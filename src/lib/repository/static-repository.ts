@@ -21,7 +21,7 @@ export class StaticKnowledgeRepository implements KnowledgeRepository {
   private cache: Map<string, unknown>;
 
   constructor() {
-    this.dataDir = path.join(process.cwd(), 'ProdigyOS-data');
+    this.dataDir = path.join(process.cwd(), 'samundar-data');
     this.cache = new Map();
   }
 

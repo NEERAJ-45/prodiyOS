@@ -8,7 +8,7 @@ import { useModeStore } from "@/lib/stores/mode-store";
 import { ModeToggle } from "@/components/layout/mode-toggle";
 import {
   LayoutDashboard,
-  GitGraph,
+  GitBranch,
   Map,
   Target,
   RefreshCw,
@@ -31,7 +31,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { label: "Command Center", href: "/command-center", icon: LayoutDashboard },
-  { label: "Knowledge Graph", href: "/knowledge-graph", icon: GitGraph },
+  { label: "DSA Patterns", href: "/knowledge-graph", icon: GitBranch },
   { label: "Learning Roadmaps", href: "/roadmaps", icon: Map },
   { label: "Mastery Tracking", href: "/mastery", icon: Target },
   { label: "Revision Engine", href: "/revision", icon: RefreshCw },
