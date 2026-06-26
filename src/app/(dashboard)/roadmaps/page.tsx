@@ -42,13 +42,13 @@ const categories = [
   },
   {
     title: 'Frontend Development',
-    description: 'Deep dive into modern web user interfaces. Master React components, state management, hooks, and next-generation frameworks.',
+    description: 'Deep dive into modern web user interfaces. Master React components, hooks, Next.js framework, and federated MicroFrontends architectures.',
     href: '/roadmaps/frontend',
     progress: 82,
-    hours: 90,
-    difficulty: 'Medium',
+    hours: 260,
+    difficulty: 'Medium-Hard',
     color: 'from-sky-500 via-indigo-500 to-cyan-400',
-    topics: ['React Core', 'Next.js & Ecosystem'],
+    topics: ['React Core', 'Next.js Framework', 'MicroFrontends'],
   },
   {
     title: 'DevOps & Cloud Engineering',
@@ -126,8 +126,9 @@ export default function RoadmapsPage() {
     setBackendProgress(Math.round(((javaCompleted + springCompleted) / 100) * 100));
 
     const reactCompleted = getCompletedCount('frontend-react');
-    const nextjsMfeCompleted = getCompletedCount('frontend-nextjs-mfe');
-    setFrontendProgress(Math.round(((reactCompleted + nextjsMfeCompleted) / 100) * 100));
+    const nextjsCompleted = getCompletedCount('frontend-nextjs');
+    const mfeCompleted = getCompletedCount('frontend-mfe');
+    setFrontendProgress(Math.round(((reactCompleted + nextjsCompleted + mfeCompleted) / 150) * 100));
 
     const dockerCompleted = getCompletedCount('devops-cloud-docker');
     const k8sCompleted = getCompletedCount('devops-cloud-kubernetes');

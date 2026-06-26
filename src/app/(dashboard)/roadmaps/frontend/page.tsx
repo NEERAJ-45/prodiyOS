@@ -22,15 +22,27 @@ const pillars = [
     ],
   },
   {
-    name: 'Next.js & MicroFrontends',
-    slug: 'nextjs-mfe',
+    name: 'Next.js',
+    slug: 'nextjs',
     progress: 0,
-    hours: 120,
-    difficulty: 'Hard' as const,
-    color: 'from-cyan-500 to-indigo-500',
+    hours: 90,
+    difficulty: 'Medium-Hard' as const,
+    color: 'from-cyan-500 to-teal-400',
     domains: [
-      { name: 'Next.js App Router', progress: 0, modules: ['SSR & SSG', 'Server Components', 'Actions', 'Middlewares'] },
-      { name: 'MicroFrontends Architecture', progress: 0, modules: ['Module Federation', 'Single-SPA', 'iFrames', 'State Sharing'] },
+      { name: 'Routing & Pages', progress: 0, modules: ['App Router', 'Nested Layouts', 'Dynamic Routes'] },
+      { name: 'Server & Rendering', progress: 0, modules: ['RSC vs RCC', 'Server Actions', 'Edge API'] },
+    ],
+  },
+  {
+    name: 'MicroFrontends',
+    slug: 'microfrontends',
+    progress: 0,
+    hours: 80,
+    difficulty: 'Hard' as const,
+    color: 'from-indigo-500 to-purple-500',
+    domains: [
+      { name: 'Orchestration & Federation', progress: 0, modules: ['Module Federation', 'Single-SPA', 'SystemJS'] },
+      { name: 'Communication & Isolation', progress: 0, modules: ['postMessage', 'Shadow DOM', 'State Sync'] },
     ],
   },
 ];
@@ -38,6 +50,7 @@ const pillars = [
 const difficultyColors: Record<string, string> = {
   Easy: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
   Medium: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+  'Medium-Hard': 'bg-orange-500/15 text-orange-400 border-orange-500/30',
   Hard: 'bg-red-500/15 text-red-400 border-red-500/30',
 };
 
@@ -49,7 +62,7 @@ function RoadmapCard({
   return (
     <Link href={`/roadmaps/frontend/${pillar.slug}`} className="block">
       <Card
-        className="group cursor-pointer border-zinc-800 bg-zinc-900/50 transition-all hover:border-zinc-700 hover:bg-zinc-900"
+        className="group cursor-pointer border-zinc-800 bg-zinc-900/50 transition-all hover:border-zinc-700 hover:bg-zinc-900 h-full flex flex-col justify-between"
       >
         <CardHeader className="p-5 pb-3">
           <div className="flex items-start justify-between">
@@ -76,7 +89,7 @@ function RoadmapCard({
             </div>
           </div>
         </CardHeader>
-        <CardContent className="p-5 pt-0">
+        <CardContent className="p-5 pt-0 mt-auto">
           <div className="h-1.5 w-full rounded-full bg-zinc-800 overflow-hidden">
             <div
               className={cn('h-full rounded-full bg-gradient-to-r transition-all duration-500', pillar.color)}
@@ -92,7 +105,8 @@ function RoadmapCard({
 export default function FrontendRoadmapPage() {
   const [progressData, setProgressData] = React.useState({
     react: { overall: 0, core: 0, nextjs: 0 },
-    nextjsMfe: { overall: 0, nextjs: 0, mfe: 0 }
+    nextjs: { overall: 0, routing: 0, rendering: 0 },
+    mfe: { overall: 0, orchestration: 0, isolation: 0 }
   });
 
   React.useEffect(() => {
@@ -126,12 +140,19 @@ export default function FrontendRoadmapPage() {
     const reactCore = getCompletedCountInRange('frontend-react', 801, 830);
     const reactNextjs = getCompletedCountInRange('frontend-react', 831, 850);
 
-    // Next.js & MFE splits (IDs 851 to 900)
-    // Next.js App Router: 851 to 875 (25 questions)
-    // MicroFrontends: 876 to 900 (25 questions)
-    const mfeOverall = getOverallCount('frontend-nextjs-mfe');
-    const mfeNextjs = getCompletedCountInRange('frontend-nextjs-mfe', 851, 875);
-    const mfeArchitecture = getCompletedCountInRange('frontend-nextjs-mfe', 876, 900);
+    // Next.js splits (IDs 851 to 900)
+    // Routing: 851 to 875 (25 questions)
+    // Rendering: 876 to 900 (25 questions)
+    const nextjsOverall = getOverallCount('frontend-nextjs');
+    const nextjsRouting = getCompletedCountInRange('frontend-nextjs', 851, 875);
+    const nextjsRendering = getCompletedCountInRange('frontend-nextjs', 876, 900);
+
+    // MicroFrontends splits (IDs 901 to 950)
+    // Orchestration: 901 to 925 (25 questions)
+    // Isolation: 926 to 950 (25 questions)
+    const mfeOverall = getOverallCount('frontend-mfe');
+    const mfeOrchestration = getCompletedCountInRange('frontend-mfe', 901, 925);
+    const mfeIsolation = getCompletedCountInRange('frontend-mfe', 926, 950);
 
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setProgressData({
@@ -140,10 +161,15 @@ export default function FrontendRoadmapPage() {
         core: Math.round((reactCore / 30) * 100),
         nextjs: Math.round((reactNextjs / 20) * 100),
       },
-      nextjsMfe: {
+      nextjs: {
+        overall: Math.round((nextjsOverall / 50) * 100),
+        routing: Math.round((nextjsRouting / 25) * 100),
+        rendering: Math.round((nextjsRendering / 25) * 100),
+      },
+      mfe: {
         overall: Math.round((mfeOverall / 50) * 100),
-        nextjs: Math.round((mfeNextjs / 25) * 100),
-        mfe: Math.round((mfeArchitecture / 25) * 100),
+        orchestration: Math.round((mfeOrchestration / 25) * 100),
+        isolation: Math.round((mfeIsolation / 25) * 100),
       }
     });
   }, []);
@@ -160,10 +186,18 @@ export default function FrontendRoadmapPage() {
       },
       {
         ...pillars[1],
-        progress: progressData.nextjsMfe.overall,
+        progress: progressData.nextjs.overall,
         domains: [
-          { ...pillars[1].domains[0], progress: progressData.nextjsMfe.nextjs },
-          { ...pillars[1].domains[1], progress: progressData.nextjsMfe.mfe },
+          { ...pillars[1].domains[0], progress: progressData.nextjs.routing },
+          { ...pillars[1].domains[1], progress: progressData.nextjs.rendering },
+        ]
+      },
+      {
+        ...pillars[2],
+        progress: progressData.mfe.overall,
+        domains: [
+          { ...pillars[2].domains[0], progress: progressData.mfe.orchestration },
+          { ...pillars[2].domains[1], progress: progressData.mfe.isolation },
         ]
       }
     ];
@@ -183,11 +217,11 @@ export default function FrontendRoadmapPage() {
           </Link>
           <h1 className="text-3xl font-bold tracking-tight text-zinc-100">Frontend Development</h1>
           <p className="text-sm text-zinc-500 mt-1">
-            Build responsive, interactive user interfaces with React and Next.js.
+            Build responsive, interactive, and modular user interfaces with React, Next.js, and MicroFrontends.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
           {dynamicPillars.map((pillar) => (
             <RoadmapCard
               key={pillar.name}

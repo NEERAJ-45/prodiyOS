@@ -45,7 +45,9 @@ export default function MasteryPage() {
     if (currentFilter === 'FOUNDATION') return key.startsWith('foundation-');
     if (currentFilter === 'SYSTEM_DESIGN') return key.startsWith('system-design-');
     if (currentFilter === 'BACKEND') return key.startsWith('backend-');
-    if (currentFilter === 'FRONTEND') return key.startsWith('frontend-');
+    if (currentFilter === 'REACT') return key.startsWith('frontend-react');
+    if (currentFilter === 'NEXTJS') return key.startsWith('frontend-nextjs');
+    if (currentFilter === 'MFE') return key.startsWith('frontend-mfe');
     if (currentFilter === 'DEVOPS') return key.startsWith('devops-cloud-');
     if (currentFilter === 'APTITUDE') return key.startsWith('aptitude-');
     if (currentFilter === 'DATABASES') return key.startsWith('databases-');
@@ -164,7 +166,9 @@ export default function MasteryPage() {
     let foundation = 0;
     let systemDesign = 0;
     let backend = 0;
-    let frontend = 0;
+    let react = 0;
+    let nextjs = 0;
+    let mfe = 0;
     let devops = 0;
     let aptitude = 0;
     let databases = 0;
@@ -173,7 +177,9 @@ export default function MasteryPage() {
       if (item.key.startsWith('foundation-')) foundation++;
       else if (item.key.startsWith('system-design-')) systemDesign++;
       else if (item.key.startsWith('backend-')) backend++;
-      else if (item.key.startsWith('frontend-')) frontend++;
+      else if (item.key.startsWith('frontend-react')) react++;
+      else if (item.key.startsWith('frontend-nextjs')) nextjs++;
+      else if (item.key.startsWith('frontend-mfe')) mfe++;
       else if (item.key.startsWith('devops-cloud-')) devops++;
       else if (item.key.startsWith('aptitude-')) aptitude++;
       else if (item.key.startsWith('databases-')) databases++;
@@ -183,7 +189,9 @@ export default function MasteryPage() {
       { name: 'Computer Science Foundation', completed: foundation, total: 150, color: 'bg-cyan-500' },
       { name: 'System Design & Architecture', completed: systemDesign, total: 104, color: 'bg-violet-500' },
       { name: 'Backend Development', completed: backend, total: 100, color: 'bg-orange-500' },
-      { name: 'Frontend Development', completed: frontend, total: 100, color: 'bg-sky-500' },
+      { name: 'React Core', completed: react, total: 50, color: 'bg-sky-500' },
+      { name: 'Next.js Development', completed: nextjs, total: 50, color: 'bg-teal-500' },
+      { name: 'MicroFrontends Architecture', completed: mfe, total: 50, color: 'bg-indigo-500' },
       { name: 'DevOps & Cloud Engineering', completed: devops, total: 200, color: 'bg-blue-500' },
       { name: 'Aptitude & Logical Reasoning', completed: aptitude, total: 50, color: 'bg-teal-500' },
       { name: 'Databases (SQL & NoSQL)', completed: databases, total: 50, color: 'bg-rose-500' },
@@ -239,7 +247,9 @@ export default function MasteryPage() {
                 <option value="FOUNDATION">CS Foundation</option>
                 <option value="SYSTEM_DESIGN">System Design & Architecture</option>
                 <option value="BACKEND">Backend Development</option>
-                <option value="FRONTEND">Frontend Development</option>
+                <option value="REACT">React Core</option>
+                <option value="NEXTJS">Next.js Development</option>
+                <option value="MFE">MicroFrontends Architecture</option>
                 <option value="DEVOPS">DevOps & Cloud Engineering</option>
                 <option value="APTITUDE">Aptitude & Logical Reasoning</option>
                 <option value="DATABASES">Databases (SQL & NoSQL)</option>
