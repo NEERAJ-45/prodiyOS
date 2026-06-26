@@ -232,62 +232,12 @@ export default function QuestionsTable({
   const [completedMap, setCompletedMap] = useState<CompletedMap>({});
   const [notesMap, setNotesMap] = useState<NotesMap>({});
   const [customQuestions, setCustomQuestions] = useState<QuestionItem[]>([]);
+  const [dbConnected, setDbConnected] = useState(false);
 
   const saveData = useCallback(<T,>(key: string, data: T) => {
     if (typeof window === 'undefined') return;
     localStorage.setItem(`${storagePrefix}-${key}`, JSON.stringify(data));
   }, [storagePrefix]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const raw = localStorage.getItem(`${storagePrefix}-custom-questions`);
-    if (raw) {
-      try {
-        setCustomQuestions(JSON.parse(raw));
-      } catch {
-        // ignore
-      }
-    }
-  }, [storagePrefix]);
-
-  const saveCustomQuestions = useCallback((list: QuestionItem[]) => {
-    localStorage.setItem(`${storagePrefix}-custom-questions`, JSON.stringify(list));
-    setCustomQuestions(list);
-  }, [storagePrefix]);
-
-  const handleAddQuestion = useCallback((title: string, difficulty: string, link: string) => {
-    const newQuestion: QuestionItem = {
-      id: Date.now(),
-      title,
-      difficulty,
-      link,
-      isCustom: true,
-    };
-    const nextList = [...customQuestions, newQuestion];
-    saveCustomQuestions(nextList);
-  }, [customQuestions, saveCustomQuestions]);
-
-  const handleDeleteQuestion = useCallback((id: number) => {
-    const nextList = customQuestions.filter((q) => q.id !== id);
-    saveCustomQuestions(nextList);
-    setCompletedMap((prev) => {
-      const next = { ...prev };
-      delete next[String(id)];
-      saveData('completed', next);
-      return next;
-    });
-    setNotesMap((prev) => {
-      const next = { ...prev };
-      delete next[String(id)];
-      saveData('notes', next);
-      return next;
-    });
-  }, [customQuestions, saveCustomQuestions, saveData]);
-
-  const [pagination, setPagination] = useState({
-    pageIndex: 0,
-    pageSize: 10,
-  });
 
   const defaultCompletedIdsRef = useRef(defaultCompletedIds);
   useEffect(() => {
@@ -316,25 +266,245 @@ export default function QuestionsTable({
     }
   }, [storagePrefix]);
 
+  // Load and Sync data on mount or when storagePrefix changes
   useEffect(() => {
-    setCompletedMap(loadData<CompletedMap>('completed', {}));
-    setNotesMap(loadData<NotesMap>('notes', {}));
+    const initialCompleted = loadData<CompletedMap>('completed', {});
+    const initialNotes = loadData<NotesMap>('notes', {});
+    
+    let initialCustom: QuestionItem[] = [];
+    if (typeof window !== 'undefined') {
+      const rawCustom = localStorage.getItem(`${storagePrefix}-custom-questions`);
+      if (rawCustom) {
+        try {
+          initialCustom = JSON.parse(rawCustom);
+        } catch {}
+      }
+    }
+
+    setCompletedMap(initialCompleted);
+    setNotesMap(initialNotes);
+    setCustomQuestions(initialCustom);
     setMounted(true);
-  }, [loadData]);
+
+    async function syncWithDB() {
+      try {
+        // Sync completions
+        const compRes = await fetch('/api/db/completions');
+        const compData = await compRes.json();
+        if (compData.dbConnected) {
+          setDbConnected(true);
+          const dbComps = compData.data.filter(
+            (x: any) => x.storagePrefix === `${storagePrefix}-completed`
+          );
+          const dbCompMap: CompletedMap = {};
+          dbComps.forEach((x: any) => {
+            dbCompMap[x.itemId] = x.completedAt;
+          });
+          const mergedComps = { ...initialCompleted, ...dbCompMap };
+          setCompletedMap(mergedComps);
+          saveData('completed', mergedComps);
+
+          // Push local-only completions to DB
+          for (const [id, dateStr] of Object.entries(initialCompleted)) {
+            if (!dbCompMap[id]) {
+              fetch('/api/db/completions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  storagePrefix: `${storagePrefix}-completed`,
+                  itemId: id,
+                  completedAt: dateStr,
+                }),
+              }).catch(() => {});
+            }
+          }
+        }
+
+        // Sync notes
+        const noteRes = await fetch('/api/db/notes');
+        const noteData = await noteRes.json();
+        if (noteData.dbConnected) {
+          const dbNotes = noteData.data.filter(
+            (x: any) => x.storagePrefix === `${storagePrefix}-notes`
+          );
+          const dbNoteMap: NotesMap = {};
+          dbNotes.forEach((x: any) => {
+            dbNoteMap[x.itemId] = x.note;
+          });
+          const mergedNotes = { ...initialNotes, ...dbNoteMap };
+          setNotesMap(mergedNotes);
+          saveData('notes', mergedNotes);
+
+          // Push local-only notes to DB
+          for (const [id, noteText] of Object.entries(initialNotes)) {
+            if (!dbNoteMap[id]) {
+              fetch('/api/db/notes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  storagePrefix: `${storagePrefix}-notes`,
+                  itemId: id,
+                  note: noteText,
+                }),
+              }).catch(() => {});
+            }
+          }
+        }
+
+        // Sync custom topics
+        const customRes = await fetch('/api/db/custom-topics');
+        const customData = await customRes.json();
+        if (customData.dbConnected) {
+          const dbCustoms = customData.data.filter(
+            (x: any) => x.storagePrefix === `${storagePrefix}-custom-questions`
+          );
+          const dbCustomMap = new Map(dbCustoms.map((x: any) => [x.id, x]));
+          
+          const mergedCustoms = [...initialCustom];
+          dbCustoms.forEach((dbItem: any) => {
+            if (!mergedCustoms.some((x) => x.id === dbItem.id)) {
+              mergedCustoms.push({
+                id: dbItem.id,
+                title: dbItem.title,
+                difficulty: dbItem.difficulty,
+                link: dbItem.link,
+                isCustom: true,
+              });
+            }
+          });
+          setCustomQuestions(mergedCustoms);
+          localStorage.setItem(`${storagePrefix}-custom-questions`, JSON.stringify(mergedCustoms));
+
+          // Push local-only customs to DB
+          for (const item of initialCustom) {
+            if (!dbCustomMap.has(item.id)) {
+              fetch('/api/db/custom-topics', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  storagePrefix: `${storagePrefix}-custom-questions`,
+                  id: item.id,
+                  title: item.title,
+                  difficulty: item.difficulty,
+                  link: item.link,
+                }),
+              }).catch(() => {});
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Failed to sync with MongoDB:', err);
+      }
+    }
+    
+    syncWithDB();
+  }, [storagePrefix, loadData, saveData]);
+
+  const saveCustomQuestions = useCallback((list: QuestionItem[]) => {
+    localStorage.setItem(`${storagePrefix}-custom-questions`, JSON.stringify(list));
+    setCustomQuestions(list);
+  }, [storagePrefix]);
+
+  const handleAddQuestion = useCallback((title: string, difficulty: string, link: string) => {
+    const newId = Date.now();
+    const newQuestion: QuestionItem = {
+      id: newId,
+      title,
+      difficulty,
+      link,
+      isCustom: true,
+    };
+    const nextList = [...customQuestions, newQuestion];
+    saveCustomQuestions(nextList);
+
+    // Sync to DB
+    fetch('/api/db/custom-topics', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        storagePrefix: `${storagePrefix}-custom-questions`,
+        id: newId,
+        title,
+        difficulty,
+        link,
+      }),
+    }).catch(() => {});
+  }, [customQuestions, saveCustomQuestions, storagePrefix]);
+
+  const handleDeleteQuestion = useCallback((id: number) => {
+    const nextList = customQuestions.filter((q) => q.id !== id);
+    saveCustomQuestions(nextList);
+    setCompletedMap((prev) => {
+      const next = { ...prev };
+      delete next[String(id)];
+      saveData('completed', next);
+      return next;
+    });
+    setNotesMap((prev) => {
+      const next = { ...prev };
+      delete next[String(id)];
+      saveData('notes', next);
+      return next;
+    });
+
+    // Delete custom topic from DB
+    fetch(`/api/db/custom-topics?storagePrefix=${storagePrefix}-custom-questions&id=${id}`, {
+      method: 'DELETE',
+    }).catch(() => {});
+
+    // Delete completions & notes associated with this custom question
+    fetch('/api/db/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        storagePrefix: `${storagePrefix}-completed`,
+        itemId: String(id),
+      }),
+    }).catch(() => {});
+
+    fetch('/api/db/notes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        storagePrefix: `${storagePrefix}-notes`,
+        itemId: String(id),
+      }),
+    }).catch(() => {});
+  }, [customQuestions, saveCustomQuestions, saveData, storagePrefix]);
+
+  const [pagination, setPagination] = useState({
+    pageIndex: 0,
+    pageSize: 10,
+  });
 
   const toggleCompleted = useCallback((id: number) => {
+    let isCompleted = false;
+    let compAtStr = '';
     setCompletedMap((prev) => {
       const key = String(id);
       const next = { ...prev };
       if (next[key]) {
         delete next[key];
       } else {
-        next[key] = new Date().toISOString();
+        compAtStr = new Date().toISOString();
+        next[key] = compAtStr;
+        isCompleted = true;
       }
       saveData('completed', next);
       return next;
     });
-  }, [saveData]);
+
+    // Sync completion state to DB
+    fetch('/api/db/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        storagePrefix: `${storagePrefix}-completed`,
+        itemId: String(id),
+        completedAt: isCompleted ? compAtStr : undefined,
+      }),
+    }).catch(() => {});
+  }, [saveData, storagePrefix]);
 
   const updateNote = useCallback((id: number, value: string) => {
     setNotesMap((prev) => {
@@ -344,7 +514,18 @@ export default function QuestionsTable({
       saveData('notes', next);
       return next;
     });
-  }, [saveData]);
+
+    // Sync note to DB
+    fetch('/api/db/notes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        storagePrefix: `${storagePrefix}-notes`,
+        itemId: String(id),
+        note: value || undefined,
+      }),
+    }).catch(() => {});
+  }, [saveData, storagePrefix]);
 
   const filteredQuestions = useMemo(() => {
     const all = [...questions, ...customQuestions];
@@ -472,11 +653,15 @@ export default function QuestionsTable({
           
           const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
             const val = e.target.value;
+            let isoString = '';
+            let hasVal = false;
             if (val) {
+              isoString = new Date(val).toISOString();
+              hasVal = true;
               setCompletedMap((prev) => {
                 const key = String(id);
                 const next = { ...prev };
-                next[key] = new Date(val).toISOString();
+                next[key] = isoString;
                 saveData('completed', next);
                 return next;
               });
@@ -489,6 +674,17 @@ export default function QuestionsTable({
                 return next;
               });
             }
+
+            // Sync to MongoDB
+            fetch('/api/db/completions', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                storagePrefix: `${storagePrefix}-completed`,
+                itemId: String(id),
+                completedAt: hasVal ? isoString : undefined,
+              }),
+            }).catch(() => {});
           };
 
           const inputValue = dateStr ? new Date(dateStr).toISOString().split('T')[0] : '';
@@ -508,7 +704,7 @@ export default function QuestionsTable({
         minSize: 110,
       }),
     ],
-    [completedMap, toggleCompleted, notesMap, updateNote, handleDeleteQuestion]
+    [completedMap, toggleCompleted, notesMap, updateNote, handleDeleteQuestion, storagePrefix, saveData]
   );
 
   const table = useReactTable({

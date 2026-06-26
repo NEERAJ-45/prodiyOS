@@ -225,28 +225,141 @@ export function ProblemsTable({
 }: ProblemsTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
 
-  const [completedMap, setCompletedMap] = useState<CompletedMap>(() =>
-    loadData<CompletedMap>(patternName, "completed", {})
-  );
-
-  const [notesMap, setNotesMap] = useState<NotesMap>(() =>
-    loadData<NotesMap>(patternName, "notes", {})
-  );
-
+  const [completedMap, setCompletedMap] = useState<CompletedMap>({});
+  const [notesMap, setNotesMap] = useState<NotesMap>({});
   const [customProblems, setCustomProblems] = useState<ProblemItem[]>([]);
+  const [dbConnected, setDbConnected] = useState(false);
 
+  // Load and Sync data on mount or when patternName changes
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const raw = localStorage.getItem(`${patternName}-custom-problems`);
-    if (raw) {
-      try {
-        setCustomProblems(JSON.parse(raw));
-      } catch {
-        // ignore
+    const initialCompleted = loadData<CompletedMap>(patternName, "completed", {});
+    const initialNotes = loadData<NotesMap>(patternName, "notes", {});
+    
+    let initialCustom: ProblemItem[] = [];
+    if (typeof window !== 'undefined') {
+      const rawCustom = localStorage.getItem(`${patternName}-custom-problems`);
+      if (rawCustom) {
+        try {
+          initialCustom = JSON.parse(rawCustom);
+        } catch {}
       }
-    } else {
-      setCustomProblems([]);
     }
+
+    setCompletedMap(initialCompleted);
+    setNotesMap(initialNotes);
+    setCustomProblems(initialCustom);
+
+    async function syncWithDB() {
+      try {
+        // Sync completions
+        const compRes = await fetch('/api/db/completions');
+        const compData = await compRes.json();
+        if (compData.dbConnected) {
+          setDbConnected(true);
+          const dbComps = compData.data.filter(
+            (x: any) => x.storagePrefix === `completed-${patternName}`
+          );
+          const dbCompMap: CompletedMap = {};
+          dbComps.forEach((x: any) => {
+            dbCompMap[x.itemId] = x.completedAt;
+          });
+          const mergedComps = { ...initialCompleted, ...dbCompMap };
+          setCompletedMap(mergedComps);
+          saveData(patternName, "completed", mergedComps);
+
+          // Push local-only completions to DB
+          for (const [id, dateStr] of Object.entries(initialCompleted)) {
+            if (!dbCompMap[id]) {
+              fetch('/api/db/completions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  storagePrefix: `completed-${patternName}`,
+                  itemId: id,
+                  completedAt: dateStr,
+                }),
+              }).catch(() => {});
+            }
+          }
+        }
+
+        // Sync notes
+        const noteRes = await fetch('/api/db/notes');
+        const noteData = await noteRes.json();
+        if (noteData.dbConnected) {
+          const dbNotes = noteData.data.filter(
+            (x: any) => x.storagePrefix === `notes-${patternName}`
+          );
+          const dbNoteMap: NotesMap = {};
+          dbNotes.forEach((x: any) => {
+            dbNoteMap[x.itemId] = x.note;
+          });
+          const mergedNotes = { ...initialNotes, ...dbNoteMap };
+          setNotesMap(mergedNotes);
+          saveData(patternName, "notes", mergedNotes);
+
+          // Push local-only notes to DB
+          for (const [id, noteText] of Object.entries(initialNotes)) {
+            if (!dbNoteMap[id]) {
+              fetch('/api/db/notes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  storagePrefix: `notes-${patternName}`,
+                  itemId: id,
+                  note: noteText,
+                }),
+              }).catch(() => {});
+            }
+          }
+        }
+
+        // Sync custom problems
+        const customRes = await fetch('/api/db/custom-topics');
+        const customData = await customRes.json();
+        if (customData.dbConnected) {
+          const dbCustoms = customData.data.filter(
+            (x: any) => x.storagePrefix === `${patternName}-custom-problems`
+          );
+          const dbCustomMap = new Map(dbCustoms.map((x: any) => [x.id, x]));
+
+          const mergedCustoms = [...initialCustom];
+          dbCustoms.forEach((dbItem: any) => {
+            if (!mergedCustoms.some((x) => x.id === dbItem.id)) {
+              mergedCustoms.push({
+                id: dbItem.id,
+                title: dbItem.title,
+                difficulty: dbItem.difficulty || "MEDIUM",
+                link: dbItem.link,
+              });
+            }
+          });
+          setCustomProblems(mergedCustoms);
+          localStorage.setItem(`${patternName}-custom-problems`, JSON.stringify(mergedCustoms));
+
+          // Push local-only customs to DB
+          for (const item of initialCustom) {
+            if (!dbCustomMap.has(item.id)) {
+              fetch('/api/db/custom-topics', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  storagePrefix: `${patternName}-custom-problems`,
+                  id: item.id,
+                  title: item.title,
+                  difficulty: item.difficulty || "MEDIUM",
+                  link: item.link,
+                }),
+              }).catch(() => {});
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Failed to sync with MongoDB:', err);
+      }
+    }
+
+    syncWithDB();
   }, [patternName]);
 
   const saveCustomProblems = useCallback((list: ProblemItem[]) => {
@@ -255,15 +368,29 @@ export function ProblemsTable({
   }, [patternName]);
 
   const handleAddProblem = useCallback((title: string, difficulty: string, link: string) => {
+    const newId = Date.now();
     const newProblem: ProblemItem & { difficulty: string } = {
-      id: Date.now(),
+      id: newId,
       title,
       link,
       difficulty,
     };
     const nextList = [...customProblems, newProblem];
     saveCustomProblems(nextList);
-  }, [customProblems, saveCustomProblems]);
+
+    // Sync to DB
+    fetch('/api/db/custom-topics', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        storagePrefix: `${patternName}-custom-problems`,
+        id: newId,
+        title,
+        difficulty,
+        link,
+      }),
+    }).catch(() => {});
+  }, [customProblems, saveCustomProblems, patternName]);
 
   const handleDeleteProblem = useCallback((id: number) => {
     const nextList = customProblems.filter((p) => p.id !== id);
@@ -280,26 +407,60 @@ export function ProblemsTable({
       saveData(patternName, "notes", next);
       return next;
     });
-  }, [customProblems, saveCustomProblems, patternName]);
 
-  useEffect(() => {
-    setCompletedMap(loadData<CompletedMap>(patternName, "completed", {}));
-    setNotesMap(loadData<NotesMap>(patternName, "notes", {}));
-  }, [patternName]);
+    // Delete custom topic from DB
+    fetch(`/api/db/custom-topics?storagePrefix=${patternName}-custom-problems&id=${id}`, {
+      method: 'DELETE',
+    }).catch(() => {});
+
+    // Delete completions & notes associated with this custom question
+    fetch('/api/db/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        storagePrefix: `completed-${patternName}`,
+        itemId: String(id),
+      }),
+    }).catch(() => {});
+
+    fetch('/api/db/notes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        storagePrefix: `notes-${patternName}`,
+        itemId: String(id),
+      }),
+    }).catch(() => {});
+  }, [customProblems, saveCustomProblems, patternName]);
 
   const toggleCompleted = useCallback(
     (id: number) => {
+      let isCompleted = false;
+      let compAtStr = '';
       setCompletedMap((prev) => {
         const key = String(id);
         const next = { ...prev };
         if (next[key]) {
           delete next[key];
         } else {
-          next[key] = new Date().toISOString();
+          compAtStr = new Date().toISOString();
+          next[key] = compAtStr;
+          isCompleted = true;
         }
         saveData(patternName, "completed", next);
         return next;
       });
+
+      // Sync completion state to DB
+      fetch('/api/db/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          storagePrefix: `completed-${patternName}`,
+          itemId: String(id),
+          completedAt: isCompleted ? compAtStr : undefined,
+        }),
+      }).catch(() => {});
     },
     [patternName]
   );
@@ -313,6 +474,17 @@ export function ProblemsTable({
         saveData(patternName, "notes", next);
         return next;
       });
+
+      // Sync note to DB
+      fetch('/api/db/notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          storagePrefix: `notes-${patternName}`,
+          itemId: String(id),
+          note: value || undefined,
+        }),
+      }).catch(() => {});
     },
     [patternName]
   );
@@ -481,11 +653,15 @@ export function ProblemsTable({
           
           const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
             const val = e.target.value;
+            let isoString = '';
+            let hasVal = false;
             if (val) {
+              isoString = new Date(val).toISOString();
+              hasVal = true;
               setCompletedMap((prev) => {
                 const key = String(id);
                 const next = { ...prev };
-                next[key] = new Date(val).toISOString();
+                next[key] = isoString;
                 saveData(patternName, "completed", next);
                 return next;
               });
@@ -498,6 +674,17 @@ export function ProblemsTable({
                 return next;
               });
             }
+
+            // Sync to MongoDB
+            fetch('/api/db/completions', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                storagePrefix: `completed-${patternName}`,
+                itemId: String(id),
+                completedAt: hasVal ? isoString : undefined,
+              }),
+            }).catch(() => {});
           };
 
           const inputValue = dateStr ? new Date(dateStr).toISOString().split('T')[0] : '';

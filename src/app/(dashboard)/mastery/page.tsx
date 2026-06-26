@@ -18,6 +18,7 @@ export default function MasteryPage() {
     if (typeof window === 'undefined') return;
 
     const allCompletions: Record<string, { date: string; key: string }> = {};
+    const localMap: Record<string, Record<string, string>> = {};
 
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
@@ -26,6 +27,7 @@ export default function MasteryPage() {
           const raw = localStorage.getItem(key);
           if (raw) {
             const data = JSON.parse(raw); // Record<string, string> (id -> dateStr)
+            localMap[key] = data;
             Object.entries(data).forEach(([itemId, val]) => {
               if (typeof val === 'string') {
                 allCompletions[`${key}-${itemId}`] = { date: val, key };
@@ -37,7 +39,41 @@ export default function MasteryPage() {
         }
       }
     }
-    setCompletions(allCompletions);
+    setCompletions({ ...allCompletions });
+
+    async function loadCompletionsFromDB() {
+      try {
+        const res = await fetch('/api/db/completions');
+        const resData = await res.json();
+        if (resData.dbConnected && resData.data) {
+          const dbData = resData.data; // array of { storagePrefix, itemId, completedAt }
+          
+          dbData.forEach((item: any) => {
+            const { storagePrefix, itemId, completedAt } = item;
+            
+            if (storagePrefix && (storagePrefix.endsWith('-completed') || storagePrefix.startsWith('completed-'))) {
+              allCompletions[`${storagePrefix}-${itemId}`] = { date: completedAt, key: storagePrefix };
+              
+              if (!localMap[storagePrefix]) {
+                localMap[storagePrefix] = {};
+              }
+              localMap[storagePrefix][itemId] = completedAt;
+            }
+          });
+
+          // Write back merged completions to localStorage
+          Object.entries(localMap).forEach(([storageKey, mapData]) => {
+            localStorage.setItem(storageKey, JSON.stringify(mapData));
+          });
+
+          setCompletions({ ...allCompletions });
+        }
+      } catch (e) {
+        console.error('Failed to load completions from DB:', e);
+      }
+    }
+    
+    loadCompletionsFromDB();
   }, []);
 
   const isKeyInFilter = useCallback((key: string, currentFilter: string) => {
