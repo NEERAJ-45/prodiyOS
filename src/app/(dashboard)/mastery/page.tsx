@@ -47,6 +47,8 @@ export default function MasteryPage() {
     if (currentFilter === 'BACKEND') return key.startsWith('backend-');
     if (currentFilter === 'FRONTEND') return key.startsWith('frontend-');
     if (currentFilter === 'DEVOPS') return key.startsWith('devops-cloud-');
+    if (currentFilter === 'APTITUDE') return key.startsWith('aptitude-');
+    if (currentFilter === 'DATABASES') return key.startsWith('databases-');
     return false;
   }, []);
 
@@ -164,6 +166,8 @@ export default function MasteryPage() {
     let backend = 0;
     let frontend = 0;
     let devops = 0;
+    let aptitude = 0;
+    let databases = 0;
 
     Object.values(completions).forEach((item) => {
       if (item.key.startsWith('foundation-')) foundation++;
@@ -171,6 +175,8 @@ export default function MasteryPage() {
       else if (item.key.startsWith('backend-')) backend++;
       else if (item.key.startsWith('frontend-')) frontend++;
       else if (item.key.startsWith('devops-cloud-')) devops++;
+      else if (item.key.startsWith('aptitude-')) aptitude++;
+      else if (item.key.startsWith('databases-')) databases++;
     });
 
     return [
@@ -179,6 +185,8 @@ export default function MasteryPage() {
       { name: 'Backend Development', completed: backend, total: 100, color: 'bg-orange-500' },
       { name: 'Frontend Development', completed: frontend, total: 50, color: 'bg-sky-500' },
       { name: 'DevOps & Cloud Engineering', completed: devops, total: 200, color: 'bg-blue-500' },
+      { name: 'Aptitude & Logical Reasoning', completed: aptitude, total: 50, color: 'bg-teal-500' },
+      { name: 'Databases (SQL & NoSQL)', completed: databases, total: 50, color: 'bg-rose-500' },
     ];
   }, [completions]);
 
@@ -233,6 +241,8 @@ export default function MasteryPage() {
                 <option value="BACKEND">Backend Development</option>
                 <option value="FRONTEND">Frontend Development</option>
                 <option value="DEVOPS">DevOps & Cloud Engineering</option>
+                <option value="APTITUDE">Aptitude & Logical Reasoning</option>
+                <option value="DATABASES">Databases (SQL & NoSQL)</option>
               </select>
             </div>
           </CardHeader>

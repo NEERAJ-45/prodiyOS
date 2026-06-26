@@ -60,10 +60,31 @@ const categories = [
     color: 'from-blue-500 via-violet-500 to-red-500',
     topics: ['Docker & K8s', 'AWS Cloud Services', 'CI/CD Pipelines'],
   },
+  {
+    title: 'Aptitude & Logical Reasoning',
+    description: 'Master quantitative aptitude, logical reasoning, and data interpretation. Crucial for technical assessments, problem solving, and cognitive evaluations.',
+    href: '/roadmaps/aptitude',
+    progress: 0,
+    hours: 120,
+    difficulty: 'Easy-Medium',
+    color: 'from-teal-500 via-emerald-600 to-green-400',
+    topics: ['Quantitative Aptitude', 'Logical Reasoning', 'Data Interpretation'],
+  },
+  {
+    title: 'Databases (SQL & NoSQL)',
+    description: 'Deep dive into relational (SQL) and non-relational (NoSQL) database technologies. Master schema design, indexes, transactional isolation, sharding, caching, and document/key-value/graph models.',
+    href: '/roadmaps/databases',
+    progress: 0,
+    hours: 180,
+    difficulty: 'Medium-Hard',
+    color: 'from-pink-500 via-rose-600 to-red-500',
+    topics: ['SQL & Schema Design', 'NoSQL Architectures', 'Query Tuning & Scaling'],
+  },
 ];
 
 const difficultyColors: Record<string, string> = {
   Easy: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+  'Easy-Medium': 'bg-teal-500/15 text-teal-400 border-teal-500/30',
   Medium: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
   'Medium-Hard': 'bg-orange-500/15 text-orange-400 border-orange-500/30',
   Hard: 'bg-red-500/15 text-red-400 border-red-500/30',
@@ -75,6 +96,8 @@ export default function RoadmapsPage() {
   const [backendProgress, setBackendProgress] = React.useState(0);
   const [frontendProgress, setFrontendProgress] = React.useState(0);
   const [devopsProgress, setDevopsProgress] = React.useState(0);
+  const [aptitudeProgress, setAptitudeProgress] = React.useState(0);
+  const [databasesProgress, setDatabasesProgress] = React.useState(0);
 
   React.useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect */
@@ -110,6 +133,12 @@ export default function RoadmapsPage() {
     const awsCompleted = getCompletedCount('devops-cloud-aws');
     const devopsCompleted = getCompletedCount('devops-cloud-devops');
     setDevopsProgress(Math.round(((dockerCompleted + k8sCompleted + awsCompleted + devopsCompleted) / 200) * 100));
+
+    const aptitudeCompleted = getCompletedCount('aptitude');
+    setAptitudeProgress(Math.round((aptitudeCompleted / 50) * 100));
+
+    const databasesCompleted = getCompletedCount('databases');
+    setDatabasesProgress(Math.round((databasesCompleted / 50) * 100));
     /* eslint-enable react-hooks/set-state-in-effect */
   }, []);
 
@@ -135,8 +164,16 @@ export default function RoadmapsPage() {
         ...categories[4],
         progress: devopsProgress,
       },
+      {
+        ...categories[5],
+        progress: aptitudeProgress,
+      },
+      {
+        ...categories[6],
+        progress: databasesProgress,
+      },
     ];
-  }, [csFoundationProgress, systemDesignProgress, backendProgress, frontendProgress, devopsProgress]);
+  }, [csFoundationProgress, systemDesignProgress, backendProgress, frontendProgress, devopsProgress, aptitudeProgress, databasesProgress]);
 
   return (
     <div className="flex flex-col h-full bg-background">
