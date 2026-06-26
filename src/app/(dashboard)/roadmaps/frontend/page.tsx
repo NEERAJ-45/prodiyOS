@@ -21,6 +21,18 @@ const pillars = [
       { name: 'Ecosystem & Next.js', progress: 0, modules: ['Next.js', 'React Query', 'Zustand'] },
     ],
   },
+  {
+    name: 'Next.js & MicroFrontends',
+    slug: 'nextjs-mfe',
+    progress: 0,
+    hours: 120,
+    difficulty: 'Hard' as const,
+    color: 'from-cyan-500 to-indigo-500',
+    domains: [
+      { name: 'Next.js App Router', progress: 0, modules: ['SSR & SSG', 'Server Components', 'Actions', 'Middlewares'] },
+      { name: 'MicroFrontends Architecture', progress: 0, modules: ['Module Federation', 'Single-SPA', 'iFrames', 'State Sharing'] },
+    ],
+  },
 ];
 
 const difficultyColors: Record<string, string> = {
@@ -79,7 +91,8 @@ function RoadmapCard({
 
 export default function FrontendRoadmapPage() {
   const [progressData, setProgressData] = React.useState({
-    react: { overall: 0, core: 0, nextjs: 0 }
+    react: { overall: 0, core: 0, nextjs: 0 },
+    nextjsMfe: { overall: 0, nextjs: 0, mfe: 0 }
   });
 
   React.useEffect(() => {
@@ -113,12 +126,24 @@ export default function FrontendRoadmapPage() {
     const reactCore = getCompletedCountInRange('frontend-react', 801, 830);
     const reactNextjs = getCompletedCountInRange('frontend-react', 831, 850);
 
+    // Next.js & MFE splits (IDs 851 to 900)
+    // Next.js App Router: 851 to 875 (25 questions)
+    // MicroFrontends: 876 to 900 (25 questions)
+    const mfeOverall = getOverallCount('frontend-nextjs-mfe');
+    const mfeNextjs = getCompletedCountInRange('frontend-nextjs-mfe', 851, 875);
+    const mfeArchitecture = getCompletedCountInRange('frontend-nextjs-mfe', 876, 900);
+
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setProgressData({
       react: {
         overall: Math.round((reactOverall / 50) * 100),
         core: Math.round((reactCore / 30) * 100),
         nextjs: Math.round((reactNextjs / 20) * 100),
+      },
+      nextjsMfe: {
+        overall: Math.round((mfeOverall / 50) * 100),
+        nextjs: Math.round((mfeNextjs / 25) * 100),
+        mfe: Math.round((mfeArchitecture / 25) * 100),
       }
     });
   }, []);
@@ -131,6 +156,14 @@ export default function FrontendRoadmapPage() {
         domains: [
           { ...pillars[0].domains[0], progress: progressData.react.core },
           { ...pillars[0].domains[1], progress: progressData.react.nextjs },
+        ]
+      },
+      {
+        ...pillars[1],
+        progress: progressData.nextjsMfe.overall,
+        domains: [
+          { ...pillars[1].domains[0], progress: progressData.nextjsMfe.nextjs },
+          { ...pillars[1].domains[1], progress: progressData.nextjsMfe.mfe },
         ]
       }
     ];

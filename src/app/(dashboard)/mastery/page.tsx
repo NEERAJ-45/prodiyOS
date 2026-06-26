@@ -183,7 +183,7 @@ export default function MasteryPage() {
       { name: 'Computer Science Foundation', completed: foundation, total: 150, color: 'bg-cyan-500' },
       { name: 'System Design & Architecture', completed: systemDesign, total: 104, color: 'bg-violet-500' },
       { name: 'Backend Development', completed: backend, total: 100, color: 'bg-orange-500' },
-      { name: 'Frontend Development', completed: frontend, total: 50, color: 'bg-sky-500' },
+      { name: 'Frontend Development', completed: frontend, total: 100, color: 'bg-sky-500' },
       { name: 'DevOps & Cloud Engineering', completed: devops, total: 200, color: 'bg-blue-500' },
       { name: 'Aptitude & Logical Reasoning', completed: aptitude, total: 50, color: 'bg-teal-500' },
       { name: 'Databases (SQL & NoSQL)', completed: databases, total: 50, color: 'bg-rose-500' },

@@ -126,7 +126,8 @@ export default function RoadmapsPage() {
     setBackendProgress(Math.round(((javaCompleted + springCompleted) / 100) * 100));
 
     const reactCompleted = getCompletedCount('frontend-react');
-    setFrontendProgress(Math.round((reactCompleted / 50) * 100));
+    const nextjsMfeCompleted = getCompletedCount('frontend-nextjs-mfe');
+    setFrontendProgress(Math.round(((reactCompleted + nextjsMfeCompleted) / 100) * 100));
 
     const dockerCompleted = getCompletedCount('devops-cloud-docker');
     const k8sCompleted = getCompletedCount('devops-cloud-kubernetes');
