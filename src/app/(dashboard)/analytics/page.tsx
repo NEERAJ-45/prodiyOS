@@ -5,7 +5,7 @@ import { ChevronDown, ChevronRight } from 'lucide-react';
 import {
   Clock, Flame, BookOpen, Target, TrendingUp,
   AlertTriangle, CheckCircle, Brain, Activity,
-  Loader2, Database, Wifi, WifiOff,
+  Loader2, Database, Wifi, WifiOff, ShieldAlert,
 } from 'lucide-react';
 import { Navbar } from '@/components/layout/navbar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,36 +15,36 @@ import { useProfile } from '@/components/providers/ProfileProvider';
 
 // ─── Roadmap Definitions ──────────────────────────────────────────────────────
 const ROADMAPS = [
-  { label: 'OS',           storageKey: 'foundation-os-completed',           total: 50, category: 'Foundation',    color: '#06b6d4' },
-  { label: 'DBMS',         storageKey: 'foundation-dbms-completed',         total: 50, category: 'Foundation',    color: '#0ea5e9' },
-  { label: 'CN',           storageKey: 'foundation-cn-completed',           total: 50, category: 'Foundation',    color: '#22d3ee' },
-  { label: 'SD Concepts',  storageKey: 'system-design-concepts-completed',  total: 50, category: 'System Design', color: '#8b5cf6' },
-  { label: 'SD Problems',  storageKey: 'system-design-problems-completed',  total: 50, category: 'System Design', color: '#a855f7' },
-  { label: 'Java',         storageKey: 'backend-java-completed',            total: 50, category: 'Backend',       color: '#f97316' },
-  { label: 'Spring Boot',  storageKey: 'backend-springboot-completed',      total: 50, category: 'Backend',       color: '#22c55e' },
-  { label: 'React',        storageKey: 'frontend-react-completed',          total: 50, category: 'Frontend',      color: '#38bdf8' },
-  { label: 'Next.js',      storageKey: 'frontend-nextjs-completed',         total: 50, category: 'Frontend',      color: '#0ea5e9' },
-  { label: 'MFE',          storageKey: 'frontend-mfe-completed',            total: 50, category: 'Frontend',      color: '#6366f1' },
-  { label: 'DevOps',       storageKey: 'devops-cloud-devops-completed',     total: 50, category: 'DevOps',        color: '#3b82f6' },
-  { label: 'Docker',       storageKey: 'devops-cloud-docker-completed',     total: 50, category: 'DevOps',        color: '#60a5fa' },
-  { label: 'K8s',          storageKey: 'devops-cloud-kubernetes-completed', total: 50, category: 'DevOps',        color: '#818cf8' },
-  { label: 'AWS',          storageKey: 'devops-cloud-aws-completed',        total: 50, category: 'DevOps',        color: '#f59e0b' },
-  { label: 'SQL Theory',   storageKey: 'databases-sql-completed',           total: 50, category: 'Databases',     color: '#10b981' },
-  { label: 'NoSQL',        storageKey: 'databases-nosql-completed',         total: 50, category: 'Databases',     color: '#34d399' },
-  { label: 'SQL LeetCode', storageKey: 'completed-databases-leetcode',      total: 50, category: 'Databases',     color: '#059669' },
-  { label: 'Aptitude',     storageKey: 'aptitude-completed',                total: 50, category: 'Aptitude',      color: '#14b8a6' },
+  { label: 'OS', storageKey: 'foundation-os-completed', total: 50, category: 'Foundation', color: '#06b6d4' },
+  { label: 'DBMS', storageKey: 'foundation-dbms-completed', total: 50, category: 'Foundation', color: '#0ea5e9' },
+  { label: 'CN', storageKey: 'foundation-cn-completed', total: 50, category: 'Foundation', color: '#22d3ee' },
+  { label: 'SD Concepts', storageKey: 'system-design-concepts-completed', total: 50, category: 'System Design', color: '#8b5cf6' },
+  { label: 'SD Problems', storageKey: 'system-design-problems-completed', total: 50, category: 'System Design', color: '#a855f7' },
+  { label: 'Java', storageKey: 'backend-java-completed', total: 50, category: 'Backend', color: '#f97316' },
+  { label: 'Spring Boot', storageKey: 'backend-springboot-completed', total: 50, category: 'Backend', color: '#22c55e' },
+  { label: 'React', storageKey: 'frontend-react-completed', total: 50, category: 'Frontend', color: '#38bdf8' },
+  { label: 'Next.js', storageKey: 'frontend-nextjs-completed', total: 50, category: 'Frontend', color: '#0ea5e9' },
+  { label: 'MFE', storageKey: 'frontend-mfe-completed', total: 50, category: 'Frontend', color: '#6366f1' },
+  { label: 'DevOps', storageKey: 'devops-cloud-devops-completed', total: 50, category: 'DevOps', color: '#3b82f6' },
+  { label: 'Docker', storageKey: 'devops-cloud-docker-completed', total: 50, category: 'DevOps', color: '#60a5fa' },
+  { label: 'K8s', storageKey: 'devops-cloud-kubernetes-completed', total: 50, category: 'DevOps', color: '#818cf8' },
+  { label: 'AWS', storageKey: 'devops-cloud-aws-completed', total: 50, category: 'DevOps', color: '#f59e0b' },
+  { label: 'SQL Theory', storageKey: 'databases-sql-completed', total: 50, category: 'Databases', color: '#10b981' },
+  { label: 'NoSQL', storageKey: 'databases-nosql-completed', total: 50, category: 'Databases', color: '#34d399' },
+  { label: 'SQL LeetCode', storageKey: 'completed-databases-leetcode', total: 50, category: 'Databases', color: '#059669' },
+  { label: 'Aptitude', storageKey: 'aptitude-completed', total: 50, category: 'Aptitude', color: '#14b8a6' },
 ] as const;
 
 const TOTAL_TOPICS = ROADMAPS.reduce((s, r) => s + r.total, 0);
 
 const CATEGORY_COLORS: Record<string, string> = {
-  Foundation:      '#0ea5e9',
+  Foundation: '#0ea5e9',
   'System Design': '#8b5cf6',
-  Backend:         '#f97316',
-  Frontend:        '#38bdf8',
-  DevOps:          '#3b82f6',
-  Databases:       '#10b981',
-  Aptitude:        '#14b8a6',
+  Backend: '#f97316',
+  Frontend: '#38bdf8',
+  DevOps: '#3b82f6',
+  Databases: '#10b981',
+  Aptitude: '#14b8a6',
 };
 
 // ─── Bar Chart ───────────────────────────────────────────────────────────────
@@ -145,7 +145,7 @@ function GroupedRoadmapTable({
     });
     return Array.from(map.entries()).map(([cat, items]) => {
       const done = items.reduce((s, r) => s + r.completed, 0);
-      const tot  = items.reduce((s, r) => s + r.total, 0);
+      const tot = items.reduce((s, r) => s + r.total, 0);
       return { cat, items, done, tot, pct: Math.round((done / tot) * 100) };
     });
   }, [roadmapStats]);
@@ -257,6 +257,7 @@ export default function AnalyticsPage() {
   const { userEmail, customDbUrl } = useProfile();
   const [completionMap, setCompletionMap] = useState<Record<string, Set<string>>>({});
   const [completionDates, setCompletionDates] = useState<string[]>([]);
+  const [loginStreak, setLoginStreak] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [dbConnected, setDbConnected] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -264,6 +265,19 @@ export default function AnalyticsPage() {
   useEffect(() => {
     setMounted(true);
     if (typeof window === 'undefined') return;
+
+    async function fetchLoginStreak() {
+      try {
+        const res = await fetch('/api/auth/login-streak');
+        if (res.ok) {
+          const data = await res.json();
+          setLoginStreak(data.streak || 0);
+        }
+      } catch (e) {
+        console.error('Failed to fetch login streak:', e);
+      }
+    }
+    fetchLoginStreak();
 
     const localMap: Record<string, Set<string>> = {};
     const localDates: string[] = [];
@@ -275,7 +289,7 @@ export default function AnalyticsPage() {
           const parsed = JSON.parse(raw) as Record<string, string>;
           localMap[rm.storageKey] = new Set(Object.keys(parsed));
           Object.values(parsed).forEach((d) => { if (d) localDates.push(d); });
-        } catch {}
+        } catch { }
       }
       if (!localMap[rm.storageKey]) localMap[rm.storageKey] = new Set();
     });
@@ -391,18 +405,21 @@ export default function AnalyticsPage() {
                   <Wifi className="h-3 w-3" /> Cloud DB
                 </Badge>
               ) : (
-               <></>
+                <Badge variant="outline" className="gap-1.5 text-amber-400 border-amber-500/30 bg-amber-500/10">
+                  <WifiOff className="h-3 w-3" /> Local Only
+                </Badge>
               )}
             </div>
           </div>
 
           {/* KPI Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             {[
-              { label: 'Topics Done',      value: loading ? '…' : `${totalCompleted} / ${TOTAL_TOPICS}`, icon: BookOpen, color: 'text-blue-400',    bg: 'bg-blue-500/10' },
-              { label: 'Current Streak',   value: loading ? '…' : `${streak} day${streak !== 1 ? 's' : ''}`, icon: Flame, color: 'text-amber-400',   bg: 'bg-amber-500/10' },
-              { label: 'Active Days',      value: loading ? '…' : `${activeDays}`,  icon: Activity, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-              { label: 'Overall Progress', value: loading ? '…' : `${overallPct}%`, icon: Target,   color: 'text-purple-400', bg: 'bg-purple-500/10' },
+              { label: 'Topics Done', value: loading ? '…' : `${totalCompleted} / ${TOTAL_TOPICS}`, icon: BookOpen, color: 'text-blue-400', bg: 'bg-blue-500/10' },
+              { label: 'Current Streak', value: loading ? '…' : `${streak} day${streak !== 1 ? 's' : ''}`, icon: Flame, color: 'text-amber-400', bg: 'bg-amber-500/10' },
+              { label: 'Login Streak', value: loading ? '…' : `${loginStreak} day${loginStreak !== 1 ? 's' : ''}`, icon: ShieldAlert, color: 'text-orange-455', bg: 'bg-orange-500/10' },
+              { label: 'Active Days', value: loading ? '…' : `${activeDays}`, icon: Activity, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+              { label: 'Overall Progress', value: loading ? '…' : `${overallPct}%`, icon: Target, color: 'text-purple-400', bg: 'bg-purple-500/10' },
             ].map((stat) => {
               const Icon = stat.icon;
               return (

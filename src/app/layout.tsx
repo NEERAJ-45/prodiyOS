@@ -1,23 +1,22 @@
-import type { Metadata } from "next";
-import { ProfileProvider } from "@/components/providers/ProfileProvider";
-import "./globals.css";
+import type { Metadata } from 'next';
+import { SessionProvider } from 'next-auth/react';
+import { ProfileProvider } from '@/components/providers/ProfileProvider';
+import './globals.css';
 
 export const metadata: Metadata = {
-  title: "ProdigyOS — Engineering Operating System",
-  description: "Personal Engineering Mastery Platform",
+  title: 'ProdigyOS — Engineering Operating System',
+  description: 'Personal Engineering Mastery Platform',
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <body className="antialiased" suppressHydrationWarning>
-        <ProfileProvider>
-          {children}
-        </ProfileProvider>
+        <SessionProvider>
+          <ProfileProvider>
+            {children}
+          </ProfileProvider>
+        </SessionProvider>
       </body>
     </html>
   );

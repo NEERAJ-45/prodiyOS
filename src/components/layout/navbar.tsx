@@ -10,8 +10,9 @@ import { GlobalSearch } from '@/components/shared/GlobalSearch';
 export function Navbar({ global = false }: { global?: boolean }) {
   if (!global) return null;
   const pathname = usePathname();
-  const { userEmail, userName, userRole, customDbUrl, dbConnected, logout } = useProfile();
+  const { userEmail, userName, userRole, logout } = useProfile();
   const [profileOpen, setProfileOpen] = useState(false);
+  const dbConnected = true; // Secured and active via main Atlas URI now
   
   // Format breadcrumbs from pathname
   const segments = pathname.split('/').filter(Boolean);
@@ -56,7 +57,7 @@ export function Navbar({ global = false }: { global?: boolean }) {
             >
               <Database className="h-3 w-3" />
               <span className="h-1.5 w-1.5 rounded-full bg-current animate-pulse" />
-              <span>{dbConnected ? "Cloud DB Active" : "Offline Mode"}</span>
+              <span>{dbConnected ? "Cloud DB" : "Offline Mode"}</span>
             </div>
 
             {/* User Badge */}
