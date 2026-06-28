@@ -630,7 +630,7 @@ export function ProblemsTable({
             ))}
           </thead>
           <tbody>
-            <AnimatePresence mode="wait">
+            <AnimatePresence>
               {isLoading ? (
                 <motion.tr key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                   <td colSpan={columns.length} className="px-4 py-16">

@@ -465,10 +465,9 @@ export default function DailyPage() {
           {/* Header */}
           <div className="flex items-start justify-between">
             <div>
-              <h1 className="text-2xl font-semibold tracking-tight text-zinc-100">Daily Execution Center</h1>
+              <h1 className="text-2xl font-semibold tracking-tight text-zinc-100">Today's Schedule</h1>
               <p className="text-sm text-zinc-500 mt-1">{dateStr}</p>
             </div>
-            
           </div>
 
           {/* Stats */}
@@ -536,6 +535,37 @@ export default function DailyPage() {
                 style={{ width: `${progressPct}%` }}
               />
             </div>
+          </div>
+
+          {/* Time Blocks — Featured Schedule */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+            {timeBlocks.map((block, i) => {
+              const BlockIcon = block.icon;
+              const isActive = i === currentBlock;
+              const isPast = currentBlock > i;
+              return (
+                <div
+                  key={block.period}
+                  className={cn(
+                    'rounded-lg border p-3 transition-all text-center',
+                    isActive
+                      ? 'border-zinc-600 bg-zinc-800/50 ring-1 ring-zinc-700'
+                      : isPast
+                        ? 'border-zinc-800/50 bg-zinc-900/20 opacity-60'
+                        : 'border-zinc-800 bg-zinc-900/20',
+                  )}
+                >
+                  <BlockIcon className={cn('h-4 w-4 mx-auto mb-1.5', isActive ? 'text-zinc-300' : 'text-zinc-500')} />
+                  <span className={cn('text-xs font-medium block', isActive ? 'text-zinc-200' : 'text-zinc-400')}>
+                    {block.period}
+                  </span>
+                  <span className="text-[10px] text-zinc-600 block mt-0.5">{block.time}</span>
+                  <p className={cn('text-[10px] mt-1 leading-tight', isActive ? 'text-zinc-400' : 'text-zinc-600')}>
+                    {block.focus}
+                  </p>
+                </div>
+              );
+            })}
           </div>
 
           {/* Main content grid */}
@@ -787,51 +817,6 @@ export default function DailyPage() {
                       <RotateCcw className="h-3.5 w-3.5" />
                     </Button>
                   </div>
-                </CardContent>
-              </Card>
-
-              {/* Time Blocks */}
-              <Card className="bg-card/50 border-zinc-800">
-                <CardHeader className="p-4 pb-3">
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-blue-400" />
-                    <CardTitle className="text-sm font-medium text-zinc-200">Schedule</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-4 pt-0 space-y-2">
-                  {timeBlocks.map((block, i) => {
-                    const BlockIcon = block.icon;
-                    const isActive = i === currentBlock;
-                    const isPast = currentBlock > i;
-                    return (
-                      <div
-                        key={block.period}
-                        className={cn(
-                          'rounded-lg border p-3 transition-all',
-                          isActive
-                            ? 'border-zinc-600 bg-zinc-800/50 ring-1 ring-zinc-700'
-                            : isPast
-                              ? 'border-zinc-800/50 bg-zinc-900/20 opacity-60'
-                              : 'border-zinc-800 bg-zinc-900/20',
-                        )}
-                      >
-                        <div className="flex items-center justify-between mb-1">
-                          <div className="flex items-center gap-2">
-                            <BlockIcon className={cn('h-3.5 w-3.5', isActive ? 'text-zinc-300' : 'text-zinc-600')} />
-                            <span className={cn('text-xs font-medium', isActive ? 'text-zinc-200' : 'text-zinc-500')}>
-                              {block.period}
-                            </span>
-                          </div>
-                          <span className={cn('text-[10px]', isActive ? 'text-zinc-400' : 'text-zinc-600')}>
-                            {block.time}
-                          </span>
-                        </div>
-                        <p className={cn('text-[11px]', isActive ? 'text-zinc-400' : 'text-zinc-600')}>
-                          {block.focus}
-                        </p>
-                      </div>
-                    );
-                  })}
                 </CardContent>
               </Card>
 

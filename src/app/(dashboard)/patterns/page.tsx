@@ -202,7 +202,7 @@ function PatternsContent() {
             ))}
           </thead>
           <tbody className="relative">
-            <AnimatePresence mode="wait">
+            <AnimatePresence>
               {isLoading ? (
                 <motion.tr
                   key="loading"

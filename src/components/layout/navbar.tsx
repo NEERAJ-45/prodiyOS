@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useProfile } from '@/components/providers/ProfileProvider';
-import { Database, LogOut, User, CheckCircle2, AlertTriangle, X, ChevronRight } from 'lucide-react';
+import { Database, LogOut, User, CheckCircle2, AlertTriangle, X, ChevronRight, CalendarDays } from 'lucide-react';
 import { SpotlightCard } from '@/components/ui/SpotlightCard';
 import { GlobalSearch } from '@/components/shared/GlobalSearch';
 
@@ -14,6 +14,14 @@ export function Navbar({ global = false }: { global?: boolean }) {
   const [profileOpen, setProfileOpen] = useState(false);
   const dbConnected = true; // Secured and active via main Atlas URI now
   
+  const today = new Date();
+  const dateStr = today.toLocaleDateString('en-US', {
+    weekday: 'short',
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+
   // Format breadcrumbs from pathname
   const segments = pathname.split('/').filter(Boolean);
   const breadcrumbs = segments.map((seg) => {
@@ -46,6 +54,12 @@ export function Navbar({ global = false }: { global?: boolean }) {
 
           {/* Database Status & User Badge */}
           <div className="flex items-center gap-4">
+            {/* Date Display */}
+            <div className="hidden sm:flex items-center gap-1.5 text-xs text-zinc-400 border-r border-zinc-800 pr-4">
+              <CalendarDays className="h-3.5 w-3.5 text-zinc-500" />
+              <span className="font-medium text-zinc-300">{dateStr}</span>
+            </div>
+
             {/* DB Status Badge */}
             <div 
               className={`flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-semibold border ${

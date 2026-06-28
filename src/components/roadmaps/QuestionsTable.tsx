@@ -740,7 +740,7 @@ export default function QuestionsTable({
             ))}
           </thead>
           <tbody>
-            <AnimatePresence mode="wait">
+            <AnimatePresence>
               {!mounted ? (
                 <motion.tr
                   key="loading"
