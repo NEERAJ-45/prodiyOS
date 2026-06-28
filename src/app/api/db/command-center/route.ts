@@ -12,6 +12,11 @@ import '@/lib/models/Completion';
 import type { IRevision } from '@/lib/models/Revision';
 import '@/lib/models/Revision';
 
+function computeProgress(features?: { done?: boolean }[]): number {
+  if (!features?.length) return 0;
+  return Math.round((features.filter((f) => f.done).length / features.length) * 100);
+}
+
 function computeStreak(dates: string[]): number {
   if (!dates.length) return 0;
   const daySet = new Set(dates.map((d) => d.split('T')[0]));
@@ -107,9 +112,9 @@ export async function GET(request: Request) {
       projects: projects.map((p: any) => ({
         name: p.name,
         status: p.status,
-        progress: `${p.progress}%`,
+        progress: `${computeProgress(p.features)}%`,
       })),
-      activities: activities.map((a: any) => a.text),
+      activities: activities.map((a: any) => ({ text: a.text, createdAt: a.createdAt })),
     });
   } catch (error: any) {
     return NextResponse.json({ dbConnected: false, error: error.message }, { status: 500 });

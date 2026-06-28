@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db';
 import type { IRevision } from '@/lib/models/Revision';
 import '@/lib/models/Revision';
+import { logActivity } from '@/lib/activity-logger';
 
 export async function GET(request: Request) {
   try {
@@ -37,11 +38,13 @@ export async function POST(request: Request) {
     }
 
     const Revision = conn.model<IRevision>('Revision');
+    const existing = await Revision.findOne({ id, userEmail });
     const doc = await Revision.findOneAndUpdate(
       { id, userEmail },
       { concept, stage, dueDate, completed: !!completed },
       { upsert: true, new: true }
     );
+    logActivity(userEmail, existing ? `Updated revision for "${concept}"` : `Added revision for "${concept}"`);
     return NextResponse.json({ success: true, data: doc });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -68,7 +71,9 @@ export async function DELETE(request: Request) {
     }
 
     const Revision = conn.model<IRevision>('Revision');
+    const existing = await Revision.findOne({ id, userEmail });
     await Revision.deleteOne({ id, userEmail });
+    logActivity(userEmail, `Removed revision for "${existing?.concept || id}"`);
     return NextResponse.json({ success: true, deleted: true });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { Navbar } from "@/components/layout/navbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,8 +17,9 @@ import {
   Circle,
   CheckCircle2,
   Loader2,
+  Plus,
 } from "lucide-react";
-import { cn } from '@/lib/utils';
+import { cn, formatRelativeTime } from '@/lib/utils';
 
 interface StatItem {
   icon: any;
@@ -38,11 +40,16 @@ interface ProjectItem {
   progress: string;
 }
 
+interface ActivityItem {
+  text: string;
+  createdAt: string;
+}
+
 interface DashboardData {
   stats: StatItem[];
   focusItems: FocusItem[];
   projects: ProjectItem[];
-  activities: string[];
+  activities: ActivityItem[];
 }
 
 const CACHE_KEY = 'samundar-command-center';
@@ -94,6 +101,7 @@ function ProjectCardSkeleton() {
 
 export default function CommandCenterPage() {
   const { userName, userEmail, customDbUrl } = useProfile();
+  const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -130,7 +138,11 @@ export default function CommandCenterPage() {
     const cached = localStorage.getItem(CACHE_KEY);
     if (cached) {
       try {
-        setData(JSON.parse(cached));
+        const parsed = JSON.parse(cached);
+        const activities = parsed.activities?.map((a: any) =>
+          typeof a === 'string' ? { text: a, createdAt: new Date().toISOString() } : a
+        ) ?? [];
+        setData({ ...parsed, activities });
         setLoading(false);
         return;
       } catch {}
@@ -149,7 +161,7 @@ export default function CommandCenterPage() {
         { label: "Due Revisions", value: "No pending revisions", badge: "Up to date" },
       ],
       projects: [],
-      activities: ['Start your journey by completing some tasks!'],
+      activities: [{ text: 'Start your journey by completing some tasks!', createdAt: new Date().toISOString() }],
     });
     setLoading(false);
   }, [mounted, userEmail, customDbUrl]);
@@ -242,14 +254,21 @@ export default function CommandCenterPage() {
               </CardHeader>
               <CardContent className="space-y-3">
                 {data.projects.length === 0 ? (
-                  <p className="text-sm text-zinc-600 text-center py-6">No projects yet</p>
+                  <div className="text-center py-6 space-y-3">
+                    <p className="text-sm text-zinc-600">No projects yet</p>
+                    <button onClick={() => router.push('/projects')}
+                      className="inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-200 transition-colors">
+                      <Plus className="h-3 w-3" /> Add projects in Hub
+                    </button>
+                  </div>
                 ) : (
                   data.projects.map((project) => {
                     const style = statusStyles[project.status] || statusStyles.PLANNING;
                     return (
                       <div
                         key={project.name}
-                        className="rounded-lg border border-zinc-800/60 bg-zinc-900/20 p-3 space-y-2 hover:border-zinc-700 transition-colors"
+                        onClick={() => router.push('/projects')}
+                        className="rounded-lg border border-zinc-800/60 bg-zinc-900/20 p-3 space-y-2 hover:border-zinc-700 hover:bg-zinc-900/40 transition-colors cursor-pointer"
                       >
                         <div className="flex items-center justify-between">
                           <p className="text-sm font-medium truncate">{project.name}</p>
@@ -277,7 +296,10 @@ export default function CommandCenterPage() {
                 {data.activities.map((activity, i) => (
                   <div key={i} className="flex items-center gap-3">
                     <div className="h-1.5 w-1.5 rounded-full bg-zinc-700 shrink-0" />
-                    <p className="text-sm text-zinc-400">{activity}</p>
+                    <p className="text-sm text-zinc-400 flex-1 truncate">{activity.text}</p>
+                    <span className="text-[10px] text-zinc-600 shrink-0 tabular-nums">
+                      {formatRelativeTime(activity.createdAt)}
+                    </span>
                   </div>
                 ))}
               </div>

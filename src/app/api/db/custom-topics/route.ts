@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db';
 import type { ICustomTopic } from '@/lib/models/CustomTopic';
 import '@/lib/models/CustomTopic';
+import { logActivity } from '@/lib/activity-logger';
 
 export async function GET(request: Request) {
   try {
@@ -37,11 +38,13 @@ export async function POST(request: Request) {
     }
 
     const CustomTopic = conn.model<ICustomTopic>('CustomTopic');
+    const existing = await CustomTopic.findOne({ storagePrefix, id, userEmail });
     const doc = await CustomTopic.findOneAndUpdate(
       { storagePrefix, id, userEmail },
       { title, difficulty, link: link || '' },
       { upsert: true, new: true }
     );
+    logActivity(userEmail, existing ? `Updated custom topic "${title}"` : `Added custom topic "${title}"`);
     return NextResponse.json({ success: true, data: doc });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -66,7 +69,9 @@ export async function DELETE(request: Request) {
 
     const id = Number(idStr);
     const CustomTopic = conn.model<ICustomTopic>('CustomTopic');
+    const existing = await CustomTopic.findOne({ storagePrefix, id, userEmail });
     await CustomTopic.deleteOne({ storagePrefix, id, userEmail });
+    logActivity(userEmail, `Removed custom topic "${existing?.title || id}" from ${storagePrefix}`);
     return NextResponse.json({ success: true, deleted: true });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db';
 import type { INote } from '@/lib/models/Note';
 import '@/lib/models/Note';
+import { logActivity } from '@/lib/activity-logger';
 
 export async function GET(request: Request) {
   try {
@@ -43,9 +44,11 @@ export async function POST(request: Request) {
         { note },
         { upsert: true, new: true }
       );
+      logActivity(userEmail, `Added note to "${itemId}" in ${storagePrefix}`);
       return NextResponse.json({ success: true, data: doc });
     } else {
       await Note.deleteOne({ storagePrefix, itemId, userEmail });
+      logActivity(userEmail, `Removed note from "${itemId}" in ${storagePrefix}`);
       return NextResponse.json({ success: true, deleted: true });
     }
   } catch (error: any) {

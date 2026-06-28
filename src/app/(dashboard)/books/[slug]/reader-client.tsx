@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import { ChevronLeft, ChevronRight, Loader2, ZoomIn, ZoomOut, RotateCw, BookOpen } from 'lucide-react';
 import { Navbar } from '@/components/layout/navbar';
 import { Button } from '@/components/ui/button';
+import { useProfile } from '@/components/providers/ProfileProvider';
 import type { BookEntry } from '@/data/books';
 
 const PdfViewer = dynamic(() => import('./pdf-viewer'), {
@@ -20,10 +21,19 @@ const PdfViewer = dynamic(() => import('./pdf-viewer'), {
 });
 
 export function BookReaderClient({ book }: { book: BookEntry }) {
+  const { userEmail } = useProfile();
   const [numPages, setNumPages] = React.useState(0);
   const [pageNumber, setPageNumber] = React.useState(1);
   const [scale, setScale] = React.useState(1);
   const [rotation, setRotation] = React.useState(0);
+
+  React.useEffect(() => {
+    if (!userEmail) return;
+    fetch('/api/db/activity', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userEmail, text: `Opened book "${book.title}"` }),
+    }).catch(() => {});
+  }, [userEmail]);
 
   const pdfUrl = `/api/books/${book.slug}`;
 
