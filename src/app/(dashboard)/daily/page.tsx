@@ -756,9 +756,6 @@ export default function DailyPage() {
                           </button>
                         )}
                       </div>
-                      <span className="text-xs text-zinc-500 mt-1.5 font-medium tracking-wide">
-                        {timerMode === 'work' ? `${workMinutes} min focus` : `${breakMinutes} min break`}
-                      </span>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
