@@ -26,6 +26,8 @@ import {
   Pencil,
   Check,
   X,
+  Trash2,
+  Edit,
 } from 'lucide-react';
 import { Navbar } from '@/components/layout/navbar';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -38,6 +40,32 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 const STORAGE_KEY = 'daily-completions';
 const NOTES_KEY = 'daily-notes';
+const SCHEDULE_KEY = 'daily-schedule';
+
+interface TimeBlock {
+  id: string;
+  period: string;
+  time: string;
+  focus: string;
+}
+
+const defaultBlocks: TimeBlock[] = [
+  { id: 'morning', period: 'Morning', time: '6:00 — 9:00', focus: 'Light Revision & DSA Warm-up' },
+  { id: 'deep-work', period: 'Deep Work', time: '9:00 — 12:00', focus: 'System Design & Core CS Deep Dive' },
+  { id: 'break', period: 'Break', time: '12:00 — 1:00', focus: 'Rest & Recharge' },
+  { id: 'afternoon', period: 'Afternoon', time: '1:00 — 4:00', focus: 'Project Work — Ship Features' },
+  { id: 'evening', period: 'Evening', time: '4:00 — 6:00', focus: 'DSA Practice & Problem Solving' },
+  { id: 'review', period: 'Review', time: '6:00 — 7:00', focus: 'Daily Review & Plan Tomorrow' },
+];
+
+const blockColors = [
+  { bg: 'bg-blue-500/10', border: 'border-blue-500/20', text: 'text-blue-400', icon: BookOpen },
+  { bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', text: 'text-emerald-400', icon: Target },
+  { bg: 'bg-zinc-800/50', border: 'border-zinc-700/20', text: 'text-zinc-400', icon: Clock },
+  { bg: 'bg-amber-500/10', border: 'border-amber-500/20', text: 'text-amber-400', icon: Zap },
+  { bg: 'bg-purple-500/10', border: 'border-purple-500/20', text: 'text-purple-400', icon: Code },
+  { bg: 'bg-rose-500/10', border: 'border-rose-500/20', text: 'text-rose-400', icon: RefreshCw },
+];
 
 const today = new Date();
 const dateStr = today.toLocaleDateString('en-US', {
@@ -134,15 +162,6 @@ const categories: Category[] = [
   },
 ];
 
-const timeBlocks = [
-  { period: 'Morning', time: '6:00 — 9:00', focus: 'Light Revision & DSA Warm-up', color: 'bg-blue-500/10 border-blue-500/20', icon: BookOpen },
-  { period: 'Deep Work', time: '9:00 — 12:00', focus: 'System Design & Core CS Deep Dive', color: 'bg-emerald-500/10 border-emerald-500/20', icon: Target },
-  { period: 'Break', time: '12:00 — 1:00', focus: 'Rest & Recharge', color: 'bg-zinc-800/50 border-zinc-700/20', icon: Clock },
-  { period: 'Afternoon', time: '1:00 — 4:00', focus: 'Project Work — Ship Features', color: 'bg-amber-500/10 border-amber-500/20', icon: Zap },
-  { period: 'Evening', time: '4:00 — 6:00', focus: 'DSA Practice & Problem Solving', color: 'bg-purple-500/10 border-purple-500/20', icon: Code },
-  { period: 'Review', time: '6:00 — 7:00', focus: 'Daily Review & Plan Tomorrow', color: 'bg-rose-500/10 border-rose-500/20', icon: RefreshCw },
-];
-
 const priorityConfig: Record<Priority, { label: string; className: string }> = {
   must: { label: 'Must', className: 'bg-red-950 text-red-300 border-red-800' },
   should: { label: 'Should', className: 'bg-amber-950 text-amber-300 border-amber-800' },
@@ -159,7 +178,7 @@ function difficultyColor(difficulty: string) {
   }
 }
 
-function getCurrentBlockIndex(): number {
+function getCurrentBlockIndex(timeBlocks: TimeBlock[]): number {
   const h = today.getHours();
   const m = today.getMinutes();
   const totalMinutes = h * 60 + m;
@@ -181,6 +200,15 @@ export default function DailyPage() {
   const [customTasks, setCustomTasks] = React.useState<Task[]>([]);
   const [newTaskTitle, setNewTaskTitle] = React.useState('');
   const [taskCategories, setTaskCategories] = React.useState<Category[]>(categories);
+  const [timeBlocks, setTimeBlocks] = React.useState<TimeBlock[]>([]);
+  const [editingBlockId, setEditingBlockId] = React.useState<string | null>(null);
+  const [editBlockPeriod, setEditBlockPeriod] = React.useState('');
+  const [editBlockTime, setEditBlockTime] = React.useState('');
+  const [editBlockFocus, setEditBlockFocus] = React.useState('');
+  const [showAddBlock, setShowAddBlock] = React.useState(false);
+  const [newBlockPeriod, setNewBlockPeriod] = React.useState('');
+  const [newBlockTime, setNewBlockTime] = React.useState('');
+  const [newBlockFocus, setNewBlockFocus] = React.useState('');
 
   const [timerMode, setTimerMode] = React.useState<'work' | 'break'>('work');
   const [timerRunning, setTimerRunning] = React.useState(false);
@@ -205,6 +233,13 @@ export default function DailyPage() {
         setCompleted(new Set(todayCompleted));
       } catch {}
     }
+    const savedSchedule = localStorage.getItem(SCHEDULE_KEY);
+    if (savedSchedule) {
+      try { setTimeBlocks(JSON.parse(savedSchedule)); }
+      catch { setTimeBlocks(defaultBlocks); }
+    } else {
+      setTimeBlocks(defaultBlocks);
+    }
     const savedNote = localStorage.getItem(NOTES_KEY);
     if (savedNote) {
       try {
@@ -227,6 +262,11 @@ export default function DailyPage() {
     saved[todayKey] = note;
     localStorage.setItem(NOTES_KEY, JSON.stringify(saved));
   }, [note, mounted]);
+
+  React.useEffect(() => {
+    if (!mounted || timeBlocks.length === 0) return;
+    localStorage.setItem(SCHEDULE_KEY, JSON.stringify(timeBlocks));
+  }, [timeBlocks, mounted]);
 
   React.useEffect(() => {
     return () => {
@@ -268,6 +308,44 @@ export default function DailyPage() {
         body: JSON.stringify({ userEmail, text: `Added custom daily task "${title}"` }),
       }).catch(() => {});
     }
+  }
+
+  function addBlock() {
+    if (!newBlockPeriod.trim() || !newBlockTime.trim()) return;
+    const block: TimeBlock = {
+      id: `block-${Date.now()}`,
+      period: newBlockPeriod.trim(),
+      time: newBlockTime.trim(),
+      focus: newBlockFocus.trim(),
+    };
+    setTimeBlocks((prev) => [...prev, block]);
+    setNewBlockPeriod('');
+    setNewBlockTime('');
+    setNewBlockFocus('');
+    setShowAddBlock(false);
+  }
+
+  function deleteBlock(id: string) {
+    setTimeBlocks((prev) => prev.filter((b) => b.id !== id));
+  }
+
+  function startEditBlock(block: TimeBlock) {
+    setEditingBlockId(block.id);
+    setEditBlockPeriod(block.period);
+    setEditBlockTime(block.time);
+    setEditBlockFocus(block.focus);
+  }
+
+  function saveEditBlock() {
+    if (!editBlockPeriod.trim() || !editBlockTime.trim() || !editingBlockId) return;
+    setTimeBlocks((prev) =>
+      prev.map((b) =>
+        b.id === editingBlockId
+          ? { ...b, period: editBlockPeriod.trim(), time: editBlockTime.trim(), focus: editBlockFocus.trim() }
+          : b
+      )
+    );
+    setEditingBlockId(null);
   }
 
   function startTimer() {
@@ -435,7 +513,7 @@ export default function DailyPage() {
     ? ((WORK_TIME - timerSeconds) / WORK_TIME) * 100
     : ((BREAK_TIME - timerSeconds) / BREAK_TIME) * 100;
 
-  const currentBlock = getCurrentBlockIndex();
+  const currentBlock = getCurrentBlockIndex(timeBlocks);
   const allTasks = React.useMemo(
     () => taskCategories.flatMap((c) => c.tasks).concat(customTasks),
     [taskCategories, customTasks],
@@ -537,17 +615,59 @@ export default function DailyPage() {
             </div>
           </div>
 
-          {/* Time Blocks — Featured Schedule */}
+          {/* Time Blocks — Editable Schedule */}
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-zinc-300">Time Blocks</h2>
+            <Button variant="outline" size="sm" onClick={() => setShowAddBlock((p) => !p)}>
+              <Plus className="h-3.5 w-3.5 mr-1" /> Add Block
+            </Button>
+          </div>
+
+          {showAddBlock && (
+            <div className="flex items-center gap-2 rounded-lg border border-dashed border-zinc-700 bg-zinc-900/30 p-3">
+              <Input value={newBlockPeriod} onChange={(e) => setNewBlockPeriod(e.target.value)} placeholder="Period name" className="h-8 text-sm bg-zinc-800 border-zinc-700 w-28" onKeyDown={(e) => { if (e.key === 'Enter') addBlock(); }} />
+              <Input value={newBlockTime} onChange={(e) => setNewBlockTime(e.target.value)} placeholder="e.g. 9:00 — 12:00" className="h-8 text-sm bg-zinc-800 border-zinc-700 w-36" onKeyDown={(e) => { if (e.key === 'Enter') addBlock(); }} />
+              <Input value={newBlockFocus} onChange={(e) => setNewBlockFocus(e.target.value)} placeholder="Focus description" className="h-8 text-sm bg-zinc-800 border-zinc-700 flex-1" onKeyDown={(e) => { if (e.key === 'Enter') addBlock(); }} />
+              <Button size="sm" onClick={addBlock} disabled={!newBlockPeriod.trim() || !newBlockTime.trim()}>
+                <Check className="h-3.5 w-3.5 mr-1" /> Add
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setShowAddBlock(false)}>
+                <X className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
             {timeBlocks.map((block, i) => {
-              const BlockIcon = block.icon;
+              const color = blockColors[i % blockColors.length];
+              const BlockIcon = color.icon;
               const isActive = i === currentBlock;
               const isPast = currentBlock > i;
+              const isEditing = editingBlockId === block.id;
+
+              if (isEditing) {
+                return (
+                  <div key={block.id} className="rounded-lg border border-zinc-700 bg-zinc-900/50 p-3 space-y-2">
+                    <Input value={editBlockPeriod} onChange={(e) => setEditBlockPeriod(e.target.value)} className="h-7 text-xs bg-zinc-800 border-zinc-700" onKeyDown={(e) => { if (e.key === 'Enter') saveEditBlock(); if (e.key === 'Escape') setEditingBlockId(null); }} autoFocus />
+                    <Input value={editBlockTime} onChange={(e) => setEditBlockTime(e.target.value)} className="h-7 text-xs bg-zinc-800 border-zinc-700" onKeyDown={(e) => { if (e.key === 'Enter') saveEditBlock(); if (e.key === 'Escape') setEditingBlockId(null); }} />
+                    <Input value={editBlockFocus} onChange={(e) => setEditBlockFocus(e.target.value)} className="h-7 text-xs bg-zinc-800 border-zinc-700" onKeyDown={(e) => { if (e.key === 'Enter') saveEditBlock(); if (e.key === 'Escape') setEditingBlockId(null); }} />
+                    <div className="flex gap-1 pt-1">
+                      <Button variant="ghost" size="icon" className="h-6 w-6 text-green-500 hover:text-green-400" onClick={saveEditBlock}>
+                        <Check className="h-3 w-3" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-6 w-6 text-red-500 hover:text-red-400" onClick={() => setEditingBlockId(null)}>
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                );
+              }
+
               return (
                 <div
-                  key={block.period}
+                  key={block.id}
                   className={cn(
-                    'rounded-lg border p-3 transition-all text-center',
+                    'rounded-lg border p-3 transition-all text-center relative group',
                     isActive
                       ? 'border-zinc-600 bg-zinc-800/50 ring-1 ring-zinc-700'
                       : isPast
@@ -555,6 +675,14 @@ export default function DailyPage() {
                         : 'border-zinc-800 bg-zinc-900/20',
                   )}
                 >
+                  <div className="absolute top-1 right-1 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => startEditBlock(block)} className="p-0.5 rounded hover:bg-zinc-700 text-zinc-500 hover:text-zinc-300">
+                      <Edit className="h-3 w-3" />
+                    </button>
+                    <button onClick={() => deleteBlock(block.id)} className="p-0.5 rounded hover:bg-zinc-700 text-zinc-500 hover:text-red-400">
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </div>
                   <BlockIcon className={cn('h-4 w-4 mx-auto mb-1.5', isActive ? 'text-zinc-300' : 'text-zinc-500')} />
                   <span className={cn('text-xs font-medium block', isActive ? 'text-zinc-200' : 'text-zinc-400')}>
                     {block.period}
