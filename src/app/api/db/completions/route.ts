@@ -1,23 +1,46 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db';
-import Completion from '@/lib/models/Completion';
+import type { ICompletion } from '@/lib/models/Completion';
+import '@/lib/models/Completion';
+import { auth } from '@/auth';
+import { logActivity } from '@/lib/activity-logger';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const conn = await connectToDatabase();
+    const session = await auth();
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const userEmail = session.user.email;
+    const customUri = request.headers.get('x-mongodb-url') || undefined;
+    const effectiveUri = customUri || process.env.MONGODB_URI || 'NOT SET';
+
+    console.log('[API/completions] Using URI:', effectiveUri.substring(0, 60) + '...');
+
+    const conn = await connectToDatabase(customUri);
     if (!conn) {
       return NextResponse.json({ dbConnected: false, data: [] });
     }
-    const list = await Completion.find({});
+    const Completion = conn.model<ICompletion>('Completion');
+    const list = await Completion.find({ userEmail });
     return NextResponse.json({ dbConnected: true, data: list });
   } catch (error: any) {
+    console.error('[API/completions] Connection error:', error.message);
     return NextResponse.json({ dbConnected: false, error: error.message }, { status: 500 });
   }
 }
 
 export async function POST(request: Request) {
   try {
-    const conn = await connectToDatabase();
+    const session = await auth();
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const userEmail = session.user.email;
+
+    const customUri = request.headers.get('x-mongodb-url') || undefined;
+    const conn = await connectToDatabase(customUri);
     if (!conn) {
       return NextResponse.json({ dbConnected: false, error: 'Database not configured' }, { status: 400 });
     }
@@ -28,15 +51,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing storagePrefix or itemId' }, { status: 400 });
     }
 
+    const Completion = conn.model<ICompletion>('Completion');
     if (completedAt) {
       const doc = await Completion.findOneAndUpdate(
-        { storagePrefix, itemId },
+        { storagePrefix, itemId, userEmail },
         { completedAt },
         { upsert: true, new: true }
       );
+      logActivity(userEmail, `Completed "${itemId}" in ${storagePrefix}`);
       return NextResponse.json({ success: true, data: doc });
     } else {
-      await Completion.deleteOne({ storagePrefix, itemId });
+      await Completion.deleteOne({ storagePrefix, itemId, userEmail });
+      logActivity(userEmail, `Uncompleted "${itemId}" in ${storagePrefix}`);
       return NextResponse.json({ success: true, deleted: true });
     }
   } catch (error: any) {

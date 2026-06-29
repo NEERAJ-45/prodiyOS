@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Navbar } from '@/components/layout/navbar';
+
 
 const pillars = [
   {
@@ -79,7 +79,7 @@ function RoadmapCard({
         <CardContent className="p-5 pt-0">
           <div className="h-1.5 w-full rounded-full bg-zinc-800 overflow-hidden">
             <div
-              className={cn('h-full rounded-full bg-gradient-to-r transition-all duration-500', pillar.color)}
+              className="h-full rounded-full bg-indigo-650 transition-all duration-500"
               style={{ width: `${pillar.progress}%` }}
             />
           </div>
@@ -171,8 +171,7 @@ export default function BackendRoadmapPage() {
 
   return (
     <div className="flex flex-col h-full bg-zinc-950 text-zinc-100 min-h-screen">
-      <Navbar />
-      <div className="flex-1 p-6 overflow-y-auto max-w-7xl mx-auto w-full">
+      <div className="flex-1 p-4 md:p-6 overflow-y-auto max-w-7xl mx-auto w-full">
         <div className="mb-6">
           <Link
             href="/roadmaps"

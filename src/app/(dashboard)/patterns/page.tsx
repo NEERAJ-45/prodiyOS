@@ -1,35 +1,61 @@
 "use client";
 
-import { Suspense, useState, useEffect, useMemo } from "react";
+import { Suspense, useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
-import { PatternCard } from "@/components/patterns/PatternCard";
+import { useQuery } from "@tanstack/react-query";
+import {
+  useReactTable,
+  getCoreRowModel,
+  flexRender,
+  createColumnHelper,
+  PaginationState,
+} from "@tanstack/react-table";
 import { ProblemsTable } from "@/components/patterns/ProblemsTable";
+<<<<<<< HEAD
 import { Loader2, Search } from "lucide-react";
+=======
+import { LazyAppear } from "@/components/shared/LazyAppear";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Loader2, Search, ChevronLeft, ChevronRight,
+  ChevronsLeft, ChevronsRight, AlertCircle, ListOrdered
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { toast } from "@/components/ui/toast";
+>>>>>>> 20e0f19a2013ac938bd69dd10b1e14eaffd6a452
 
-interface ProblemItem {
-  id: number;
-  title: string;
-  link: string;
-}
-
-interface PatternData {
+interface PatternRow {
+  key: string;
   name: string;
   description?: string;
-  easy: ProblemItem[];
-  medium: ProblemItem[];
-  hard: ProblemItem[];
+  easy: number;
+  medium: number;
+  hard: number;
+  total: number;
 }
 
-interface PatternsData {
-  patterns: Record<string, PatternData>;
+interface PaginatedResponse {
+  patterns: PatternRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+function useDebounce<T>(value: T, delay: number): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+  return debounced;
 }
 
 function PatternsContent() {
   const searchParams = useSearchParams();
-  const [data, setData] = useState<PatternsData | null>(null);
-  const [loading, setLoading] = useState(true);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+<<<<<<< HEAD
   const [completedVersion, setCompletedVersion] = useState(0);
   const [completions, setCompletions] = useState<Record<string, number>>({});
 
@@ -48,25 +74,49 @@ function PatternsContent() {
       })
       .catch(() => {});
   }, [completedVersion]);
+=======
+  const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 15 });
+
+  const debouncedSearch = useDebounce(search, 300);
+
+  const queryKey = ["patterns", pagination.pageIndex, pagination.pageSize, debouncedSearch] as const;
+
+  const { data, isLoading, isFetching, error } = useQuery<PaginatedResponse>({
+    queryKey,
+    queryFn: async ({ queryKey: [, page, pageSize, search] }) => {
+      const params = new URLSearchParams({
+        page: String((page as number) + 1),
+        pageSize: String(pageSize),
+      });
+      if (search) params.set("search", search as string);
+      const res = await fetch(`/api/patterns?${params}`);
+      if (!res.ok) throw new Error("Failed to fetch patterns");
+      return res.json();
+    },
+    placeholderData: (prev) => prev,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  useEffect(() => {
+    if (error) toast({ variant: 'destructive', title: 'Failed to load patterns' });
+  }, [error]);
+>>>>>>> 20e0f19a2013ac938bd69dd10b1e14eaffd6a452
 
   const urlPattern = searchParams.get("pattern");
   useEffect(() => {
-    if (urlPattern && data) {
-      const found = Object.keys(data.patterns).find(
-        (k) => k === urlPattern || data.patterns[k].name.toLowerCase().replace(/\s+/g, "-") === urlPattern
+    if (urlPattern && data && !selectedKey) {
+      const found = data.patterns.find(
+        (p) => p.key === urlPattern || p.name.toLowerCase().replace(/\s+/g, "-") === urlPattern
       );
-      if (found) setSelectedKey(found);
+      if (found) setSelectedKey(found.key);
     }
-  }, [urlPattern, data]);
+  }, [urlPattern, data, selectedKey]);
 
   useEffect(() => {
-    fetch("/api/patterns")
-      .then((res) => res.json())
-      .then((d) => setData(d))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+    setPagination((p) => ({ ...p, pageIndex: 0 }));
+  }, [debouncedSearch]);
 
+<<<<<<< HEAD
   const patternEntries = useMemo(() => {
     if (!data) return [];
     return Object.entries(data.patterns)
@@ -89,21 +139,79 @@ function PatternsContent() {
         description: p.description,
       }));
   }, [data, search, completions]);
+=======
+  const patternRows = useMemo(() => data?.patterns ?? [], [data]);
+>>>>>>> 20e0f19a2013ac938bd69dd10b1e14eaffd6a452
 
-  const selectedPattern = selectedKey && data ? data.patterns[selectedKey] : null;
+  const columnHelper = createColumnHelper<PatternRow>();
 
-  if (loading) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <div className="flex flex-col items-center gap-3 text-muted-foreground">
-          <Loader2 className="h-6 w-6 animate-spin" />
-          <p className="text-sm">Loading patterns...</p>
+  const columns = useMemo(() => [
+    columnHelper.display({
+      id: "srno",
+      header: "#",
+      cell: (info) => (
+        <span className="text-xs text-muted-foreground tabular-nums">
+          {info.row.index + 1 + pagination.pageIndex * pagination.pageSize}
+        </span>
+      ),
+      size: 44,
+    }),
+    columnHelper.accessor("name", {
+      header: "Pattern",
+      cell: (info) => (
+        <div className="text-left">
+          <span className="font-medium text-foreground text-sm">{info.getValue()}</span>
+          {info.row.original.description && (
+            <p className="text-[11px] text-muted-foreground/60 mt-0.5 leading-tight line-clamp-1">
+              {info.row.original.description}
+            </p>
+          )}
         </div>
-      </div>
+      ),
+    }),
+    columnHelper.accessor("easy", {
+      header: "Easy",
+      cell: (info) => <span className="text-xs text-emerald-400 font-medium">{info.getValue()}</span>,
+      size: 56,
+    }),
+    columnHelper.accessor("medium", {
+      header: "Medium",
+      cell: (info) => <span className="text-xs text-amber-400 font-medium">{info.getValue()}</span>,
+      size: 64,
+    }),
+    columnHelper.accessor("hard", {
+      header: "Hard",
+      cell: (info) => <span className="text-xs text-red-400 font-medium">{info.getValue()}</span>,
+      size: 56,
+    }),
+    columnHelper.accessor("total", {
+      header: "Total",
+      cell: (info) => <span className="text-xs font-semibold text-foreground">{info.getValue()}</span>,
+      size: 56,
+    }),
+  ], [columnHelper, pagination.pageIndex, pagination.pageSize]);
+
+  const table = useReactTable({
+    data: patternRows,
+    columns,
+    state: { pagination },
+    onPaginationChange: setPagination,
+    getCoreRowModel: getCoreRowModel(),
+    manualPagination: true,
+    pageCount: data?.totalPages ?? -1,
+  });
+
+  if (selectedKey) {
+    return (
+      <ProblemsTable
+        patternKey={selectedKey}
+        onBack={() => setSelectedKey(null)}
+      />
     );
   }
 
   return (
+<<<<<<< HEAD
     <div className="flex h-full flex-col p-6">
       {selectedPattern ? (
         <ProblemsTable
@@ -112,18 +220,32 @@ function PatternsContent() {
           medium={selectedPattern.medium}
           hard={selectedPattern.hard}
           onBack={() => { setCompletedVersion(v => v + 1); setSelectedKey(null); }}
-        />
-      ) : (
-        <>
-          <div className="mb-6">
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-              DSA Patterns
-            </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {patternEntries.length} patterns
-            </p>
-          </div>
+=======
+    <div className="flex h-full mt10 flex-col p-4 md:p-6">
+      <div className="mb-6">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+          DSA Patterns
+        </h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {data ? `${data.total} patterns` : "Loading..."}
+        </p>
+      </div>
 
+      <div className="mb-6 mt-3 flex items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 transition-all duration-200 focus-within:border-primary/50 focus-within:bg-background focus-within:ring-2 focus-within:ring-primary/20">
+        <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search patterns..."
+          className="w-full bg-transparent py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+>>>>>>> 20e0f19a2013ac938bd69dd10b1e14eaffd6a452
+        />
+        {isFetching && (
+          <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
+        )}
+      </div>
+
+<<<<<<< HEAD
           <div className="mb-6 flex items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 transition-colors focus-within:border-primary/50 focus-within:bg-background focus-within:ring-2 focus-within:ring-primary/20">
             <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
             <input
@@ -160,14 +282,186 @@ function PatternsContent() {
                 ))}
               </tbody>
             </table>
+=======
+      <div className="overflow-x-auto rounded-lg border border-border relative">
+        <table className="w-full text-sm">
+          <thead>
+            {table.getHeaderGroups().map((hg) => (
+              <tr key={hg.id} className="border-b border-border bg-muted/50">
+                {hg.headers.map((header) => (
+                  <th
+                    key={header.id}
+                    className="px-4 py-2.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground text-center"
+                    style={{ width: header.getSize() }}
+                  >
+                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                  </th>
+                ))}
+              </tr>
+            ))}
+          </thead>
+          <tbody className="relative">
+            <AnimatePresence>
+              {isLoading ? (
+                <motion.tr
+                  key="loading"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <td colSpan={columns.length} className="px-4 py-16">
+                    <div className="flex flex-col items-center justify-center gap-3 text-muted-foreground">
+                      <Loader2 className="h-6 w-6 animate-spin" />
+                      <p className="text-sm">Loading patterns...</p>
+                    </div>
+                  </td>
+                </motion.tr>
+              ) : error ? (
+                <motion.tr
+                  key="error"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <td colSpan={columns.length} className="px-4 py-16">
+                    <div className="flex flex-col items-center justify-center gap-3 text-muted-foreground">
+                      <AlertCircle className="h-8 w-8 text-red-400" />
+                      <p className="text-sm text-red-400">Failed to load patterns</p>
+                      <button
+                        onClick={() => setPagination((p) => ({ ...p }))}
+                        className="text-xs text-primary hover:underline"
+                      >
+                        Retry
+                      </button>
+                    </div>
+                  </td>
+                </motion.tr>
+              ) : patternRows.length === 0 ? (
+                <motion.tr
+                  key="empty"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <td colSpan={columns.length} className="px-4 py-16">
+                    <div className="flex flex-col items-center justify-center gap-3 text-muted-foreground">
+                      <ListOrdered className="h-8 w-8" />
+                      <p className="text-sm">No patterns match your search</p>
+                    </div>
+                  </td>
+                </motion.tr>
+              ) : (
+                table.getRowModel().rows.map((row, i) => (
+                  <motion.tr
+                    key={row.id}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: i * 0.04, ease: "easeOut" }}
+                    className="border-b border-border transition-colors hover:bg-muted/30 cursor-pointer last:border-0"
+                    onClick={() => setSelectedKey(row.original.key)}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <td
+                        key={cell.id}
+                        className="px-4 py-2.5 text-center"
+                        style={{ width: cell.column.getSize() }}
+                      >
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </td>
+                    ))}
+                  </motion.tr>
+                ))
+              )}
+            </AnimatePresence>
+          </tbody>
+        </table>
+      </div>
+
+      {/* Pagination */}
+      {data && data.total > 0 && (
+        <div className="flex items-center justify-between px-4 py-3 mt-4 border border-border rounded-lg bg-muted/20 text-sm text-muted-foreground">
+          <div className="flex items-center gap-1.5 text-xs">
+            <span>Showing</span>
+            <span className="font-semibold text-foreground">
+              {pagination.pageIndex * pagination.pageSize + 1}
+            </span>
+            <span>to</span>
+            <span className="font-semibold text-foreground">
+              {Math.min(
+                (pagination.pageIndex + 1) * pagination.pageSize,
+                data.total
+              )}
+            </span>
+            <span>of</span>
+            <span className="font-semibold text-foreground">{data.total}</span>
+            <span>patterns</span>
+>>>>>>> 20e0f19a2013ac938bd69dd10b1e14eaffd6a452
           </div>
 
-          {patternEntries.length === 0 && (
-            <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-              No patterns match your search
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-xs">Show</span>
+              <select
+                value={pagination.pageSize}
+                onChange={(e) => {
+                  table.setPageSize(Number(e.target.value));
+                }}
+                className="bg-background border border-border text-foreground text-xs rounded px-2 py-1 focus:outline-none focus:border-primary/50 transition-colors"
+              >
+                {[10, 15, 20, 30, 50].map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
             </div>
-          )}
-        </>
+
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => table.setPageIndex(0)}
+                disabled={!table.getCanPreviousPage()}
+                className="p-1.5 rounded border border-border bg-background hover:bg-muted/50 hover:text-foreground disabled:opacity-50 disabled:pointer-events-none transition-colors"
+                title="First"
+              >
+                <ChevronsLeft className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => table.previousPage()}
+                disabled={!table.getCanPreviousPage()}
+                className="p-1.5 rounded border border-border bg-background hover:bg-muted/50 hover:text-foreground disabled:opacity-50 disabled:pointer-events-none transition-colors"
+                title="Previous"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <span className="text-xs px-2 select-none">
+                Page{" "}
+                <strong className="text-foreground font-semibold">
+                  {pagination.pageIndex + 1}
+                </strong>{" "}
+                of{" "}
+                <strong className="text-foreground font-semibold">
+                  {data.totalPages}
+                </strong>
+              </span>
+              <button
+                onClick={() => table.nextPage()}
+                disabled={!table.getCanNextPage()}
+                className="p-1.5 rounded border border-border bg-background hover:bg-muted/50 hover:text-foreground disabled:opacity-50 disabled:pointer-events-none transition-colors"
+                title="Next"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => table.setPageIndex(data.totalPages - 1)}
+                disabled={!table.getCanNextPage()}
+                className="p-1.5 rounded border border-border bg-background hover:bg-muted/50 hover:text-foreground disabled:opacity-50 disabled:pointer-events-none transition-colors"
+                title="Last"
+              >
+                <ChevronsRight className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -175,14 +469,16 @@ function PatternsContent() {
 
 export default function PatternsPage() {
   return (
-    <Suspense fallback={
-      <div className="flex h-full items-center justify-center">
-        <div className="flex flex-col items-center gap-3 text-muted-foreground">
-          <Loader2 className="h-6 w-6 animate-spin" />
-          <p className="text-sm">Loading patterns...</p>
+    <Suspense
+      fallback={
+        <div className="flex h-full items-center justify-center">
+          <div className="flex flex-col items-center gap-3 text-muted-foreground">
+            <Loader2 className="h-6 w-6 animate-spin" />
+            <p className="text-sm">Loading patterns...</p>
+          </div>
         </div>
-      </div>
-    }>
+      }
+    >
       <PatternsContent />
     </Suspense>
   );

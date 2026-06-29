@@ -4,11 +4,10 @@ import * as React from 'react';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Navbar } from '@/components/layout/navbar';
-
-const USER_NAME = 'NEERAJ';
+import { useProfile } from '@/components/providers/ProfileProvider';
 
 export default function MasteryPage() {
+  const { userEmail, userName, customDbUrl } = useProfile();
   const [completions, setCompletions] = useState<Record<string, { date: string; key: string }>>({});
   const [filter, setFilter] = useState('ALL');
   const [mounted, setMounted] = useState(false);
@@ -43,7 +42,15 @@ export default function MasteryPage() {
 
     async function loadCompletionsFromDB() {
       try {
-        const res = await fetch('/api/db/completions');
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+          'x-user-email': userEmail,
+        };
+        if (customDbUrl) {
+          headers['x-mongodb-url'] = customDbUrl;
+        }
+
+        const res = await fetch(`/api/db/completions?userEmail=${encodeURIComponent(userEmail)}`, { headers });
         const resData = await res.json();
         if (resData.dbConnected && resData.data) {
           const dbData = resData.data; // array of { storagePrefix, itemId, completedAt }
@@ -74,7 +81,7 @@ export default function MasteryPage() {
     }
     
     loadCompletionsFromDB();
-  }, []);
+  }, [userEmail, customDbUrl]);
 
   const isKeyInFilter = useCallback((key: string, currentFilter: string) => {
     if (currentFilter === 'ALL') return true;
@@ -86,7 +93,9 @@ export default function MasteryPage() {
     if (currentFilter === 'MFE') return key.startsWith('frontend-mfe');
     if (currentFilter === 'DEVOPS') return key.startsWith('devops-cloud-');
     if (currentFilter === 'APTITUDE') return key.startsWith('aptitude-');
-    if (currentFilter === 'DATABASES') return key.startsWith('databases-');
+    if (currentFilter === 'SQL_DATABASES') return key.startsWith('databases-sql-') || key === 'databases-sql';
+    if (currentFilter === 'NOSQL_DATABASES') return key.startsWith('databases-nosql-') || key === 'databases-nosql';
+    if (currentFilter === 'SQL_LEETCODE') return key.startsWith('completed-databases-leetcode') || key === 'completed-databases-leetcode';
     return false;
   }, []);
 
@@ -207,7 +216,9 @@ export default function MasteryPage() {
     let mfe = 0;
     let devops = 0;
     let aptitude = 0;
-    let databases = 0;
+    let sqlDatabases = 0;
+    let nosqlDatabases = 0;
+    let leetcodePractice = 0;
 
     Object.values(completions).forEach((item) => {
       if (item.key.startsWith('foundation-')) foundation++;
@@ -218,7 +229,9 @@ export default function MasteryPage() {
       else if (item.key.startsWith('frontend-mfe')) mfe++;
       else if (item.key.startsWith('devops-cloud-')) devops++;
       else if (item.key.startsWith('aptitude-')) aptitude++;
-      else if (item.key.startsWith('databases-')) databases++;
+      else if (item.key.startsWith('databases-sql')) sqlDatabases++;
+      else if (item.key.startsWith('databases-nosql')) nosqlDatabases++;
+      else if (item.key.startsWith('completed-databases-leetcode')) leetcodePractice++;
     });
 
     return [
@@ -230,7 +243,9 @@ export default function MasteryPage() {
       { name: 'MicroFrontends Architecture', completed: mfe, total: 50, color: 'bg-indigo-500' },
       { name: 'DevOps & Cloud Engineering', completed: devops, total: 200, color: 'bg-blue-500' },
       { name: 'Aptitude & Logical Reasoning', completed: aptitude, total: 50, color: 'bg-teal-500' },
-      { name: 'Databases (SQL & NoSQL)', completed: databases, total: 50, color: 'bg-rose-500' },
+      { name: 'SQL Databases (Relational)', completed: sqlDatabases, total: 34, color: 'bg-rose-500' },
+      { name: 'NoSQL Databases (Non-Relational)', completed: nosqlDatabases, total: 16, color: 'bg-purple-500' },
+      { name: 'LeetCode SQL Practice', completed: leetcodePractice, total: 50, color: 'bg-emerald-500' },
     ];
   }, [completions]);
 
@@ -249,8 +264,7 @@ export default function MasteryPage() {
 
   return (
     <div className="flex flex-col h-full bg-zinc-950 text-zinc-100 min-h-screen">
-      <Navbar />
-      <div className="flex-1 p-6 overflow-y-auto max-w-7xl mx-auto w-full">
+      <div className="flex-1 p-4 md:p-6 overflow-y-auto max-w-7xl mx-auto w-full">
         <div className="mb-8">
           <h1 className="text-2xl font-bold tracking-tight text-zinc-100">Mastery Tracking</h1>
           <p className="text-sm text-zinc-500 mt-1">
@@ -288,7 +302,9 @@ export default function MasteryPage() {
                 <option value="MFE">MicroFrontends Architecture</option>
                 <option value="DEVOPS">DevOps & Cloud Engineering</option>
                 <option value="APTITUDE">Aptitude & Logical Reasoning</option>
-                <option value="DATABASES">Databases (SQL & NoSQL)</option>
+                <option value="SQL_DATABASES">SQL Databases (Relational)</option>
+                <option value="NOSQL_DATABASES">NoSQL Databases (Non-Relational)</option>
+                <option value="SQL_LEETCODE">LeetCode SQL Practice</option>
               </select>
             </div>
           </CardHeader>
