@@ -161,10 +161,21 @@ export default function QuestionsTable({
   const [customQuestions, setCustomQuestions] = useState<QuestionItem[]>([]);
   const [dbConnected, setDbConnected] = useState(false);
 
+  const broadcastProgress = useCallback(() => {
+    try {
+      const bc = new BroadcastChannel('roadmap-progress');
+      bc.postMessage({ storagePrefix, key: 'completed' });
+      bc.close();
+    } catch {}
+  }, [storagePrefix]);
+
   const saveData = useCallback(<T,>(key: string, data: T) => {
     if (typeof window === 'undefined') return;
     localStorage.setItem(`${storagePrefix}-${key}`, JSON.stringify(data));
-  }, [storagePrefix]);
+    if (key === 'completed') {
+      broadcastProgress();
+    }
+  }, [storagePrefix, broadcastProgress]);
 
   const defaultCompletedIdsRef = useRef(defaultCompletedIds);
   useEffect(() => {
