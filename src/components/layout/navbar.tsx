@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useProfile } from '@/components/providers/ProfileProvider';
+import { signOut } from 'next-auth/react';
 import { Database, LogOut, User, CheckCircle2, AlertTriangle, X, ChevronRight, CalendarDays, Flame } from 'lucide-react';
 import { toast } from '@/components/ui/toast';
 import { quotes } from '../../../quotes';
@@ -13,8 +14,12 @@ import { GlobalSearch } from '@/components/shared/GlobalSearch';
 export function Navbar({ global = false }: { global?: boolean }) {
   if (!global) return null;
   const pathname = usePathname();
-  const { userEmail, userName, userRole, logout } = useProfile();
+  const { userEmail, userName, userRole, logout, updateEmail } = useProfile();
   const [profileOpen, setProfileOpen] = useState(false);
+  const [editingEmail, setEditingEmail] = useState(false);
+  const [newEmail, setNewEmail] = useState('');
+  const [emailPassword, setEmailPassword] = useState('');
+  const [emailLoading, setEmailLoading] = useState(false);
   const dbConnected = true; // Secured and active via main Atlas URI now
   
   const today = new Date();
@@ -132,7 +137,7 @@ export function Navbar({ global = false }: { global?: boolean }) {
             <SpotlightCard className="border-zinc-800 bg-zinc-950 p-6 shadow-2xl rounded-xl relative" spotlightColor="rgba(59, 130, 246, 0.08)">
               {/* Close Button */}
               <button 
-                onClick={() => setProfileOpen(false)}
+          onClick={() => { setProfileOpen(false); setEditingEmail(false); }}
                 className="absolute top-4 right-4 text-zinc-400 hover:text-zinc-200 transition-colors p-1 rounded-md hover:bg-zinc-900 cursor-pointer"
               >
                 <X size={16} />
@@ -151,9 +156,65 @@ export function Navbar({ global = false }: { global?: boolean }) {
               <div className="space-y-4 text-xs">
                 <div className="space-y-1">
                   <span className="text-zinc-500 font-semibold uppercase tracking-wider text-[10px]">Email Scope</span>
-                  <div className="bg-zinc-900 px-3 py-2.5 rounded-lg border border-zinc-850 text-zinc-300 font-mono select-text">
-                    {userEmail}
-                  </div>
+                  {editingEmail ? (
+                    <div className="space-y-2">
+                      <input
+                        type="email"
+                        value={newEmail}
+                        onChange={(e) => setNewEmail(e.target.value)}
+                        placeholder="New email"
+                        className="w-full bg-zinc-900 px-3 py-2 rounded-lg border border-zinc-700 text-zinc-200 font-mono text-xs outline-none focus:border-zinc-500 transition-colors"
+                      />
+                      <input
+                        type="password"
+                        value={emailPassword}
+                        onChange={(e) => setEmailPassword(e.target.value)}
+                        placeholder="Current password"
+                        className="w-full bg-zinc-900 px-3 py-2 rounded-lg border border-zinc-700 text-zinc-200 font-mono text-xs outline-none focus:border-zinc-500 transition-colors"
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          disabled={emailLoading}
+                          onClick={async () => {
+                            if (!newEmail || !emailPassword) return;
+                            setEmailLoading(true);
+                            const result = await updateEmail(userEmail, newEmail, emailPassword);
+                            setEmailLoading(false);
+                            if (result.success) {
+                              toast({ title: 'Email updated — signing out' });
+                              setProfileOpen(false);
+                              setEditingEmail(false);
+                              setTimeout(() => signOut({ callbackUrl: '/login' }), 1500);
+                            } else {
+                              toast({ variant: 'destructive', title: result.error || 'Failed to update email' });
+                            }
+                          }}
+                          className="flex-1 px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold transition-colors disabled:opacity-50 cursor-pointer"
+                        >
+                          {emailLoading ? 'Saving…' : 'Save'}
+                        </button>
+                        <button
+                          onClick={() => { setEditingEmail(false); setNewEmail(''); setEmailPassword(''); }}
+                          className="px-3 py-1.5 rounded-lg border border-zinc-800 hover:bg-zinc-900 text-zinc-400 text-xs font-semibold transition-colors cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="group flex items-center justify-between bg-zinc-900 px-3 py-2.5 rounded-lg border border-zinc-850 text-zinc-300 font-mono select-text">
+                      <span className="truncate">{userEmail}</span>
+                      <button
+                        onClick={() => { setEditingEmail(true); setNewEmail(userEmail); setEmailPassword(''); }}
+                        className="ml-2 shrink-0 rounded p-1 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors cursor-pointer"
+                        title="Change email"
+                      >
+                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-1">

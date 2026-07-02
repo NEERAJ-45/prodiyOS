@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Cpu } from 'lucide-react';
@@ -13,6 +13,7 @@ interface ProfileContextType {
   customDbUrl:  string;   // always '' — shared Atlas connection used for all users
   dbConnected:  boolean;  // kept for backwards compat
   logout:       () => void;
+  updateEmail:  (currentEmail: string, newEmail: string, password: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
@@ -121,6 +122,21 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
 
   const logout = () => signOut({ callbackUrl: '/login' });
 
+  const updateEmail = useCallback(async (currentEmail: string, newEmail: string, password: string) => {
+    try {
+      const res = await fetch('/api/profile/email', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentEmail, newEmail, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) return { success: false, error: data.error };
+      return { success: true };
+    } catch {
+      return { success: false, error: 'Network error' };
+    }
+  }, []);
+
   const userEmail = session?.user?.email ?? '';
   const userName  = session?.user?.name  ?? '';
   const userRole  = (session?.user as any)?.role ?? 'User';
@@ -128,7 +144,7 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
   if (!mounted) return <div className="min-h-screen bg-zinc-950" />;
 
   return (
-    <ProfileContext.Provider value={{ userEmail, userName, userRole, customDbUrl: '', dbConnected: false, logout }}>
+    <ProfileContext.Provider value={{ userEmail, userName, userRole, customDbUrl: '', dbConnected: false, logout, updateEmail }}>
       <AnimatePresence>
         {booting && <BootScreen onDone={handleBootDone} />}
       </AnimatePresence>
