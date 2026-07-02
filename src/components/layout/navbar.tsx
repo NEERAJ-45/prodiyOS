@@ -3,7 +3,9 @@
 import React, { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useProfile } from '@/components/providers/ProfileProvider';
-import { Database, LogOut, User, CheckCircle2, AlertTriangle, X, ChevronRight, CalendarDays } from 'lucide-react';
+import { Database, LogOut, User, CheckCircle2, AlertTriangle, X, ChevronRight, CalendarDays, Flame } from 'lucide-react';
+import { toast } from '@/components/ui/toast';
+import { quotes } from '../../../quotes';
 import { cn } from '@/lib/utils';
 import { SpotlightCard } from '@/components/ui/SpotlightCard';
 import { GlobalSearch } from '@/components/shared/GlobalSearch';
@@ -83,13 +85,25 @@ export function Navbar({ global = false }: { global?: boolean }) {
               <span>{dbConnected ? "Cloud DB" : "Offline Mode"}</span>
             </div>
 
+            {/* Quote Button */}
+            <button
+              onClick={() => {
+                const q = quotes[Math.floor(Math.random() * quotes.length)];
+                toast({ title: q.text, description: `— ${q.author}` });
+              }}
+              className="flex items-center justify-center rounded-lg border border-zinc-800 hover:border-amber-500/30 hover:bg-amber-500/5 p-1.5 text-zinc-500 hover:text-amber-400 transition-colors cursor-pointer"
+              title="Inspire me"
+            >
+              <Flame className="h-3.5 w-3.5" />
+            </button>
+
             {/* User Badge */}
             <button 
               onClick={() => setProfileOpen(true)}
               className="flex items-center justify-center rounded-lg bg-zinc-900 border border-zinc-800 hover:bg-zinc-850 p-1.5 transition-colors cursor-pointer"
             >
-              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[10px] font-bold leading-none text-white uppercase">
-                {userName.slice(0, 1)}
+              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-zinc-600 text-zinc-300">
+                <User className="h-3 w-3" />
               </div>
             </button>
 
@@ -107,8 +121,14 @@ export function Navbar({ global = false }: { global?: boolean }) {
 
       {/* Profile Details Dialog */}
       {profileOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-6 backdrop-blur-sm select-none">
-          <div className="w-full max-w-md relative animate-in fade-in zoom-in-95 duration-200">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-6 backdrop-blur-sm select-none"
+          onClick={() => setProfileOpen(false)}
+        >
+          <div
+            className="w-full max-w-md relative animate-in fade-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
             <SpotlightCard className="border-zinc-800 bg-zinc-950 p-6 shadow-2xl rounded-xl relative" spotlightColor="rgba(59, 130, 246, 0.08)">
               {/* Close Button */}
               <button 
