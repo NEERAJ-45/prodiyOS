@@ -313,7 +313,7 @@ export function ProblemsTable({
     fetch("/api/db/notes", { method: "POST", headers, body: JSON.stringify({ storagePrefix: `notes-${patternName}`, itemId: String(id), userEmail }) }).catch(() => { toast({ variant: 'destructive', title: 'Failed to sync notes data' }); });
   }, [customProblems, saveCustomProblems, patternName, getRequestHeaders, userEmail]);
 
-  const toggleCompleted = useCallback((id: number) => {
+  const toggleCompleted = useCallback((id: number, title?: string) => {
     let isCompleted = false;
     let compAtStr = "";
     setCompletedMap((prev) => {
@@ -326,7 +326,7 @@ export function ProblemsTable({
     });
     fetch("/api/db/completions", {
       method: "POST", headers: getRequestHeaders(),
-      body: JSON.stringify({ storagePrefix: `completed-${patternName}`, itemId: String(id), completedAt: isCompleted ? compAtStr : undefined, userEmail }),
+      body: JSON.stringify({ storagePrefix: `completed-${patternName}`, itemId: String(id), completedAt: isCompleted ? compAtStr : undefined, userEmail, ...(title ? { title } : {}) }),
     }).catch(() => { toast({ variant: 'destructive', title: 'Failed to save completion status' }); });
   }, [patternName, getRequestHeaders, userEmail]);
 
@@ -394,7 +394,7 @@ export function ProblemsTable({
           const done = !!completedMap[id];
           return (
             <button
-              onClick={() => toggleCompleted(id)}
+              onClick={() => toggleCompleted(id, info.row.original.title)}
               className="inline-flex items-center justify-center rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground"
             >
               {done ? <CheckCircle size={16} className="text-emerald-500" /> : <Circle size={16} strokeWidth={1.5} />}

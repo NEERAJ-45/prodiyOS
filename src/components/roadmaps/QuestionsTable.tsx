@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState, useEffect, useCallback, useRef } from 'react';
+import { useMounted } from '@/hooks/useMounted';
 import {
   useReactTable,
   getCoreRowModel,
@@ -155,7 +156,7 @@ export default function QuestionsTable({
   const { userEmail, userName, customDbUrl } = useProfile();
   const [sorting, setSorting] = useState<SortingState>([]);
   const [search, setSearch] = useState('');
-  const [mounted, setMounted] = useState(false);
+  const mounted = useMounted();
   const [completedMap, setCompletedMap] = useState<CompletedMap>({});
   const [notesMap, setNotesMap] = useState<NotesMap>({});
   const [customQuestions, setCustomQuestions] = useState<QuestionItem[]>([]);
@@ -231,7 +232,6 @@ export default function QuestionsTable({
     setCompletedMap(initialCompleted);
     setNotesMap(initialNotes);
     setCustomQuestions(initialCustom);
-    setMounted(true);
 
     async function syncWithDB() {
       try {
@@ -426,7 +426,7 @@ export default function QuestionsTable({
     pageSize: 10,
   });
 
-  const toggleCompleted = useCallback((id: number) => {
+  const toggleCompleted = useCallback((id: number, title?: string) => {
     let isCompleted = false;
     let compAtStr = '';
     setCompletedMap((prev) => {
@@ -451,6 +451,7 @@ export default function QuestionsTable({
         itemId: String(id),
         completedAt: isCompleted ? compAtStr : undefined,
         userEmail,
+        ...(title ? { title } : {}),
       }),
     }).catch(() => {});
   }, [saveData, storagePrefix, getRequestHeaders, userEmail]);
@@ -506,7 +507,7 @@ export default function QuestionsTable({
           const done = !!completedMap[id];
           return (
             <button
-              onClick={() => toggleCompleted(id)}
+              onClick={() => toggleCompleted(id, info.row.original.title)}
               className="inline-flex items-center justify-center rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground"
             >
               {done ? (

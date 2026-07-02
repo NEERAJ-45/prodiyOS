@@ -16,8 +16,6 @@ export async function GET(request: Request) {
     const customUri = request.headers.get('x-mongodb-url') || undefined;
     const effectiveUri = customUri || process.env.MONGODB_URI || 'NOT SET';
 
-    console.log('[API/completions] Using URI:', effectiveUri.substring(0, 60) + '...');
-
     const conn = await connectToDatabase(customUri);
     if (!conn) {
       return NextResponse.json({ dbConnected: false, data: [] });
@@ -45,11 +43,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ dbConnected: false, error: 'Database not configured' }, { status: 400 });
     }
     const body = await request.json();
-    const { storagePrefix, itemId, completedAt } = body;
+    const { storagePrefix, itemId, completedAt, title } = body;
 
     if (!storagePrefix || !itemId) {
       return NextResponse.json({ error: 'Missing storagePrefix or itemId' }, { status: 400 });
     }
+
+    const displayName = title || itemId;
 
     const Completion = conn.model<ICompletion>('Completion');
     if (completedAt) {
@@ -58,11 +58,11 @@ export async function POST(request: Request) {
         { completedAt },
         { upsert: true, new: true }
       );
-      logActivity(userEmail, `Completed "${itemId}" in ${storagePrefix}`);
+      logActivity(userEmail, `Completed "${displayName}" in ${storagePrefix}`);
       return NextResponse.json({ success: true, data: doc });
     } else {
       await Completion.deleteOne({ storagePrefix, itemId, userEmail });
-      logActivity(userEmail, `Uncompleted "${itemId}" in ${storagePrefix}`);
+      logActivity(userEmail, `Uncompleted "${displayName}" in ${storagePrefix}`);
       return NextResponse.json({ success: true, deleted: true });
     }
   } catch (error: any) {

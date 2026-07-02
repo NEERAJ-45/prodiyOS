@@ -11,6 +11,7 @@ import {
   Library,
   ChevronLeft,
   ChevronRight,
+  Search,
 } from 'lucide-react';
 import {
   Card,
@@ -208,7 +209,19 @@ function PaperCard({ paper }: { paper: ResearchPaper }) {
 }
 
 export default function BooksPage() {
+  const [searchQuery, setSearchQuery] = React.useState('');
   const grouped = React.useMemo(() => groupBooksByCategory(), []);
+
+  const filteredGrouped = React.useMemo(() => {
+    if (!searchQuery.trim()) return grouped;
+    const q = searchQuery.toLowerCase();
+    const result: Record<string, BookEntry[]> = {};
+    for (const [cat, catBooks] of Object.entries(grouped)) {
+      const filtered = catBooks.filter((b) => b.title.toLowerCase().includes(q));
+      if (filtered.length > 0) result[cat] = filtered;
+    }
+    return result;
+  }, [grouped, searchQuery]);
 
   return (
     <div className="flex flex-col h-full">
@@ -216,6 +229,17 @@ export default function BooksPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-zinc-100">Books & Research</h1>
           <p className="text-sm text-zinc-500 mt-1">Read, track, and organize your knowledge</p>
+        </div>
+
+        <div className="relative max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search books..."
+            className="w-full bg-zinc-900/40 border border-zinc-800 rounded-lg pl-9 pr-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-600 outline-none focus:border-primary/50 focus:bg-zinc-900/80 transition-all"
+          />
         </div>
 
         <Tabs defaultValue="library" className="space-y-6">
@@ -240,7 +264,7 @@ export default function BooksPage() {
 
           <TabsContent value="library" className="mt-0 space-y-8">
             {categoryOrder.map((cat) => {
-              const catBooks = grouped[cat];
+              const catBooks = filteredGrouped[cat];
               if (!catBooks) return null;
               return (
                 <div key={cat} className="space-y-3">
