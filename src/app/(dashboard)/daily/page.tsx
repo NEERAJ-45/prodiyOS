@@ -29,6 +29,7 @@ import {
   Trash2,
   Edit,
   Server,
+  Cloud,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -146,6 +147,19 @@ const categories: Category[] = [
       { id: 'be-1', title: 'REST API — Design CRUD for Resource X', time: '45 min', difficulty: 'Medium', priority: 'must' },
       { id: 'be-2', title: 'Database — Optimize Slow Query with Indexing', time: '30 min', difficulty: 'Medium', priority: 'should' },
       { id: 'be-3', title: 'Auth — Implement JWT Refresh Token Flow', time: '40 min', difficulty: 'Hard', priority: 'must' },
+    ],
+  },
+  {
+    id: 'deployment',
+    title: "Deployment & DevOps",
+    icon: Cloud,
+    color: 'text-cyan-400',
+    bgColor: 'bg-cyan-500/10',
+    borderColor: 'border-cyan-500/20',
+    tasks: [
+      { id: 'dep-1', title: 'CI/CD — Set Up GitHub Actions Pipeline', time: '45 min', difficulty: 'Medium', priority: 'must' },
+      { id: 'dep-2', title: 'Docker — Containerize the Application', time: '30 min', difficulty: 'Medium', priority: 'should' },
+      { id: 'dep-3', title: 'Cloud — Deploy to Staging Environment', time: '30 min', difficulty: 'Medium', priority: 'should' },
     ],
   },
   {
