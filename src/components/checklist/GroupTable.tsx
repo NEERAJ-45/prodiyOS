@@ -1,18 +1,20 @@
 'use client';
 
 import * as React from 'react';
-import { CheckCircle, Circle, ExternalLink } from 'lucide-react';
+import { CheckCircle, Circle, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Loader2 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   useReactTable,
   getCoreRowModel,
   getSortedRowModel,
+  getPaginationRowModel,
   flexRender,
   createColumnHelper,
   SortingState,
+  PaginationState,
 } from '@tanstack/react-table';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { useProfile } from '@/components/providers/ProfileProvider';
 import type { ChecklistGroup } from '@/../samundar-data/system-design-checklist';
 
 const STORAGE_KEY = 'system-design-checklist-progress';
@@ -86,16 +88,13 @@ export function GroupTable({
   group,
   completedMap,
   onToggle,
-  showHeader = true,
-  showFooter = true,
 }: {
   group: ChecklistGroup;
   completedMap: Record<string, boolean>;
   onToggle: (id: number) => void;
-  showHeader?: boolean;
-  showFooter?: boolean;
 }) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
+  const [pagination, setPagination] = React.useState<PaginationState>({ pageIndex: 0, pageSize: 10 });
 
   const data: GroupRow[] = React.useMemo(() =>
     group.items.map((it, i) => ({
@@ -113,22 +112,22 @@ export function GroupTable({
       id: 'status',
       header: '',
       cell: (info) => (
-        <button onClick={() => onToggle(info.row.original.id)} className="flex items-center justify-center mx-auto">
+        <button onClick={() => onToggle(info.row.original.id)} className="inline-flex items-center justify-center rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground">
           {info.row.original.checked ? (
-            <CheckCircle className="h-3.5 w-3.5 text-emerald-500" />
+            <CheckCircle size={16} className="text-emerald-500" />
           ) : (
-            <Circle className="h-3.5 w-3.5 text-zinc-600 hover:text-zinc-400 transition-colors" strokeWidth={1.5} />
+            <Circle size={16} strokeWidth={1.5} />
           )}
         </button>
       ),
-      size: 32,
+      size: 36,
       enableSorting: false,
     }),
     columnHelper.display({
       id: 'idx',
       header: '#',
-      cell: (info) => <span className="text-[11px] text-zinc-600 tabular-nums">{info.row.original.idx}</span>,
-      size: 32,
+      cell: (info) => <span className="text-xs text-muted-foreground tabular-nums">{info.row.original.idx}</span>,
+      size: 44,
     }),
     columnHelper.accessor('text', {
       header: 'Topic',
@@ -136,74 +135,48 @@ export function GroupTable({
         const row = info.row.original;
         return (
           <span
-            className={cn('text-xs leading-snug block', row.checked ? 'text-zinc-500 line-through' : 'text-zinc-300')}
-            style={{ paddingLeft: `${row.depth * 14}px` }}
+            className={cn('text-sm block text-left', row.checked ? 'text-muted-foreground line-through' : 'text-foreground')}
+            style={{ paddingLeft: `${row.depth * 16}px` }}
           >
-            {row.depth > 0 && <span className="text-zinc-700 mr-1.5 select-none">{'└─'}</span>}
+            {row.depth > 0 && <span className="text-border mr-1.5 select-none">{'└─'}</span>}
             {row.text}
           </span>
         );
       },
-    }),
-    columnHelper.display({
-      id: 'link',
-      header: '',
-      cell: () => <span className="text-zinc-700 text-[10px]">—</span>,
-      size: 28,
-      enableSorting: false,
     }),
   ], [onToggle]);
 
   const table = useReactTable({
     data,
     columns,
-    state: { sorting },
+    state: { sorting, pagination },
     onSortingChange: setSorting,
+    onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
     enableSortingRemoval: false,
   });
 
-  const itemCount = data.length;
-  const doneCount = data.filter(r => r.checked).length;
-  const progress = itemCount > 0 ? Math.round((doneCount / itemCount) * 100) : 0;
-  const barColor = progress === 100 ? '#22c55e' : progress >= 60 ? '#6366f1' : progress >= 30 ? '#a855f7' : '#52525b';
+  const solvedCount = data.filter(r => r.checked).length;
 
   return (
-    <div className="rounded-lg border border-zinc-800/80 bg-zinc-900/40 overflow-hidden">
-      {showHeader && (
-        <div className="flex items-center justify-between gap-3 px-4 md:px-5 py-3 border-b border-zinc-800/60">
-          <div className="flex items-center gap-3 min-w-0">
-            <span className="text-lg shrink-0">{group.emoji}</span>
-            <div className="min-w-0">
-              <h3 className="text-sm font-semibold text-zinc-100 truncate">{group.title}</h3>
-              <p className="text-[11px] text-zinc-500 mt-0.5">{doneCount}/{itemCount}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <div className="h-1.5 w-20 rounded-full bg-zinc-800 overflow-hidden">
-              <div className="h-full rounded-full transition-all duration-500" style={{ width: `${progress}%`, backgroundColor: barColor }} />
-            </div>
-            <span className={cn('text-xs font-semibold tabular-nums w-8 text-right', progress === 100 ? 'text-emerald-400' : 'text-zinc-400')}>{progress}%</span>
-          </div>
-        </div>
-      )}
-
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse">
+    <div>
+      <div className="overflow-x-auto rounded-lg border border-border">
+        <table className="w-full">
           <thead>
             {table.getHeaderGroups().map(hg => (
-              <tr key={hg.id} className="border-b border-zinc-800 bg-zinc-900/60">
+              <tr key={hg.id} className="border-b border-border bg-muted/50">
                 {hg.headers.map(header => (
                   <th
                     key={header.id}
-                    className="px-2 py-2 text-center text-[10px] font-semibold uppercase tracking-wider text-zinc-500"
+                    className="px-3 py-2 text-center text-[11px] font-medium uppercase tracking-wider text-muted-foreground"
                     style={{ width: header.getSize() }}
                   >
                     {header.isPlaceholder ? null : (
                       <button
                         onClick={header.column.getToggleSortingHandler()}
-                        className={cn('mx-auto flex items-center gap-1', header.column.getCanSort() && 'cursor-pointer select-none hover:text-zinc-300')}
+                        className={cn('mx-auto flex items-center gap-1', header.column.getCanSort() && 'cursor-pointer select-none')}
                       >
                         {flexRender(header.column.columnDef.header, header.getContext())}
                         {{ asc: ' ↑', desc: ' ↓' }[header.column.getIsSorted() as string] ?? null}
@@ -215,38 +188,96 @@ export function GroupTable({
             ))}
           </thead>
           <tbody>
-            {table.getRowModel().rows.map(row => (
-              <tr
-                key={row.id}
-                className={cn(
-                  'border-b border-zinc-800/40 transition-colors last:border-0',
-                  row.original.checked ? 'bg-zinc-900/20' : 'hover:bg-zinc-800/15',
-                )}
-              >
-                {row.getVisibleCells().map(cell => (
-                  <td key={cell.id} className="px-2 py-1.5 text-center" style={{ width: cell.column.getSize() }}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+            <AnimatePresence>
+              {table.getRowModel().rows.length === 0 ? (
+                <motion.tr key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                  <td colSpan={columns.length} className="px-4 py-16">
+                    <div className="flex flex-col items-center justify-center gap-3 text-muted-foreground">
+                      <p className="text-sm">No items found</p>
+                    </div>
                   </td>
-                ))}
-              </tr>
-            ))}
+                </motion.tr>
+              ) : (
+                table.getRowModel().rows.map((row, i) => (
+                  <motion.tr
+                    key={row.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.25, delay: i * 0.03, ease: 'easeOut' }}
+                    className={cn(
+                      'border-b border-border transition-colors last:border-0',
+                      row.original.checked ? 'bg-muted/20' : 'hover:bg-muted/30',
+                    )}
+                  >
+                    {row.getVisibleCells().map(cell => (
+                      <td
+                        key={cell.id}
+                        className="overflow-hidden px-3 py-2 text-center"
+                        style={{ width: cell.column.getSize() }}
+                      >
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </td>
+                    ))}
+                  </motion.tr>
+                ))
+              )}
+            </AnimatePresence>
           </tbody>
         </table>
       </div>
 
-      {showFooter && (
-        <div className="flex items-center justify-between px-4 md:px-5 py-2 border-t border-zinc-800/40 bg-zinc-900/30">
-          {sorting.length > 0 && (
-            <button onClick={() => setSorting([])} className="text-[11px] text-zinc-600 hover:text-zinc-300 transition-colors">
-              Clear sort
-            </button>
-          )}
-          <button
-            onClick={() => { for (const i of group.items) onToggle(i.id); }}
-            className="text-[11px] text-zinc-600 hover:text-zinc-300 transition-colors ml-auto"
-          >
-            Toggle all
-          </button>
+      {data.length > 0 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-3 mt-3 border border-border rounded-lg bg-muted/20 text-sm text-muted-foreground">
+          <div className="flex items-center gap-1.5 text-xs">
+            <span>Showing</span>
+            <span className="font-semibold text-foreground">
+              {pagination.pageIndex * pagination.pageSize + 1}
+            </span>
+            <span>to</span>
+            <span className="font-semibold text-foreground">
+              {Math.min((pagination.pageIndex + 1) * pagination.pageSize, data.length)}
+            </span>
+            <span>of</span>
+            <span className="font-semibold text-foreground">{data.length}</span>
+            <span>topics</span>
+            <span className="ml-2 font-semibold text-emerald-400">{solvedCount} done</span>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-xs">Show</span>
+              <select
+                value={pagination.pageSize}
+                onChange={(e) => table.setPageSize(Number(e.target.value))}
+                className="bg-background border border-border text-foreground text-xs rounded px-2 py-1 focus:outline-none focus:border-primary/50 transition-colors"
+              >
+                {[10, 20, 30, 50].map(size => <option key={size} value={size}>{size}</option>)}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <button onClick={() => table.setPageIndex(0)} disabled={!table.getCanPreviousPage()}
+                className="p-1.5 rounded border border-border bg-background hover:bg-muted/50 hover:text-foreground disabled:opacity-50 disabled:pointer-events-none transition-colors" title="First">
+                <ChevronsLeft className="h-4 w-4" />
+              </button>
+              <button onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}
+                className="p-1.5 rounded border border-border bg-background hover:bg-muted/50 hover:text-foreground disabled:opacity-50 disabled:pointer-events-none transition-colors" title="Previous">
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <span className="text-xs px-2 select-none">
+                Page <strong className="text-foreground font-semibold">{pagination.pageIndex + 1}</strong> of{' '}
+                <strong className="text-foreground font-semibold">{table.getPageCount()}</strong>
+              </span>
+              <button onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}
+                className="p-1.5 rounded border border-border bg-background hover:bg-muted/50 hover:text-foreground disabled:opacity-50 disabled:pointer-events-none transition-colors" title="Next">
+                <ChevronRight className="h-4 w-4" />
+              </button>
+              <button onClick={() => table.setPageIndex(table.getPageCount() - 1)} disabled={!table.getCanNextPage()}
+                className="p-1.5 rounded border border-border bg-background hover:bg-muted/50 hover:text-foreground disabled:opacity-50 disabled:pointer-events-none transition-colors" title="Last">
+                <ChevronsRight className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -94,8 +94,6 @@ export default function GroupDetailPage() {
             group={group}
             completedMap={completedMap}
             onToggle={toggle}
-            showHeader={false}
-            showFooter={true}
           />
         )}
       </div>
