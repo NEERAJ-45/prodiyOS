@@ -4,6 +4,25 @@ import type { ICompletion } from '@/lib/models/Completion';
 import '@/lib/models/Completion';
 import { auth } from '@/auth';
 import { logActivity } from '@/lib/activity-logger';
+import { ROADMAPS } from '@/data/roadmaps';
+
+function sourceDisplayName(storagePrefix: string): string {
+  const roadmap = ROADMAPS.find((r) => r.storageKey === storagePrefix);
+  if (roadmap) return roadmap.title;
+
+  if (storagePrefix.startsWith('completed-')) {
+    return storagePrefix
+      .replace('completed-', '')
+      .split('-')
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ');
+  }
+
+  return storagePrefix
+    .split('-')
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
+}
 
 export async function GET(request: Request) {
   try {
@@ -50,6 +69,7 @@ export async function POST(request: Request) {
     }
 
     const displayName = title || itemId;
+    const source = sourceDisplayName(storagePrefix);
 
     const Completion = conn.model<ICompletion>('Completion');
     if (completedAt) {
@@ -58,11 +78,11 @@ export async function POST(request: Request) {
         { completedAt },
         { upsert: true, new: true }
       );
-      logActivity(userEmail, `Completed "${displayName}" in ${storagePrefix}`);
+      logActivity(userEmail, `Completed "${displayName}" from ${source}`);
       return NextResponse.json({ success: true, data: doc });
     } else {
       await Completion.deleteOne({ storagePrefix, itemId, userEmail });
-      logActivity(userEmail, `Uncompleted "${displayName}" in ${storagePrefix}`);
+      logActivity(userEmail, `Uncompleted "${displayName}" from ${source}`);
       return NextResponse.json({ success: true, deleted: true });
     }
   } catch (error: any) {
