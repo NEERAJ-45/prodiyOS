@@ -28,6 +28,7 @@ import {
   X,
   Trash2,
   Edit,
+  Server,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -132,6 +133,19 @@ const categories: Category[] = [
     tasks: [
       { id: 'cs-1', title: 'Database Indexing — B-Trees vs LSM Trees', time: '30 min', difficulty: 'Medium', priority: 'must' },
       { id: 'cs-2', title: 'OS — Memory Management & Paging', time: '30 min', difficulty: 'Medium', priority: 'should' },
+    ],
+  },
+  {
+    id: 'backend',
+    title: "Backend Development",
+    icon: Server,
+    color: 'text-orange-400',
+    bgColor: 'bg-orange-500/10',
+    borderColor: 'border-orange-500/20',
+    tasks: [
+      { id: 'be-1', title: 'REST API — Design CRUD for Resource X', time: '45 min', difficulty: 'Medium', priority: 'must' },
+      { id: 'be-2', title: 'Database — Optimize Slow Query with Indexing', time: '30 min', difficulty: 'Medium', priority: 'should' },
+      { id: 'be-3', title: 'Auth — Implement JWT Refresh Token Flow', time: '40 min', difficulty: 'Hard', priority: 'must' },
     ],
   },
   {
