@@ -30,8 +30,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ dbConnected: false, error: 'Database not configured' }, { status: 400 });
     }
     const body = await request.json();
-    const { storagePrefix, itemId, note } = body;
+    const { storagePrefix, itemId, note, resetAll } = body;
     const userEmail = body.userEmail || request.headers.get('x-user-email') || 'NEERAJ';
+
+    if (resetAll) {
+      if (!storagePrefix) {
+        return NextResponse.json({ error: 'Missing storagePrefix' }, { status: 400 });
+      }
+      const Note = conn.model<INote>('Note');
+      await Note.deleteMany({ storagePrefix, userEmail });
+      logActivity(userEmail, `Reset all notes in ${storagePrefix}`);
+      return NextResponse.json({ success: true, deleted: true });
+    }
 
     if (!storagePrefix || !itemId) {
       return NextResponse.json({ error: 'Missing storagePrefix or itemId' }, { status: 400 });

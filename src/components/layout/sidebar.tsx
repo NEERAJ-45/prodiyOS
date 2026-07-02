@@ -42,6 +42,7 @@ const navItems: NavItem[] = [
   { label: "Revision Engine", href: "/revision", icon: RefreshCw },
   { label: "Project Hub", href: "/projects", icon: FolderKanban },
   { label: "Interview Hub", href: "/interview", icon: Briefcase },
+  { label: "Job Tracker", href: "/interviews", icon: Briefcase },
   { label: "Books & Research", href: "/books", icon: BookOpen },
   { label: "Daily Execution", href: "/daily", icon: CalendarCheck },
   { label: "Daily History", href: "/history", icon: CalendarDays },

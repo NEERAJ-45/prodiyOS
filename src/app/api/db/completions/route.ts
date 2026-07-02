@@ -45,7 +45,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ dbConnected: false, error: 'Database not configured' }, { status: 400 });
     }
     const body = await request.json();
-    const { storagePrefix, itemId, completedAt } = body;
+    const { storagePrefix, itemId, completedAt, resetAll } = body;
+
+    if (resetAll) {
+      if (!storagePrefix) {
+        return NextResponse.json({ error: 'Missing storagePrefix' }, { status: 400 });
+      }
+      const Completion = conn.model<ICompletion>('Completion');
+      await Completion.deleteMany({ storagePrefix, userEmail });
+      logActivity(userEmail, `Reset all completions in ${storagePrefix}`);
+      return NextResponse.json({ success: true, deleted: true });
+    }
 
     if (!storagePrefix || !itemId) {
       return NextResponse.json({ error: 'Missing storagePrefix or itemId' }, { status: 400 });

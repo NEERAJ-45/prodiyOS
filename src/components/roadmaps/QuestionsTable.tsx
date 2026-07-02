@@ -23,6 +23,7 @@ import {
   Loader2,
   ListOrdered,
   Info,
+  RotateCcw,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NotesDialog } from '@/components/shared/NotesDialog';
@@ -164,6 +165,7 @@ export default function QuestionsTable({
   const [customQuestions, setCustomQuestions] = useState<QuestionItem[]>([]);
   const [dbConnected, setDbConnected] = useState(false);
   const [showDescription, setShowDescription] = useState(true);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   const broadcastProgress = useCallback(() => {
     try {
@@ -172,6 +174,37 @@ export default function QuestionsTable({
       bc.close();
     } catch {}
   }, [storagePrefix]);
+
+  const handleReset = useCallback(() => {
+    localStorage.removeItem(`${storagePrefix}-completed`);
+    localStorage.removeItem(`${storagePrefix}-notes`);
+    localStorage.removeItem(`${storagePrefix}-custom-questions`);
+
+    setCompletedMap({});
+    setNotesMap({});
+    setCustomQuestions([]);
+    broadcastProgress();
+
+    if (userEmail) {
+      const headers = { 'Content-Type': 'application/json', 'x-user-email': userEmail };
+      fetch('/api/db/completions', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ storagePrefix: `${storagePrefix}-completed`, userEmail, resetAll: true }),
+      }).catch(() => {});
+      fetch('/api/db/notes', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ storagePrefix: `${storagePrefix}-notes`, userEmail, resetAll: true }),
+      }).catch(() => {});
+      fetch(`/api/db/custom-topics?storagePrefix=${storagePrefix}-custom-questions&userEmail=${encodeURIComponent(userEmail)}`, {
+        method: 'DELETE',
+        headers,
+      }).catch(() => {});
+    }
+
+    setShowResetConfirm(false);
+  }, [storagePrefix, broadcastProgress, userEmail]);
 
   const saveData = useCallback(<T,>(key: string, data: T) => {
     if (typeof window === 'undefined') return;
@@ -784,6 +817,14 @@ export default function QuestionsTable({
               Desc
             </button>
             <AddTopicDialog onAdd={handleAddQuestion} />
+            <button
+              onClick={() => setShowResetConfirm(true)}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border border-red-800/40 text-red-400 bg-red-950/30 hover:bg-red-950/50 hover:border-red-700/60 transition-colors shrink-0"
+              title="Reset all progress on this roadmap"
+            >
+              <RotateCcw size={13} />
+              Reset
+            </button>
           </div>
 
         {mounted && (
@@ -987,6 +1028,34 @@ export default function QuestionsTable({
           </div>
         </motion.div>
       )}
+
+      <Dialog open={showResetConfirm} onOpenChange={setShowResetConfirm}>
+        <DialogContent className="border-zinc-800 bg-zinc-950 text-zinc-100 sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle className="text-zinc-100 flex items-center gap-2">
+              <RotateCcw size={18} className="text-red-400" />
+              Reset Progress
+            </DialogTitle>
+            <DialogDescription className="text-zinc-500 text-sm pt-2">
+              This will clear all completed topics, notes, and custom topics for this roadmap.
+              This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <DialogClose asChild>
+              <button className="px-3.5 py-2 rounded-lg text-xs font-semibold bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition-colors cursor-pointer">
+                Cancel
+              </button>
+            </DialogClose>
+            <button
+              onClick={handleReset}
+              className="px-3.5 py-2 rounded-lg text-xs font-semibold bg-red-600 text-white hover:bg-red-500 transition-colors cursor-pointer"
+            >
+              Reset
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
