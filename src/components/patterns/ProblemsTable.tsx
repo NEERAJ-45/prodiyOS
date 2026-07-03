@@ -12,6 +12,9 @@ import {
   PaginationState,
 } from "@tanstack/react-table";
 import { useQuery } from "@tanstack/react-query";
+import { useCompletionsQuery, useToggleCompletion } from '@/hooks/use-completions';
+import { useNotesQuery, useSaveNote } from '@/hooks/use-notes';
+import { useCustomTopicsQuery, useAddCustomTopic, useDeleteCustomTopic } from '@/hooks/use-custom-topics';
 import {
   ArrowLeft, ExternalLink, CheckCircle, Circle, Trash2, Plus,
   ChevronLeft, ChevronRight,
@@ -170,6 +173,13 @@ export function ProblemsTable({
   const [notesMap, setNotesMap] = useState<NotesMap>({});
   const [customProblems, setCustomProblems] = useState<ProblemItem[]>([]);
   const [dbConnected, setDbConnected] = useState(false);
+  const completionsQuery = useCompletionsQuery(`completed-${patternName}`);
+  const notesQuery = useNotesQuery(`notes-${patternName}`);
+  const customTopicsQuery = useCustomTopicsQuery(`${patternName}-custom-problems`);
+  const toggleCompletion = useToggleCompletion();
+  const saveNote = useSaveNote();
+  const addCustomTopic = useAddCustomTopic();
+  const deleteCustomTopic = useDeleteCustomTopic();
 
   const getRequestHeaders = useCallback(() => {
     const headers: Record<string, string> = {
@@ -294,11 +304,8 @@ export function ProblemsTable({
     const newProblem: ProblemItem = { id: newId, title, link, difficulty };
     const nextList = [...customProblems, newProblem];
     saveCustomProblems(nextList);
-    fetch("/api/db/custom-topics", {
-      method: "POST", headers: getRequestHeaders(),
-      body: JSON.stringify({ storagePrefix: `${patternName}-custom-problems`, id: newId, title, difficulty, link, userEmail }),
-    }).catch(() => { toast({ variant: 'destructive', title: 'Failed to save custom problem' }); });
-  }, [customProblems, saveCustomProblems, patternName, getRequestHeaders, userEmail]);
+    addCustomTopic.mutate({ storagePrefix: `${patternName}-custom-problems`, id: newId, title, difficulty, link });
+  }, [customProblems, saveCustomProblems, patternName, getRequestHeaders, userEmail, addCustomTopic]);
 
   const handleDeleteProblem = useCallback((id: number) => {
     const nextList = customProblems.filter((p) => p.id !== id);
@@ -309,12 +316,11 @@ export function ProblemsTable({
     setNotesMap((prev) => {
       const next = { ...prev }; delete next[String(id)]; saveData(patternName, "notes", next); return next;
     });
-    const headers = getRequestHeaders();
     const deletedProblem = customProblems.find(p => p.id === id);
-    fetch(`/api/db/custom-topics?storagePrefix=${patternName}-custom-problems&id=${id}&userEmail=${encodeURIComponent(userEmail)}`, { method: "DELETE", headers }).catch(() => { toast({ variant: 'destructive', title: 'Failed to delete custom problem' }); });
-    fetch("/api/db/completions", { method: "POST", headers, body: JSON.stringify({ storagePrefix: `completed-${patternName}`, itemId: String(id), userEmail }) }).catch(() => { toast({ variant: 'destructive', title: 'Failed to sync completion data' }); });
-    fetch("/api/db/notes", { method: "POST", headers, body: JSON.stringify({ storagePrefix: `notes-${patternName}`, itemId: String(id), userEmail, itemTitle: deletedProblem?.title }) }).catch(() => { toast({ variant: 'destructive', title: 'Failed to sync notes data' }); });
-  }, [customProblems, saveCustomProblems, patternName, getRequestHeaders, userEmail]);
+    deleteCustomTopic.mutate({ storagePrefix: `${patternName}-custom-problems`, id });
+    toggleCompletion.mutate({ storagePrefix: `completed-${patternName}`, itemId: String(id) });
+    saveNote.mutate({ storagePrefix: `notes-${patternName}`, itemId: String(id), itemTitle: deletedProblem?.title });
+  }, [customProblems, saveCustomProblems, patternName, getRequestHeaders, userEmail, deleteCustomTopic, toggleCompletion, saveNote]);
 
   const toggleCompleted = useCallback((id: number, title?: string) => {
     let isCompleted = false;
@@ -327,11 +333,8 @@ export function ProblemsTable({
       saveData(patternName, "completed", next);
       return next;
     });
-    fetch("/api/db/completions", {
-      method: "POST", headers: getRequestHeaders(),
-      body: JSON.stringify({ storagePrefix: `completed-${patternName}`, itemId: String(id), completedAt: isCompleted ? compAtStr : undefined, userEmail, ...(title ? { title } : {}) }),
-    }).catch(() => { toast({ variant: 'destructive', title: 'Failed to save completion status' }); });
-  }, [patternName, getRequestHeaders, userEmail]);
+    toggleCompletion.mutate({ storagePrefix: `completed-${patternName}`, itemId: String(id), completedAt: isCompleted ? compAtStr : undefined, ...(title ? { title } : {}) });
+  }, [patternName, getRequestHeaders, userEmail, toggleCompletion]);
 
   const updateNote = useCallback((id: number, value: string) => {
     setNotesMap((prev) => {
@@ -343,11 +346,8 @@ export function ProblemsTable({
     });
     const allItems = [...(propEasy ?? []), ...(propMedium ?? []), ...(propHard ?? []), ...customProblems];
     const itemTitle = allItems.find(p => p.id === id)?.title;
-    fetch("/api/db/notes", {
-      method: "POST", headers: getRequestHeaders(),
-      body: JSON.stringify({ storagePrefix: `notes-${patternName}`, itemId: String(id), note: value || undefined, userEmail, itemTitle }),
-    }).catch(() => { toast({ variant: 'destructive', title: 'Failed to save note' }); });
-  }, [patternName, getRequestHeaders, userEmail, propEasy, propMedium, propHard, customProblems]);
+    saveNote.mutate({ storagePrefix: `notes-${patternName}`, itemId: String(id), note: value || undefined, itemTitle });
+  }, [patternName, getRequestHeaders, userEmail, propEasy, propMedium, propHard, customProblems, saveNote]);
 
   const apiProblems: ProblemWithDifficulty[] = useMemo(() => {
     if (!apiData?.problems) return [];

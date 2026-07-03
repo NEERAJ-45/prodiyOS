@@ -10,6 +10,7 @@ Track DSA problems, follow learning roadmaps, manage daily schedules, run spaced
 - **Auth**: NextAuth v5 (Credentials, JWT, brute-force lockout)
 - **Database**: MongoDB via Mongoose (dual-URI: home Atlas + office local)
 - **Styling**: Tailwind CSS v4
+- **Data Fetching**: TanStack Query v5 (`useQuery`/`useMutation`)
 - **State**: Zustand + localStorage with DB sync
 - **Testing**: Vitest + React Testing Library + jsdom
 

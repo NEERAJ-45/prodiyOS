@@ -3,6 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useMounted } from '@/hooks/useMounted';
+import { useDailyQuery, useSyncDaily, useActivityLog } from '@/hooks/use-daily';
 import {
   CheckCircle2,
   Circle,
@@ -191,6 +192,9 @@ export default function DailyPage() {
   const [editTaskTime, setEditTaskTime] = React.useState('');
   const [editTaskDifficulty, setEditTaskDifficulty] = React.useState('');
   const syncRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { data: dailyDb } = useDailyQuery(todayKey);
+  const syncDaily = useSyncDaily();
+  const logActivity = useActivityLog();
 
   const todaySchedule = React.useMemo(() => getTodaySchedule(scheduleId), [scheduleId]);
 
@@ -253,35 +257,21 @@ export default function DailyPage() {
     if (savedTasks) {
       try { setCustomTasks(JSON.parse(savedTasks)); } catch {}
     }
-    (async () => {
-      try {
-        const res = await fetch(`/api/db/daily?date=${todayKey}`);
-        const json = await res.json();
-        if (json.record) {
-          if (json.record.completedTaskIds?.length) {
-            setCompleted(new Set(json.record.completedTaskIds));
-          }
-          if (json.record.note) {
-            setNote(json.record.note);
-          }
-        }
-      } catch {}
-    })();
   }, []);
+  React.useEffect(() => {
+    if (dailyDb?.record) {
+      if (dailyDb.record.completedTaskIds?.length) {
+        setCompleted(new Set(dailyDb.record.completedTaskIds));
+      }
+      if (dailyDb.record.note) {
+        setNote(dailyDb.record.note);
+      }
+    }
+  }, [dailyDb]);
 
-  async function syncDailyToServer(ids: Set<string>, noteText: string) {
+  function syncDailyToServer(ids: Set<string>, noteText: string) {
     if (!userEmail) return;
-    try {
-      await fetch('/api/db/daily', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          date: todayKey,
-          completedTaskIds: Array.from(ids),
-          note: noteText,
-        }),
-      });
-    } catch {}
+    syncDaily.mutate({ date: todayKey, completedTaskIds: Array.from(ids), note: noteText });
   }
 
   React.useEffect(() => {
@@ -337,12 +327,7 @@ export default function DailyPage() {
       };
       return { ...prev, [todayKey]: newDay };
     });
-    if (userEmail) {
-      fetch('/api/db/activity', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userEmail, text: `Toggled "${period}" slot completion` }),
-      }).catch(() => {});
-    }
+    logActivity.mutate(`Toggled "${period}" slot completion`);
   }
 
   function updateSlotNote(period: string, text: string) {
@@ -371,12 +356,7 @@ export default function DailyPage() {
       else next.add(id);
       return next;
     });
-    if (userEmail) {
-      fetch('/api/db/activity', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userEmail, text: wasCompleted ? 'Uncompleted a daily task' : 'Completed a daily task' }),
-      }).catch(() => {});
-    }
+    logActivity.mutate(wasCompleted ? 'Uncompleted a daily task' : 'Completed a daily task');
   }
 
   function addCustomTask() {
@@ -391,12 +371,7 @@ export default function DailyPage() {
     };
     setCustomTasks((p) => [...p, task]);
     setNewTaskTitle('');
-    if (userEmail) {
-      fetch('/api/db/activity', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userEmail, text: `Added custom daily task "${title}"` }),
-      }).catch(() => {});
-    }
+    logActivity.mutate(`Added custom daily task "${title}"`);
   }
 
   function handleDeleteTask(taskId: string) {

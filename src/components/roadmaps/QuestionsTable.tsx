@@ -2,6 +2,9 @@
 
 import { useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import { useMounted } from '@/hooks/useMounted';
+import { useCompletionsQuery, useToggleCompletion } from '@/hooks/use-completions';
+import { useNotesQuery, useSaveNote } from '@/hooks/use-notes';
+import { useCustomTopicsQuery, useAddCustomTopic, useDeleteCustomTopic } from '@/hooks/use-custom-topics';
 import {
   useReactTable,
   getCoreRowModel,
@@ -169,6 +172,13 @@ export default function QuestionsTable({
   const [dbConnected, setDbConnected] = useState(false);
   const [showDescription, setShowDescription] = useState(true);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const completionsQuery = useCompletionsQuery(`${storagePrefix}-completed`);
+  const notesQuery = useNotesQuery(`${storagePrefix}-notes`);
+  const customTopicsQuery = useCustomTopicsQuery(`${storagePrefix}-custom-questions`);
+  const toggleCompletion = useToggleCompletion();
+  const saveNote = useSaveNote();
+  const addCustomTopic = useAddCustomTopic();
+  const deleteCustomTopic = useDeleteCustomTopic();
 
   const broadcastProgress = useCallback(() => {
     try {
@@ -405,19 +415,8 @@ export default function QuestionsTable({
     const nextList = [...customQuestions, newQuestion];
     saveCustomQuestions(nextList);
 
-    fetch('/api/db/custom-topics', {
-      method: 'POST',
-      headers: getRequestHeaders(),
-      body: JSON.stringify({
-        storagePrefix: `${storagePrefix}-custom-questions`,
-        id: newId,
-        title,
-        difficulty,
-        link,
-        userEmail,
-      }),
-    }).catch(() => {});
-  }, [customQuestions, saveCustomQuestions, storagePrefix, getRequestHeaders, userEmail]);
+    addCustomTopic.mutate({ storagePrefix: `${storagePrefix}-custom-questions`, id: newId, title, difficulty, link });
+  }, [customQuestions, saveCustomQuestions, storagePrefix, getRequestHeaders, userEmail, addCustomTopic]);
 
   const handleDeleteQuestion = useCallback((id: number) => {
     const nextList = customQuestions.filter((q) => q.id !== id);
@@ -435,35 +434,11 @@ export default function QuestionsTable({
       return next;
     });
 
-    const headers = getRequestHeaders();
-
-    fetch(`/api/db/custom-topics?storagePrefix=${storagePrefix}-custom-questions&id=${id}&userEmail=${encodeURIComponent(userEmail)}`, {
-      method: 'DELETE',
-      headers,
-    }).catch(() => {});
-
-    fetch('/api/db/completions', {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        storagePrefix: `${storagePrefix}-completed`,
-        itemId: String(id),
-        userEmail,
-      }),
-    }).catch(() => {});
-
     const deletedItem = customQuestions.find(q => q.id === id);
-    fetch('/api/db/notes', {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        storagePrefix: `${storagePrefix}-notes`,
-        itemId: String(id),
-        userEmail,
-        itemTitle: deletedItem?.title,
-      }),
-    }).catch(() => {});
-  }, [customQuestions, saveCustomQuestions, saveData, storagePrefix, getRequestHeaders, userEmail]);
+    deleteCustomTopic.mutate({ storagePrefix: `${storagePrefix}-custom-questions`, id });
+    toggleCompletion.mutate({ storagePrefix: `${storagePrefix}-completed`, itemId: String(id) });
+    saveNote.mutate({ storagePrefix: `${storagePrefix}-notes`, itemId: String(id), itemTitle: deletedItem?.title });
+  }, [customQuestions, saveCustomQuestions, saveData, storagePrefix, getRequestHeaders, userEmail, deleteCustomTopic, toggleCompletion, saveNote]);
 
   const [pagination, setPagination] = useState({
     pageIndex: 0,
@@ -488,31 +463,8 @@ export default function QuestionsTable({
       return next;
     });
 
-    fetch('/api/db/completions', {
-      method: 'POST',
-      headers: getRequestHeaders(),
-      body: JSON.stringify({
-        storagePrefix: `${storagePrefix}-completed`,
-        itemId: String(id),
-        completedAt: nowCompleted ? compAtStr : undefined,
-        userEmail,
-      }),
-    }).catch(() => {});
-
-    if (nowCompleted) {
-      const item = [...questions, ...customQuestions].find(q => q.id === id);
-      const title = item?.title ?? `Item #${id}`;
-      const from = sourceName ?? storagePrefix.replace(/-/g, ' ');
-      fetch('/api/db/activity', {
-        method: 'POST',
-        headers: getRequestHeaders(),
-        body: JSON.stringify({
-          userEmail,
-          text: `Completed '${title}' from ${from}`,
-        }),
-      }).catch(() => {});
-    }
-  }, [saveData, storagePrefix, getRequestHeaders, userEmail, questions, customQuestions, sourceName, loadData]);
+    toggleCompletion.mutate({ storagePrefix: `${storagePrefix}-completed`, itemId: String(id), completedAt: nowCompleted ? compAtStr : undefined });
+  }, [saveData, storagePrefix, toggleCompletion, loadData]);
 
   const updateNote = useCallback((id: number, value: string) => {
     setNotesMap((prev) => {
@@ -526,18 +478,8 @@ export default function QuestionsTable({
     const item = [...questions, ...customQuestions].find(q => q.id === id);
     const itemTitle = item?.title;
 
-    fetch('/api/db/notes', {
-      method: 'POST',
-      headers: getRequestHeaders(),
-      body: JSON.stringify({
-        storagePrefix: `${storagePrefix}-notes`,
-        itemId: String(id),
-        note: value || undefined,
-        userEmail,
-        itemTitle,
-      }),
-    }).catch(() => {});
-  }, [saveData, storagePrefix, getRequestHeaders, userEmail, questions, customQuestions]);
+    saveNote.mutate({ storagePrefix: `${storagePrefix}-notes`, itemId: String(id), note: value || undefined, itemTitle });
+  }, [saveData, storagePrefix, getRequestHeaders, userEmail, questions, customQuestions, saveNote]);
 
   const filteredQuestions = useMemo(() => {
     const all = [...questions, ...customQuestions];

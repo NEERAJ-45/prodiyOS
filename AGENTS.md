@@ -7,8 +7,22 @@ A full-stack learning progress tracking platform built with Next.js, MongoDB, an
 - **Framework**: Next.js (App Router)
 - **Auth**: NextAuth v5 with Credentials provider, JWT sessions, brute-force lockout
 - **Database**: MongoDB via Mongoose (optional, localStorage-first with DB sync)
+- **Data Fetching**: TanStack Query v5 (React Query) for all HTTP API calls — `useQuery` for reads, `useMutation` for writes with automatic cache invalidation
 - **Styling**: Tailwind CSS v4
-- **State**: React hooks + localStorage for client state; MongoDB for persistence
+- **State**: React hooks + Zustand (mode-store) + localStorage for client state; MongoDB for persistence
+
+## Data Fetching Conventions
+- All API data is fetched via shared hooks in `src/hooks/` using `@tanstack/react-query`
+- `QueryProvider` wraps the app (in `src/components/providers/QueryProvider.tsx`) with `ReactQueryDevtools` in dev
+- Available shared hooks:
+  - `useCompletionsQuery(storagePrefix)` / `useToggleCompletion()` — `/api/db/completions`
+  - `useNotesQuery(storagePrefix)` / `useSaveNote()` — `/api/db/notes`
+  - `useCustomTopicsQuery(storagePrefix)` / `useAddCustomTopic()` / `useDeleteCustomTopic()` — `/api/db/custom-topics`
+  - `useDailyQuery(date)` / `useSyncDaily()` / `useActivityLog()` — `/api/db/daily` and `/api/db/activity`
+- Query keys follow convention: `['resource', ...params]` (e.g. `['completions', prefix]`, `['daily', date]`)
+- Mutations automatically `invalidateQueries` on success to keep cache fresh
+- Default query options: staleTime=5min, gcTime=10min, retry=1, refetchOnWindowFocus=false
+- Devtools accessible via floating icon (bottom-left) in development
 
 ## Key Conventions
 - Client components use `'use client'` directive
@@ -16,7 +30,7 @@ A full-stack learning progress tracking platform built with Next.js, MongoDB, an
 - UI components in `src/components/ui/` are generic/reusable
 - Shared data constants in `src/data/`
 - Storage key constants in `src/lib/storage-keys.ts`
-- Shared hooks in `src/hooks/`
+- Shared hooks in `src/hooks/` — each major API resource gets a dedicated file (e.g. `use-completions.ts`, `use-daily.ts`)
 - Error boundaries in `src/components/shared/ErrorBoundary.tsx`
 - Auth config and handlers in `src/auth.config.ts` and `src/auth.ts`
 - Mongoose models in `src/lib/models/`
