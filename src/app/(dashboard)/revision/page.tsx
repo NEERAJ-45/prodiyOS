@@ -97,7 +97,7 @@ export default function RevisionPage() {
     // 1. Update State & LocalStorage
     setItems((prev) => {
       const idx = prev.findIndex((x) => x.id === item.id);
-      let next = [...prev];
+      const next = [...prev];
       if (idx >= 0) next[idx] = item;
       else next.push(item);
       localStorage.setItem('revision-scheduler-items', JSON.stringify(next));

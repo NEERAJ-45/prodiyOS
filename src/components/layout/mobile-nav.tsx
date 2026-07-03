@@ -28,8 +28,12 @@ export function MobileNav() {
   const posRef = useRef({ x: 20, y: 20 });
   const dragRef = useRef(false);
 
+  const prevPathname = useRef(pathname);
   useEffect(() => {
-    setOpen(false);
+    if (prevPathname.current !== pathname) {
+      prevPathname.current = pathname;
+      setOpen(false);
+    }
   }, [pathname]);
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {

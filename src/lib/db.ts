@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-let globalWithMongoose = global as typeof globalThis & {
+const globalWithMongoose = global as typeof globalThis & {
   mongooseCache?: Record<string, { conn: mongoose.Connection | null; promise: Promise<mongoose.Connection> | null }>;
 };
 

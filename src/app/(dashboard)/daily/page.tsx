@@ -269,12 +269,28 @@ export default function DailyPage() {
     })();
   }, []);
 
+  async function syncDailyToServer(ids: Set<string>, noteText: string) {
+    if (!userEmail) return;
+    try {
+      await fetch('/api/db/daily', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          date: todayKey,
+          completedTaskIds: Array.from(ids),
+          note: noteText,
+        }),
+      });
+    } catch {}
+  }
+
   React.useEffect(() => {
     if (!mounted) return;
     const saved: Record<string, string[]> = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
     saved[todayKey] = Array.from(completed);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
-    debouncedSync(completed, note);
+    if (syncRef.current) clearTimeout(syncRef.current);
+    syncRef.current = setTimeout(() => syncDailyToServer(completed, note), 2000);
   }, [completed, mounted]);
 
   React.useEffect(() => {
@@ -282,7 +298,8 @@ export default function DailyPage() {
     const saved: Record<string, string> = JSON.parse(localStorage.getItem(NOTES_KEY) || '{}');
     saved[todayKey] = note;
     localStorage.setItem(NOTES_KEY, JSON.stringify(saved));
-    debouncedSync(completed, note);
+    if (syncRef.current) clearTimeout(syncRef.current);
+    syncRef.current = setTimeout(() => syncDailyToServer(completed, note), 2000);
   }, [note, mounted]);
 
   React.useEffect(() => {
@@ -440,26 +457,6 @@ export default function DailyPage() {
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [timerRunning]);
-
-  async function syncDailyToServer(ids: Set<string>, noteText: string) {
-    if (!userEmail) return;
-    try {
-      await fetch('/api/db/daily', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          date: todayKey,
-          completedTaskIds: Array.from(ids),
-          note: noteText,
-        }),
-      });
-    } catch {}
-  }
-
-  function debouncedSync(ids: Set<string>, noteText: string) {
-    if (syncRef.current) clearTimeout(syncRef.current);
-    syncRef.current = setTimeout(() => syncDailyToServer(ids, noteText), 2000);
-  }
 
   function getAudioContext() {
     if (!audioCtxRef.current) {

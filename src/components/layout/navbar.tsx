@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useProfile } from '@/components/providers/ProfileProvider';
 import { signOut } from 'next-auth/react';
-import { Database, LogOut, User, CheckCircle2, AlertTriangle, X, CalendarDays, Flame, Wifi, WifiOff } from 'lucide-react';
+import { LogOut, User, X, CalendarDays, Flame, Wifi, WifiOff } from 'lucide-react';
 import { toast } from '@/components/ui/toast';
 import { quotes } from '../../../quotes';
 import { cn } from '@/lib/utils';
@@ -14,7 +14,6 @@ import { ModeToggle } from '@/components/layout/mode-toggle';
 import { useModeStore } from '@/lib/stores/mode-store';
 
 export function Navbar({ global = false }: { global?: boolean }) {
-  if (!global) return null;
   const pathname = usePathname();
   const { userEmail, userName, userRole, logout, updateEmail } = useProfile();
   const [profileOpen, setProfileOpen] = useState(false);
@@ -24,6 +23,8 @@ export function Navbar({ global = false }: { global?: boolean }) {
   const [emailLoading, setEmailLoading] = useState(false);
   const { mode } = useModeStore();
   const isOffice = mode === 'OFFICE';
+
+  if (!global) return null;
   
   const today = new Date();
   const dateStr = today.toLocaleDateString('en-US', {

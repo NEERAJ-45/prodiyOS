@@ -14,23 +14,26 @@ export function ProblemDesc({ slug }: ProblemDescProps) {
   const [loading, setLoading] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  const fetchDesc = useCallback(async () => {
-    if (content || loading) return;
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/leetcode?slug=${encodeURIComponent(slug)}`);
-      const data = await res.json();
-      setContent(data.content ?? "No description available");
-    } catch {
-      setContent("Failed to load description");
-    }
-    setLoading(false);
-  }, [slug, content, loading]);
-
   useEffect(() => {
-    if (!open) return;
-    fetchDesc();
-  }, [open, fetchDesc]);
+    if (!open || content || loading) return;
+    let cancelled = false;
+    setLoading(true);
+    fetch(`/api/leetcode?slug=${encodeURIComponent(slug)}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled) {
+          setContent(data.content ?? "No description available");
+          setLoading(false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setContent("Failed to load description");
+          setLoading(false);
+        }
+      });
+    return () => { cancelled = true; };
+  }, [open, slug]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {

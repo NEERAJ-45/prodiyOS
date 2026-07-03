@@ -33,12 +33,9 @@ const SLOT_COMPLETIONS_KEY = 'daily-slot-completions';
 const SLOT_NOTES_KEY = 'daily-slot-notes';
 
 async function pushDailyData() {
-  const todayKey = new Date().toISOString().slice(0, 10);
-
   const completionsRaw = localStorage.getItem(STORAGE_KEY);
   const notesRaw = localStorage.getItem(NOTES_KEY);
   const slotCompletionsRaw = localStorage.getItem(SLOT_COMPLETIONS_KEY);
-  const slotNotesRaw = localStorage.getItem(SLOT_NOTES_KEY);
 
   const completions: Record<string, string[]> = completionsRaw ? JSON.parse(completionsRaw) : {};
   const notes: Record<string, string> = notesRaw ? JSON.parse(notesRaw) : {};

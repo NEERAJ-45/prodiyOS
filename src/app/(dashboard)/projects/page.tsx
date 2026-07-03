@@ -272,10 +272,6 @@ export default function ProjectsPage() {
   const [statusFilter, setStatusFilter] = React.useState<ProjectStatus | 'ALL'>('ALL');
   const [deleteConfirm, setDeleteConfirm] = React.useState<string | null>(null);
 
-  React.useEffect(() => {
-    initProjects();
-  }, [userEmail]);
-
   async function initProjects() {
     if (userEmail) {
       try {
@@ -307,6 +303,10 @@ export default function ProjectsPage() {
       }
     }
   }
+
+  React.useEffect(() => {
+    initProjects();
+  }, [userEmail]);
 
   React.useEffect(() => {
     if (!mounted) return;
