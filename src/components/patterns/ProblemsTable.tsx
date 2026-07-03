@@ -96,7 +96,7 @@ function AddProblemDialog({
           Add Problem
         </button>
       </DialogTrigger>
-      999999999999999999999<DialogContent className="border-zinc-800 bg-zinc-950 text-zinc-100 099999sm:max-w-[425px] mt-20">
+      <DialogContent className="border-zinc-800 bg-zinc-950 text-zinc-100 099999sm:max-w-[425px] mt-20">
         <DialogHeader>
           <DialogTitle className="text-zinc-100 flex items-center gap-2">
             <Plus size={18} className="text-primary" />
