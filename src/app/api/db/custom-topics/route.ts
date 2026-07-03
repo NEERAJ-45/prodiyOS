@@ -63,12 +63,19 @@ export async function DELETE(request: Request) {
     const idStr = searchParams.get('id');
     const userEmail = searchParams.get('userEmail') || request.headers.get('x-user-email') || 'NEERAJ';
 
-    if (!storagePrefix || !idStr) {
-      return NextResponse.json({ error: 'Missing storagePrefix or id' }, { status: 400 });
+    if (!storagePrefix) {
+      return NextResponse.json({ error: 'Missing storagePrefix' }, { status: 400 });
+    }
+
+    const CustomTopic = conn.model<ICustomTopic>('CustomTopic');
+
+    if (!idStr) {
+      await CustomTopic.deleteMany({ storagePrefix, userEmail });
+      logActivity(userEmail, `Reset all custom topics in ${storagePrefix}`);
+      return NextResponse.json({ success: true, deleted: true });
     }
 
     const id = Number(idStr);
-    const CustomTopic = conn.model<ICustomTopic>('CustomTopic');
     const existing = await CustomTopic.findOne({ storagePrefix, id, userEmail });
     await CustomTopic.deleteOne({ storagePrefix, id, userEmail });
     logActivity(userEmail, `Removed custom topic "${existing?.title || id}" from ${storagePrefix}`);

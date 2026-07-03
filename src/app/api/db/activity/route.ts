@@ -3,32 +3,7 @@ import { connectToDatabase } from '@/lib/db';
 import type { IActivity } from '@/lib/models/Activity';
 import '@/lib/models/Activity';
 import { logActivity } from '@/lib/activity-logger';
-import { auth } from '@/auth';
-
-export async function GET(request: Request) {
-  try {
-    const session = await auth();
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    const userEmail = session.user.email;
-    const { searchParams } = new URL(request.url);
-    const limit = parseInt(searchParams.get('limit') || '50', 10);
-
-    const customUri = request.headers.get('x-mongodb-url') || undefined;
-    const conn = await connectToDatabase(customUri);
-    if (!conn) {
-      return NextResponse.json({ dbConnected: false, data: [] });
-    }
-
-    const Activity = conn.model<IActivity>('Activity');
-    const activities = await Activity.find({ userEmail }).sort({ createdAt: -1 }).limit(limit).lean();
-
-    return NextResponse.json({ dbConnected: true, data: activities });
-  } catch (error: any) {
-    return NextResponse.json({ dbConnected: false, error: error.message, data: [] });
-  }
-}
+import Activity from '@/lib/models/Activity';
 
 export async function POST(request: Request) {
   try {
@@ -38,6 +13,28 @@ export async function POST(request: Request) {
     }
     await logActivity(userEmail, text);
     return NextResponse.json({ success: true });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const userEmail = searchParams.get('userEmail');
+    if (!userEmail) {
+      return NextResponse.json({ error: 'userEmail required' }, { status: 400 });
+    }
+
+    await connectToDatabase();
+    const activities = await Activity.find({ userEmail })
+      .sort({ createdAt: -1 })
+      .limit(200)
+      .lean();
+
+    return NextResponse.json({
+      activities: activities.map((a: any) => ({ text: a.text, createdAt: a.createdAt })),
+    });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

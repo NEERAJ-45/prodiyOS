@@ -29,6 +29,8 @@ import {
   X,
   Trash2,
   Edit,
+  Server,
+  Cloud,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -136,6 +138,32 @@ const categories: Category[] = [
     ],
   },
   {
+    id: 'backend',
+    title: "Backend Development",
+    icon: Server,
+    color: 'text-orange-400',
+    bgColor: 'bg-orange-500/10',
+    borderColor: 'border-orange-500/20',
+    tasks: [
+      { id: 'be-1', title: 'REST API — Design CRUD for Resource X', time: '45 min', difficulty: 'Medium', priority: 'must' },
+      { id: 'be-2', title: 'Database — Optimize Slow Query with Indexing', time: '30 min', difficulty: 'Medium', priority: 'should' },
+      { id: 'be-3', title: 'Auth — Implement JWT Refresh Token Flow', time: '40 min', difficulty: 'Hard', priority: 'must' },
+    ],
+  },
+  {
+    id: 'deployment',
+    title: "Deployment & DevOps",
+    icon: Cloud,
+    color: 'text-cyan-400',
+    bgColor: 'bg-cyan-500/10',
+    borderColor: 'border-cyan-500/20',
+    tasks: [
+      { id: 'dep-1', title: 'CI/CD — Set Up GitHub Actions Pipeline', time: '45 min', difficulty: 'Medium', priority: 'must' },
+      { id: 'dep-2', title: 'Docker — Containerize the Application', time: '30 min', difficulty: 'Medium', priority: 'should' },
+      { id: 'dep-3', title: 'Cloud — Deploy to Staging Environment', time: '30 min', difficulty: 'Medium', priority: 'should' },
+    ],
+  },
+  {
     id: 'project',
     title: "Today's Project Work",
     icon: Zap,
@@ -201,6 +229,7 @@ export default function DailyPage() {
   const [note, setNote] = React.useState('');
   const [customTasks, setCustomTasks] = React.useState<Task[]>([]);
   const [newTaskTitle, setNewTaskTitle] = React.useState('');
+  const [showAddTask, setShowAddTask] = React.useState(false);
   const [taskCategories, setTaskCategories] = React.useState<Category[]>(categories);
   const [timeBlocks, setTimeBlocks] = React.useState<TimeBlock[]>([]);
   const [editingBlockId, setEditingBlockId] = React.useState<string | null>(null);
@@ -411,6 +440,11 @@ export default function DailyPage() {
   const [editTaskTitle, setEditTaskTitle] = React.useState('');
   const [editTaskTime, setEditTaskTime] = React.useState('');
   const [editTaskDifficulty, setEditTaskDifficulty] = React.useState('');
+  const [addingTaskCategory, setAddingTaskCategory] = React.useState<string | null>(null);
+  const [addTaskTitle, setAddTaskTitle] = React.useState('');
+  const [addTaskTime, setAddTaskTime] = React.useState('30 min');
+  const [addTaskDifficulty, setAddTaskDifficulty] = React.useState('Medium');
+  const [addTaskPriority, setAddTaskPriority] = React.useState<'must' | 'should' | 'nice'>('should');
   const syncRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   async function syncDailyToServer(ids: Set<string>, noteText: string) {
@@ -502,6 +536,38 @@ export default function DailyPage() {
     setEditTaskTitle(task.title);
     setEditTaskTime(task.time);
     setEditTaskDifficulty(task.difficulty);
+  }
+
+  function handleAddTask(categoryId: string) {
+    const title = addTaskTitle.trim();
+    if (!title) return;
+    const task: Task = {
+      id: `${categoryId}-${Date.now()}`,
+      title,
+      time: addTaskTime,
+      difficulty: addTaskDifficulty,
+      priority: addTaskPriority,
+    };
+    setTaskCategories((prev) =>
+      prev.map((cat) =>
+        cat.id === categoryId ? { ...cat, tasks: [...cat.tasks, task] } : cat
+      )
+    );
+    setAddTaskTitle('');
+    setAddTaskTime('30 min');
+    setAddTaskDifficulty('Medium');
+    setAddTaskPriority('should');
+    setAddingTaskCategory(null);
+  }
+
+  function handleDeleteTask(taskId: string) {
+    setTaskCategories((prev) =>
+      prev.map((cat) => ({
+        ...cat,
+        tasks: cat.tasks.filter((t) => t.id !== taskId),
+      }))
+    );
+    setCustomTasks((prev) => prev.filter((t) => t.id !== taskId));
   }
 
   function handleSaveEditTask() {
@@ -763,8 +829,58 @@ export default function DailyPage() {
                             </div>
                           </div>
                         </div>
+                        <button
+                          onClick={() => setAddingTaskCategory(addingTaskCategory === category.id ? null : category.id)}
+                          className="flex items-center justify-center w-7 h-7 rounded-full border border-dashed border-zinc-700 hover:border-zinc-500 text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 transition-colors cursor-pointer shrink-0"
+                          title="Add task"
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                        </button>
                       </CardHeader>
                       <CardContent className="p-4 pt-2 space-y-2">
+                        {addingTaskCategory === category.id && (
+                          <div className="flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900/50 p-3">
+                            <Input
+                              value={addTaskTitle}
+                              onChange={(e) => setAddTaskTitle(e.target.value)}
+                              placeholder="Task title"
+                              className="flex-1 h-8 text-sm bg-zinc-800 border-zinc-700"
+                              onKeyDown={(e) => { if (e.key === 'Enter' && addTaskTitle.trim()) { handleAddTask(category.id); } if (e.key === 'Escape') setAddingTaskCategory(null); }}
+                              autoFocus
+                            />
+                            <Input
+                              value={addTaskTime}
+                              onChange={(e) => setAddTaskTime(e.target.value)}
+                              placeholder="30 min"
+                              className="w-16 h-8 text-sm bg-zinc-800 border-zinc-700"
+                            />
+                            <select
+                              value={addTaskDifficulty}
+                              onChange={(e) => setAddTaskDifficulty(e.target.value)}
+                              className="h-8 text-xs bg-zinc-800 border border-zinc-700 rounded px-1 text-zinc-300 outline-none"
+                            >
+                              <option value="Easy">Easy</option>
+                              <option value="Medium">Medium</option>
+                              <option value="Hard">Hard</option>
+                              <option value="Advanced">Advanced</option>
+                            </select>
+                            <select
+                              value={addTaskPriority}
+                              onChange={(e) => setAddTaskPriority(e.target.value as Priority)}
+                              className="h-8 text-xs bg-zinc-800 border border-zinc-700 rounded px-1 text-zinc-300 outline-none"
+                            >
+                              <option value="must">Must</option>
+                              <option value="should">Should</option>
+                              <option value="nice">Nice</option>
+                            </select>
+                            <button onClick={() => { if (addTaskTitle.trim()) handleAddTask(category.id); }} className="flex h-8 w-8 items-center justify-center rounded text-green-500 hover:text-green-400 hover:bg-zinc-800 transition-colors cursor-pointer">
+                              <Check className="h-4 w-4" />
+                            </button>
+                            <button onClick={() => setAddingTaskCategory(null)} className="flex h-8 w-8 items-center justify-center rounded text-red-500 hover:text-red-400 hover:bg-zinc-800 transition-colors cursor-pointer">
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
+                        )}
                         {category.tasks.map((task) => {
                           const isDone = completed.has(task.id);
                           const isEditing = editingTaskId === task.id;
@@ -816,6 +932,9 @@ export default function DailyPage() {
                                     <button onClick={(e) => { e.preventDefault(); handleStartEditTask(task); }} className="p-1 rounded hover:bg-zinc-800 text-zinc-600 hover:text-zinc-300 transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100">
                                       <Pencil className="h-3 w-3 md:h-3.5 md:w-3.5" />
                                     </button>
+                                    <button onClick={(e) => { e.preventDefault(); handleDeleteTask(task.id); }} className="p-1 rounded hover:bg-zinc-800 text-zinc-600 hover:text-red-400 transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100">
+                                      <Trash2 className="h-3 w-3 md:h-3.5 md:w-3.5" />
+                                    </button>
                                   </div>
                                 </div>
                               </Link>
@@ -848,6 +967,9 @@ export default function DailyPage() {
                                   <button onClick={() => handleStartEditTask(task)} className="p-1 rounded hover:bg-zinc-800 text-zinc-600 hover:text-zinc-300 transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100">
                                     <Pencil className="h-3 w-3 md:h-3.5 md:w-3.5" />
                                   </button>
+                                  <button onClick={() => handleDeleteTask(task.id)} className="p-1 rounded hover:bg-zinc-800 text-zinc-600 hover:text-red-400 transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100">
+                                    <Trash2 className="h-3 w-3 md:h-3.5 md:w-3.5" />
+                                  </button>
                                 </div>
                               </div>
                             </div>
@@ -865,24 +987,30 @@ export default function DailyPage() {
                       {customTasks.map((task) => {
                         const isDone = completed.has(task.id);
                         return (
-                          <button
+                          <div
                             key={task.id}
-                            onClick={() => toggleTask(task.id)}
                             className={cn(
-                              'w-full flex items-center gap-3 rounded-lg border p-3 text-left transition-all',
+                              'flex items-center gap-3 rounded-lg border p-3 text-left transition-all group',
                               isDone ? 'border-emerald-500/20 bg-emerald-500/5' : 'border-zinc-800 hover:border-zinc-700 bg-zinc-900/50',
                             )}
                           >
-                            {isDone ? (
-                              <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-400" />
-                            ) : (
-                              <Circle className="h-5 w-5 shrink-0 text-zinc-600" />
-                            )}
+                            <button onClick={() => toggleTask(task.id)}>
+                              {isDone ? (
+                                <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-400" />
+                              ) : (
+                                <Circle className="h-5 w-5 shrink-0 text-zinc-600 group-hover:text-zinc-500 transition-colors" />
+                              )}
+                            </button>
                             <span className={cn('flex-1 text-sm', isDone && 'line-through text-zinc-600')}>
                               {task.title}
                             </span>
-                            <span className="text-xs text-zinc-600">{task.time}</span>
-                          </button>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <span className="text-xs text-zinc-600">{task.time}</span>
+                              <button onClick={() => handleDeleteTask(task.id)} className="p-1 rounded hover:bg-zinc-800 text-zinc-600 hover:text-red-400 transition-colors">
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          </div>
                         );
                       })}
                     </CardContent>
@@ -892,16 +1020,35 @@ export default function DailyPage() {
 
               {/* Add custom task */}
               <div className="flex items-center gap-2">
-                <Input
-                  placeholder="Add a custom task..."
-                  value={newTaskTitle}
-                  onChange={(e) => setNewTaskTitle(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') addCustomTask(); }}
-                  className="bg-zinc-900 border-zinc-800 text-zinc-200 text-sm"
-                />
-                <Button variant="outline" size="icon" onClick={addCustomTask} disabled={!newTaskTitle.trim()}>
-                  <Plus className="h-4 w-4" />
-                </Button>
+                {showAddTask ? (
+                  <>
+                    <Input
+                      placeholder="Add a custom task..."
+                      value={newTaskTitle}
+                      onChange={(e) => setNewTaskTitle(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') { addCustomTask(); setShowAddTask(false); }
+                        if (e.key === 'Escape') setShowAddTask(false);
+                      }}
+                      className="bg-zinc-900 border-zinc-800 text-zinc-200 text-sm"
+                      autoFocus
+                    />
+                    <Button variant="outline" size="icon" onClick={() => { addCustomTask(); setShowAddTask(false); }} disabled={!newTaskTitle.trim()}>
+                      <Check className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => setShowAddTask(false)} className="text-zinc-500 hover:text-zinc-300">
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => { setShowAddTask(true); setNewTaskTitle(''); }}
+                    className="flex items-center justify-center w-9 h-9 rounded-full border border-dashed border-zinc-700 hover:border-zinc-500 text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 transition-colors cursor-pointer"
+                    title="Add a task"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </button>
+                )}
               </div>
             </div>
 

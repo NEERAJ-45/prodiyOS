@@ -1,229 +1,85 @@
 'use client';
 
-import * as React from 'react';
-import { X } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Toaster as HotToaster, toast as hotToast } from 'react-hot-toast';
 
-const TOAST_LIMIT = 1;
-const TOAST_REMOVE_DELAY = 5000;
-
-type ToasterToast = {
-  id: string;
+type ToastProps = {
   title?: string;
   description?: string;
   variant?: 'default' | 'destructive';
 };
 
-type Action =
-  | { type: 'ADD_TOAST'; toast: ToasterToast }
-  | { type: 'DISMISS_TOAST'; toastId: string }
-  | { type: 'REMOVE_TOAST'; toastId: string };
-
-interface State {
-  toasts: ToasterToast[];
-}
-
-const toastTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
-
-const addToRemoveQueue = (toastId: string) => {
-  if (toastTimeouts.has(toastId)) return;
-
-  const timeout = setTimeout(() => {
-    toastTimeouts.delete(toastId);
-    dispatch({ type: 'REMOVE_TOAST', toastId });
-  }, TOAST_REMOVE_DELAY);
-
-  toastTimeouts.set(toastId, timeout);
-};
-
-const reducer = (state: State, action: Action): State => {
-  switch (action.type) {
-    case 'ADD_TOAST':
-      return {
-        ...state,
-        toasts: [action.toast, ...state.toasts].slice(0, TOAST_LIMIT),
-      };
-    case 'DISMISS_TOAST': {
-      const { toastId } = action;
-      if (toastId === 'all') {
-        state.toasts.forEach((t) => addToRemoveQueue(t.id));
-      } else {
-        addToRemoveQueue(toastId);
-      }
-      return {
-        ...state,
-        toasts: state.toasts.map((t) =>
-          t.id === toastId || toastId === 'all'
-            ? { ...t }
-            : t
-        ),
-      };
-    }
-    case 'REMOVE_TOAST':
-      if (action.toastId === 'all') {
-        return { ...state, toasts: [] };
-      }
-      return {
-        ...state,
-        toasts: state.toasts.filter((t) => t.id !== action.toastId),
-      };
-    default:
-      return state;
+const style = document.createElement('style');
+style.textContent = `
+  .toast-enter {
+    animation: toastSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   }
-};
+  .toast-exit {
+    animation: toastSlideOut 0.25s ease-in forwards;
+  }
+  @keyframes toastSlideIn {
+    from { transform: translateX(24px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+  @keyframes toastSlideOut {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(24px); opacity: 0; }
+  }
+`;
+if (typeof document !== 'undefined') document.head.appendChild(style);
 
-const listeners: Array<(state: State) => void> = [];
-let memoryState: State = { toasts: [] };
+let counter = 0;
 
-function dispatch(action: Action) {
-  memoryState = reducer(memoryState, action);
-  listeners.forEach((listener) => listener(memoryState));
-}
+function toast({ title, description, variant = 'default' }: ToastProps) {
+  const id = `toast-${++counter}`;
 
-type Toast = Omit<ToasterToast, 'id'>;
+  hotToast.custom(
+    (t) => (
+      <div
+        className={`${t.visible ? 'toast-enter' : 'toast-exit'} flex items-start gap-2 rounded-lg border px-3 py-2.5 shadow-lg text-xs ${
+          variant === 'destructive'
+            ? 'border-red-500/25 bg-red-950/90 text-red-200'
+            : 'border-zinc-700/50 bg-zinc-900/95 text-zinc-100'
+        }`}
+        style={{ minWidth: 260, maxWidth: 320 }}
+      >
+        {variant === 'destructive' && (
+          <svg className="mt-0.5 h-3.5 w-3.5 shrink-0 text-red-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+          </svg>
+        )}
+        <div className="flex-1 min-w-0">
+          {title && <div className="font-medium leading-snug">{title}</div>}
+          {description && <div className="mt-0.5 leading-snug text-zinc-400">{description}</div>}
+        </div>
+        <button
+          onClick={() => hotToast.dismiss(t.id)}
+          className="-mr-1 -mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
+        >
+          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+    ),
+    { id, duration: 4000 }
+  );
 
-function toast({ ...props }: Toast) {
-  const id = Math.random().toString(36).substring(2, 9);
-  dispatch({
-    type: 'ADD_TOAST',
-    toast: { ...props, id },
-  });
   return {
     id,
-    dismiss: () => dispatch({ type: 'DISMISS_TOAST', toastId: id }),
-    update: (updatedProps: Toast) =>
-      dispatch({
-        type: 'ADD_TOAST',
-        toast: { ...updatedProps, id },
-      }),
+    dismiss: () => hotToast.dismiss(id),
   };
 }
-
-function useToast() {
-  const [state, setState] = React.useState<State>(memoryState);
-
-  React.useEffect(() => {
-    listeners.push(setState);
-    return () => {
-      const index = listeners.indexOf(setState);
-      if (index > -1) listeners.splice(index, 1);
-    };
-  }, []);
-
-  return {
-    ...state,
-    toast,
-    dismiss: (toastId?: string) =>
-      dispatch({ type: 'DISMISS_TOAST', toastId: toastId ?? 'all' }),
-  };
-}
-
-const ToastViewport = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn(
-      'fixed top-0 right-0 z-[100] flex max-h-screen w-full flex-col-reverse gap-2 p-4 sm:max-w-[420px]',
-      className
-    )}
-    {...props}
-  />
-));
-ToastViewport.displayName = 'ToastViewport';
-
-interface ToastProps extends React.HTMLAttributes<HTMLDivElement> {
-  variant?: 'default' | 'destructive';
-}
-
-const ToastRoot = React.forwardRef<HTMLDivElement, ToastProps>(
-  ({ className, variant = 'default', ...props }, ref) => {
-    return (
-      <div
-        ref={ref}
-        className={cn(
-          'group pointer-events-auto relative flex w-full items-center justify-between space-x-4 overflow-hidden rounded-md border p-6 pr-8 shadow-lg transition-all',
-          variant === 'default' && 'bg-background text-foreground',
-          variant === 'destructive' &&
-            'destructive group border-destructive bg-destructive text-destructive-foreground',
-          className
-        )}
-        {...props}
-      />
-    );
-  }
-);
-ToastRoot.displayName = 'ToastRoot';
-
-const ToastTitle = React.forwardRef<
-  HTMLParagraphElement,
-  React.HTMLAttributes<HTMLHeadingElement>
->(({ className, ...props }, ref) => (
-  <h3
-    ref={ref}
-    className={cn('text-sm font-semibold', className)}
-    {...props}
-  />
-));
-ToastTitle.displayName = 'ToastTitle';
-
-const ToastDescription = React.forwardRef<
-  HTMLParagraphElement,
-  React.HTMLAttributes<HTMLParagraphElement>
->(({ className, ...props }, ref) => (
-  <p
-    ref={ref}
-    className={cn('text-sm opacity-90', className)}
-    {...props}
-  />
-));
-ToastDescription.displayName = 'ToastDescription';
-
-const ToastClose = React.forwardRef<
-  HTMLButtonElement,
-  React.ButtonHTMLAttributes<HTMLButtonElement>
->(({ className, ...props }, ref) => (
-  <button
-    ref={ref}
-    className={cn(
-      'absolute right-2 top-2 rounded-md p-1 text-foreground/50 opacity-0 transition-opacity hover:text-foreground focus:opacity-100 focus:outline-none focus:ring-2 group-hover:opacity-100',
-      className
-    )}
-    toast-close=""
-    {...props}
-  >
-    <X className="h-4 w-4" />
-  </button>
-));
-ToastClose.displayName = 'ToastClose';
 
 function Toaster() {
-  const { toasts, dismiss } = useToast();
-
   return (
-    <ToastViewport>
-      {toasts.map(({ id, title, description, variant }) => (
-        <ToastRoot key={id} variant={variant}>
-          <div className="grid gap-1">
-            {title && <ToastTitle>{title}</ToastTitle>}
-            {description && <ToastDescription>{description}</ToastDescription>}
-          </div>
-          <ToastClose onClick={() => dismiss(id)} />
-        </ToastRoot>
-      ))}
-    </ToastViewport>
+    <HotToaster
+      position="top-right"
+      gutter={8}
+      containerStyle={{ top: 12, right: 12 }}
+      toastOptions={{ duration: 4000 }}
+    />
   );
 }
 
-export {
-  type ToasterToast,
-  toast,
-  useToast,
-  Toaster,
-  ToastRoot,
-  ToastTitle,
-  ToastDescription,
-  ToastClose,
-  ToastViewport,
-};
+export { toast, Toaster };
+export type { ToastProps };

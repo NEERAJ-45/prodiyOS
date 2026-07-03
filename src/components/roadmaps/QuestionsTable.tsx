@@ -24,6 +24,7 @@ import {
   Loader2,
   ListOrdered,
   Info,
+  RotateCcw,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NotesDialog } from '@/components/shared/NotesDialog';
@@ -54,6 +55,7 @@ interface QuestionsTableProps {
   storagePrefix: string;
   searchPlaceholder?: string;
   defaultCompletedIds?: number[];
+  sourceName?: string;
 }
 
 type CompletedMap = Record<string, string>;
@@ -155,6 +157,7 @@ export default function QuestionsTable({
   storagePrefix,
   searchPlaceholder = 'Search topics...',
   defaultCompletedIds = [],
+  sourceName,
 }: QuestionsTableProps) {
   const { userEmail, userName, customDbUrl } = useProfile();
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -165,6 +168,7 @@ export default function QuestionsTable({
   const [customQuestions, setCustomQuestions] = useState<QuestionItem[]>([]);
   const [dbConnected, setDbConnected] = useState(false);
   const [showDescription, setShowDescription] = useState(true);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   const broadcastProgress = useCallback(() => {
     try {
@@ -173,6 +177,37 @@ export default function QuestionsTable({
       bc.close();
     } catch {}
   }, [storagePrefix]);
+
+  const handleReset = useCallback(() => {
+    localStorage.removeItem(`${storagePrefix}-completed`);
+    localStorage.removeItem(`${storagePrefix}-notes`);
+    localStorage.removeItem(`${storagePrefix}-custom-questions`);
+
+    setCompletedMap({});
+    setNotesMap({});
+    setCustomQuestions([]);
+    broadcastProgress();
+
+    if (userEmail) {
+      const headers = { 'Content-Type': 'application/json', 'x-user-email': userEmail };
+      fetch('/api/db/completions', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ storagePrefix: `${storagePrefix}-completed`, userEmail, resetAll: true }),
+      }).catch(() => {});
+      fetch('/api/db/notes', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ storagePrefix: `${storagePrefix}-notes`, userEmail, resetAll: true }),
+      }).catch(() => {});
+      fetch(`/api/db/custom-topics?storagePrefix=${storagePrefix}-custom-questions&userEmail=${encodeURIComponent(userEmail)}`, {
+        method: 'DELETE',
+        headers,
+      }).catch(() => {});
+    }
+
+    setShowResetConfirm(false);
+  }, [storagePrefix, broadcastProgress, userEmail]);
 
   const saveData = useCallback(<T,>(key: string, data: T) => {
     if (typeof window === 'undefined') return;
@@ -288,6 +323,8 @@ export default function QuestionsTable({
 
           for (const [id, noteText] of Object.entries(initialNotes)) {
             if (!dbNoteMap[id]) {
+              const noteId = Number(id);
+              const syncedItem = [...questions, ...customQuestions].find(q => q.id === noteId);
               fetch('/api/db/notes', {
                 method: 'POST',
                 headers,
@@ -296,6 +333,7 @@ export default function QuestionsTable({
                   itemId: id,
                   note: noteText,
                   userEmail,
+                  itemTitle: syncedItem?.title,
                 }),
               }).catch(() => {});
             }
@@ -414,6 +452,7 @@ export default function QuestionsTable({
       }),
     }).catch(() => {});
 
+    const deletedItem = customQuestions.find(q => q.id === id);
     fetch('/api/db/notes', {
       method: 'POST',
       headers,
@@ -421,6 +460,7 @@ export default function QuestionsTable({
         storagePrefix: `${storagePrefix}-notes`,
         itemId: String(id),
         userEmail,
+        itemTitle: deletedItem?.title,
       }),
     }).catch(() => {});
   }, [customQuestions, saveCustomQuestions, saveData, storagePrefix, getRequestHeaders, userEmail]);
@@ -430,18 +470,19 @@ export default function QuestionsTable({
     pageSize: 10,
   });
 
-  const toggleCompleted = useCallback((id: number, title?: string) => {
-    let isCompleted = false;
-    let compAtStr = '';
+  const toggleCompleted = useCallback((id: number) => {
+    const key = String(id);
+    const prevCompleted = loadData<CompletedMap>('completed', {});
+    const wasCompleted = !!prevCompleted[key];
+    const nowCompleted = !wasCompleted;
+    const compAtStr = nowCompleted ? new Date().toISOString() : '';
+
     setCompletedMap((prev) => {
-      const key = String(id);
       const next = { ...prev };
       if (next[key]) {
         delete next[key];
       } else {
-        compAtStr = new Date().toISOString();
         next[key] = compAtStr;
-        isCompleted = true;
       }
       saveData('completed', next);
       return next;
@@ -453,12 +494,26 @@ export default function QuestionsTable({
       body: JSON.stringify({
         storagePrefix: `${storagePrefix}-completed`,
         itemId: String(id),
-        completedAt: isCompleted ? compAtStr : undefined,
+        completedAt: nowCompleted ? compAtStr : undefined,
         userEmail,
         ...(title ? { title } : {}),
       }),
     }).catch(() => {});
-  }, [saveData, storagePrefix, getRequestHeaders, userEmail]);
+
+    if (nowCompleted) {
+      const item = [...questions, ...customQuestions].find(q => q.id === id);
+      const title = item?.title ?? `Item #${id}`;
+      const from = sourceName ?? storagePrefix.replace(/-/g, ' ');
+      fetch('/api/db/activity', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({
+          userEmail,
+          text: `Completed '${title}' from ${from}`,
+        }),
+      }).catch(() => {});
+    }
+  }, [saveData, storagePrefix, getRequestHeaders, userEmail, questions, customQuestions, sourceName, loadData]);
 
   const updateNote = useCallback((id: number, value: string) => {
     setNotesMap((prev) => {
@@ -469,6 +524,9 @@ export default function QuestionsTable({
       return next;
     });
 
+    const item = [...questions, ...customQuestions].find(q => q.id === id);
+    const itemTitle = item?.title;
+
     fetch('/api/db/notes', {
       method: 'POST',
       headers: getRequestHeaders(),
@@ -477,9 +535,10 @@ export default function QuestionsTable({
         itemId: String(id),
         note: value || undefined,
         userEmail,
+        itemTitle,
       }),
     }).catch(() => {});
-  }, [saveData, storagePrefix, getRequestHeaders, userEmail]);
+  }, [saveData, storagePrefix, getRequestHeaders, userEmail, questions, customQuestions]);
 
   const filteredQuestions = useMemo(() => {
     const all = [...questions, ...customQuestions];
@@ -785,6 +844,14 @@ export default function QuestionsTable({
               Desc
             </button>
             <AddTopicDialog onAdd={handleAddQuestion} />
+            <button
+              onClick={() => setShowResetConfirm(true)}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border border-red-800/40 text-red-400 bg-red-950/30 hover:bg-red-950/50 hover:border-red-700/60 transition-colors shrink-0"
+              title="Reset all progress on this roadmap"
+            >
+              <RotateCcw size={13} />
+              Reset
+            </button>
           </div>
 
         {mounted && (
@@ -988,6 +1055,34 @@ export default function QuestionsTable({
           </div>
         </motion.div>
       )}
+
+      <Dialog open={showResetConfirm} onOpenChange={setShowResetConfirm}>
+        <DialogContent className="border-zinc-800 bg-zinc-950 text-zinc-100 sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle className="text-zinc-100 flex items-center gap-2">
+              <RotateCcw size={18} className="text-red-400" />
+              Reset Progress
+            </DialogTitle>
+            <DialogDescription className="text-zinc-500 text-sm pt-2">
+              This will clear all completed topics, notes, and custom topics for this roadmap.
+              This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <DialogClose asChild>
+              <button className="px-3.5 py-2 rounded-lg text-xs font-semibold bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition-colors cursor-pointer">
+                Cancel
+              </button>
+            </DialogClose>
+            <button
+              onClick={handleReset}
+              className="px-3.5 py-2 rounded-lg text-xs font-semibold bg-red-600 text-white hover:bg-red-500 transition-colors cursor-pointer"
+            >
+              Reset
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

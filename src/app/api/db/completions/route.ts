@@ -3,26 +3,7 @@ import { connectToDatabase } from '@/lib/db';
 import type { ICompletion } from '@/lib/models/Completion';
 import '@/lib/models/Completion';
 import { auth } from '@/auth';
-import { logActivity } from '@/lib/activity-logger';
-import { ROADMAPS } from '@/data/roadmaps';
 
-function sourceDisplayName(storagePrefix: string): string {
-  const roadmap = ROADMAPS.find((r) => r.storageKey === storagePrefix);
-  if (roadmap) return roadmap.title;
-
-  if (storagePrefix.startsWith('completed-')) {
-    return storagePrefix
-      .replace('completed-', '')
-      .split('-')
-      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-      .join(' ');
-  }
-
-  return storagePrefix
-    .split('-')
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(' ');
-}
 
 export async function GET(request: Request) {
   try {
@@ -62,7 +43,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ dbConnected: false, error: 'Database not configured' }, { status: 400 });
     }
     const body = await request.json();
-    const { storagePrefix, itemId, completedAt, title } = body;
+    const { storagePrefix, itemId, completedAt, resetAll } = body;
+
+    if (resetAll) {
+      if (!storagePrefix) {
+        return NextResponse.json({ error: 'Missing storagePrefix' }, { status: 400 });
+      }
+      const Completion = conn.model<ICompletion>('Completion');
+      await Completion.deleteMany({ storagePrefix, userEmail });
+      return NextResponse.json({ success: true, deleted: true });
+    }
 
     if (!storagePrefix || !itemId) {
       return NextResponse.json({ error: 'Missing storagePrefix or itemId' }, { status: 400 });
@@ -78,11 +68,9 @@ export async function POST(request: Request) {
         { completedAt },
         { upsert: true, new: true }
       );
-      logActivity(userEmail, `Completed "${displayName}" from ${source}`);
       return NextResponse.json({ success: true, data: doc });
     } else {
       await Completion.deleteOne({ storagePrefix, itemId, userEmail });
-      logActivity(userEmail, `Uncompleted "${displayName}" from ${source}`);
       return NextResponse.json({ success: true, deleted: true });
     }
   } catch (error: any) {
