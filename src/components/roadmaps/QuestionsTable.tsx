@@ -54,6 +54,7 @@ interface QuestionsTableProps {
   storagePrefix: string;
   searchPlaceholder?: string;
   defaultCompletedIds?: number[];
+  sourceName?: string;
 }
 
 type CompletedMap = Record<string, string>;
@@ -155,6 +156,7 @@ export default function QuestionsTable({
   storagePrefix,
   searchPlaceholder = 'Search topics...',
   defaultCompletedIds = [],
+  sourceName,
 }: QuestionsTableProps) {
   const { userEmail, userName, customDbUrl } = useProfile();
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -490,7 +492,19 @@ export default function QuestionsTable({
         userEmail,
       }),
     }).catch(() => {});
-  }, [saveData, storagePrefix, getRequestHeaders, userEmail]);
+
+    if (isCompleted) {
+      const item = [...questions, ...customQuestions].find(q => q.id === id);
+      const title = item?.title ?? `Item #${id}`;
+      const from = sourceName ?? storagePrefix.replace(/-/g, ' ');
+      const activityText = `Completed '${title}' from ${from}`;
+      fetch('/api/db/activity', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({ userEmail, text: activityText }),
+      }).catch(() => {});
+    }
+  }, [saveData, storagePrefix, getRequestHeaders, userEmail, questions, customQuestions, sourceName]);
 
   const updateNote = useCallback((id: number, value: string) => {
     setNotesMap((prev) => {

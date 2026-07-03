@@ -1,8 +1,9 @@
 'use client';
 
 import * as React from 'react';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -246,6 +247,18 @@ export default function CommandCenterPage() {
     setResetFlag(f => f + 1);
   }, [userEmail]);
 
+  const todayActivities = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return (data?.activities ?? []).filter(a => new Date(a.createdAt) >= today);
+  }, [data?.activities]);
+
+  const earlierActivities = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return (data?.activities ?? []).filter(a => new Date(a.createdAt) < today);
+  }, [data?.activities]);
+
   if (!mounted || loading) {
     return (
       <div className="flex flex-col h-full bg-zinc-950 min-h-screen">
@@ -393,20 +406,48 @@ export default function CommandCenterPage() {
 
         <LazyAppear delay={0.2}>
           <Card className="border-zinc-800/80 bg-zinc-900/40">
-            <CardHeader className="pb-3">
+            <CardHeader className="pb-3 flex-row items-center justify-between">
               <CardTitle className="text-sm font-medium">Recent Activity</CardTitle>
+              <Link
+                href="/command-center/activity"
+                className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+              >
+                Show more
+              </Link>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {data.activities.map((activity, i) => (
-                  <div key={i} className="flex items-center gap-3">
-                    <div className="h-1.5 w-1.5 rounded-full bg-zinc-700 shrink-0" />
-                    <p className="text-sm text-zinc-400 flex-1 truncate">{activity.text}</p>
-                    <span className="text-[10px] text-zinc-600 shrink-0 tabular-nums">
-                      {formatRelativeTime(activity.createdAt)}
-                    </span>
-                  </div>
-                ))}
+                {todayActivities.length > 0 && (
+                  <>
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-600">Today</p>
+                    {todayActivities.map((activity, i) => (
+                      <div key={i} className="flex items-center gap-3">
+                        <div className="h-1.5 w-1.5 rounded-full bg-emerald-600 shrink-0" />
+                        <p className="text-sm text-zinc-400 flex-1 truncate">{activity.text}</p>
+                        <span className="text-[10px] text-zinc-600 shrink-0 tabular-nums">
+                          {formatRelativeTime(activity.createdAt)}
+                        </span>
+                      </div>
+                    ))}
+                  </>
+                )}
+                {earlierActivities.length > 0 && (
+                  <>
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-600 mt-4">Earlier</p>
+                    {earlierActivities.map((activity, i) => (
+                      <div key={i} className="flex items-center gap-3">
+                        <div className="h-1.5 w-1.5 rounded-full bg-zinc-700 shrink-0" />
+                        <p className="text-sm text-zinc-400 flex-1 truncate">{activity.text}</p>
+                        <span className="text-[10px] text-zinc-600 shrink-0 tabular-nums">
+                          {formatRelativeTime(activity.createdAt)}
+                        </span>
+                      </div>
+                    ))}
+                  </>
+                )}
+                {data.activities.length === 0 && (
+                  <p className="text-sm text-zinc-600 text-center py-4">No activity yet</p>
+                )}
               </div>
             </CardContent>
           </Card>

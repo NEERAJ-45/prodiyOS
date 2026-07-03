@@ -72,6 +72,7 @@ export default function GroupDetailPage() {
           questions={questions}
           storagePrefix="system-design-concepts"
           searchPlaceholder={`Search ${group.title.toLowerCase()}...`}
+          sourceName={group.title}
         />
       </div>
     </div>
