@@ -29,3 +29,45 @@ A full-stack learning progress tracking platform built with Next.js, MongoDB, an
 - **Adding a UI component**: Create in `src/components/ui/` following existing patterns (cn() utility, forwardRef for Radix components)
 - **Running lint**: `npm run lint`
 - **Running typecheck**: `npx tsc --noEmit`
+
+## API Design Guide
+All API messages follow this canonical structure:
+
+### Request Envelope
+```json
+{
+  "User": {
+    "id": "MAX",
+    "password": "MAX1234"
+  },
+  "Txn": {
+    "id": "SHX55d8191214d54ba9be33b14572ba811",
+    "ts": "2026-07-02T12:00:00+05:30",
+    "type": "Complaint",
+    "Note": "COM_PR_DEP3"
+  },
+  "Channel": "03",
+  "APPVer": "2.0.1",
+  "Device": {
+    "id": "9fca6ca6a612cf6f",
+    "TYPE": "MOB",
+    "GEOCODE": "91.9819,23.9404",
+    "LOCATION": "Thane",
+    "OS": "Android",
+    "IP": "10.25.205.68",
+    "MOBILE": "918104562628"
+  },
+  "TxnType": "COMPLAINT",
+  "SubType": "BENEFICIARY",
+  "OrgTxnId": "SHXkyJke6NcnJOZLcOiMnY2090nvbzL2026",
+  "OrgTxnDate": "2026-05-28T15:00:02+05:30",
+  "ReferenceNumber": "514713000182",
+  "reqAdjAmount": "19.00",
+  "reqAdjCode": "U008",
+  "reqAdjFlag": "PBRB",
+  "Issue": "dfgfgdfgdf",
+  "Description": "35fghfhfghfghfgh",
+  "VirAddr": "",
+  "OrgRRN": "514713000182"
+}
+```

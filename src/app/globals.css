@@ -1,41 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Kalam:wght@300;400;700&display=swap');
-@import "tailwindcss";
-
-@theme {
-  --color-background: #09090b;
-  --color-foreground: #fafafa;
-  --color-card: #18181b;
-  --color-card-foreground: #fafafa;
-  --color-popover: #18181b;
-  --color-popover-foreground: #fafafa;
-  --color-primary: #fafafa;
-  --color-primary-foreground: #09090b;
-  --color-secondary: #27272a;
-  --color-secondary-foreground: #fafafa;
-  --color-muted: #27272a;
-  --color-muted-foreground: #a1a1aa;
-  --color-accent: #27272a;
-  --color-accent-foreground: #fafafa;
-  --color-destructive: #7f1d1d;
-  --color-destructive-foreground: #fafafa;
-  --color-border: #27272a;
-  --color-input: #27272a;
-  --color-ring: #3b82f6;
-  --radius: 0.5rem;
-  --animate-shimmer: shimmer 3s ease-in-out infinite;
-}
-
-@keyframes shimmer {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 * {
   border-color: var(--color-border);
@@ -73,14 +39,6 @@ body {
 
 
 
-@keyframes grid-pulse {
-  0%, 100% { opacity: 0.12; }
-  50% { opacity: 0.24; }
-}
-
-@utility animate-grid-pulse {
-  animation: grid-pulse 6s ease-in-out infinite;
-}
 
 [data-state="loading"] {
   transform: translateX(calc(-100% + var(--progress-value) * 1%));
