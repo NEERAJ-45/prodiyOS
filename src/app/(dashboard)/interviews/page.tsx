@@ -4,12 +4,17 @@ import * as React from 'react';
 import { useProfile } from '@/components/providers/ProfileProvider';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import {
   Briefcase, Phone, CheckCircle, XCircle, Calendar,
-  Building2, TrendingUp, Clock,
+  Building2, TrendingUp, Clock, Trash2, AlertTriangle,
 } from 'lucide-react';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from '@/components/ui/dialog';
 import { format, isWithinInterval, startOfWeek, endOfWeek, parseISO } from 'date-fns';
+import toast from 'react-hot-toast';
 
 const statusLabel: Record<string, { label: string; color: string }> = {
   APPLIED:       { label: 'Applied', color: 'bg-blue-950 text-blue-300 border-blue-800' },
@@ -45,6 +50,8 @@ export default function InterviewsOverviewPage() {
   const { userEmail } = useProfile();
   const [applications, setApplications] = React.useState<Application[]>([]);
   const [mounted, setMounted] = React.useState(false);
+  const [resetOpen, setResetOpen] = React.useState(false);
+  const [resetting, setResetting] = React.useState(false);
 
   React.useEffect(() => {
     setMounted(true);
@@ -86,6 +93,23 @@ export default function InterviewsOverviewPage() {
     { label: 'Offers', value: offers, icon: CheckCircle, color: 'text-green-400' },
     { label: 'Rejected', value: rejected, icon: XCircle, color: 'text-red-400' },
   ];
+
+  async function handleReset() {
+    if (!userEmail) return;
+    setResetting(true);
+    try {
+      const res = await fetch(`/api/interviews/reset?userEmail=${encodeURIComponent(userEmail)}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        setApplications([]);
+        toast.success(`Cleared ${data.deleted.applications} applications, ${data.deleted.rounds} rounds`);
+      }
+    } catch {
+      toast.error('Reset failed');
+    }
+    setResetting(false);
+    setResetOpen(false);
+  }
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -157,6 +181,48 @@ export default function InterviewsOverviewPage() {
           )}
         </CardContent>
       </Card>
+
+      <Card className="border-red-950/40 bg-red-950/5">
+        <CardContent className="p-5 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-red-950/30">
+              <Trash2 className="h-4 w-4 text-red-400" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-red-300">Danger Zone</p>
+              <p className="text-xs text-zinc-500">Permanently delete all applications, rounds, and company data</p>
+            </div>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setResetOpen(true)}
+            className="border-red-800 text-red-400 hover:bg-red-950/30 hover:text-red-300 gap-1.5"
+          >
+            <Trash2 className="h-3.5 w-3.5" /> Reset All
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Dialog open={resetOpen} onOpenChange={setResetOpen}>
+        <DialogContent className="bg-zinc-900 border-zinc-800 max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-zinc-100 flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-red-400" />
+              Confirm Reset
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-zinc-400">
+            This will permanently delete all your applications, interview rounds, and company data. This action cannot be undone.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setResetOpen(false)} disabled={resetting}>Cancel</Button>
+            <Button size="sm" onClick={handleReset} disabled={resetting} className="bg-red-600 hover:bg-red-700 text-white gap-1.5">
+              {resetting ? 'Resetting...' : 'Delete Everything'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
