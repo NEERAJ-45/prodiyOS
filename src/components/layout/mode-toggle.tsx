@@ -4,7 +4,7 @@ import * as React from 'react';
 import * as SwitchPrimitives from '@radix-ui/react-switch';
 import { useModeStore } from '@/lib/stores/mode-store';
 import { cn } from '@/lib/utils';
-import { RefreshCw, Check, AlertCircle } from 'lucide-react';
+import { RefreshCw, Check, AlertCircle, Cloud, Database } from 'lucide-react';
 
 const Switch = React.forwardRef<
   React.ElementRef<typeof SwitchPrimitives.Root>,
@@ -27,6 +27,53 @@ const Switch = React.forwardRef<
 ));
 Switch.displayName = SwitchPrimitives.Root.displayName;
 
+const STORAGE_KEY = 'daily-completions';
+const NOTES_KEY = 'daily-notes';
+const SLOT_COMPLETIONS_KEY = 'daily-slot-completions';
+const SLOT_NOTES_KEY = 'daily-slot-notes';
+
+async function pushDailyData() {
+  const todayKey = new Date().toISOString().slice(0, 10);
+
+  const completionsRaw = localStorage.getItem(STORAGE_KEY);
+  const notesRaw = localStorage.getItem(NOTES_KEY);
+  const slotCompletionsRaw = localStorage.getItem(SLOT_COMPLETIONS_KEY);
+  const slotNotesRaw = localStorage.getItem(SLOT_NOTES_KEY);
+
+  const completions: Record<string, string[]> = completionsRaw ? JSON.parse(completionsRaw) : {};
+  const notes: Record<string, string> = notesRaw ? JSON.parse(notesRaw) : {};
+
+  const dates = new Set([...Object.keys(completions), ...Object.keys(notes)]);
+  if (slotCompletionsRaw) {
+    Object.keys(JSON.parse(slotCompletionsRaw)).forEach((d) => dates.add(d));
+  }
+
+  const results: { date: string; ok: boolean }[] = [];
+  for (const date of dates) {
+    try {
+      const body: Record<string, unknown> = { date };
+      if (completions[date]) body.completedTaskIds = completions[date];
+      if (notes[date]) body.note = notes[date];
+
+      const res = await fetch('/api/db/daily', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      results.push({ date, ok: res.ok });
+    } catch {
+      results.push({ date, ok: false });
+    }
+  }
+  return results;
+}
+
+async function testConnection() {
+  const res = await fetch('/api/sync', { method: 'POST' });
+  if (!res.ok) throw new Error('DB unreachable');
+  return res.json();
+}
+
 export function ModeToggle() {
   const { mode, toggleMode, setMode } = useModeStore();
   const [syncing, setSyncing] = React.useState(false);
@@ -36,8 +83,8 @@ export function ModeToggle() {
     setSyncing(true);
     setSyncStatus('idle');
     try {
-      const res = await fetch('/api/sync', { method: 'POST' });
-      if (!res.ok) throw new Error('Sync failed');
+      await pushDailyData();
+      await testConnection();
       setSyncStatus('success');
       setTimeout(() => setSyncStatus('idle'), 2000);
     } catch {
@@ -49,56 +96,59 @@ export function ModeToggle() {
   }
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-1.5">
       <button
         onClick={() => setMode('HOME')}
         className={cn(
-          'text-xs font-medium transition-colors',
+          'inline-flex items-center gap-1 px-1.5 py-1 rounded text-[10px] font-medium transition-colors',
           mode === 'HOME'
-            ? 'text-foreground'
-            : 'text-muted-foreground hover:text-foreground'
+            ? 'text-emerald-400 bg-emerald-500/10'
+            : 'text-zinc-500 hover:text-zinc-300',
         )}
+        title="Home — Atlas cluster"
       >
-        HOME
+        <Cloud className="h-3 w-3" />
+        <span className="hidden 2xl:inline">HOME</span>
       </button>
       <Switch
         checked={mode === 'OFFICE'}
         onCheckedChange={toggleMode}
+        className="scale-75"
       />
       <button
         onClick={() => setMode('OFFICE')}
         className={cn(
-          'text-xs font-medium transition-colors',
+          'inline-flex items-center gap-1 px-1.5 py-1 rounded text-[10px] font-medium transition-colors',
           mode === 'OFFICE'
-            ? 'text-foreground'
-            : 'text-muted-foreground hover:text-foreground'
+            ? 'text-amber-400 bg-amber-500/10'
+            : 'text-zinc-500 hover:text-zinc-300',
         )}
+        title="Office — local MongoDB"
       >
-        OFFICE
+        <Database className="h-3 w-3" />
+        <span className="hidden 2xl:inline">OFFICE</span>
       </button>
-      {mode === 'HOME' && (
-        <button
-          onClick={handleSync}
-          disabled={syncing}
-          className={cn(
-            'ml-1 inline-flex items-center justify-center rounded-md p-1 transition-colors',
-            syncStatus === 'success' ? 'text-emerald-400 hover:text-emerald-300' :
-            syncStatus === 'error' ? 'text-red-400 hover:text-red-300' :
-            'text-muted-foreground hover:text-foreground hover:bg-accent'
-          )}
-        >
-          {syncing ? (
-            <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-          ) : syncStatus === 'success' ? (
-            <Check className="h-3.5 w-3.5" />
-          ) : syncStatus === 'error' ? (
-            <AlertCircle className="h-3.5 w-3.5" />
-          ) : (
-            <RefreshCw className="h-3.5 w-3.5" />
-          )}
-          <span className="sr-only">Sync</span>
-        </button>
-      )}
+      <button
+        onClick={handleSync}
+        disabled={syncing}
+        className={cn(
+          'ml-0.5 inline-flex items-center justify-center rounded-md p-1 transition-colors',
+          syncStatus === 'success' ? 'text-emerald-400 hover:text-emerald-300' :
+          syncStatus === 'error' ? 'text-red-400 hover:text-red-300' :
+          'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800',
+        )}
+        title="Sync local data to server"
+      >
+        {syncing ? (
+          <RefreshCw className="h-3 w-3 animate-spin" />
+        ) : syncStatus === 'success' ? (
+          <Check className="h-3 w-3" />
+        ) : syncStatus === 'error' ? (
+          <AlertCircle className="h-3 w-3" />
+        ) : (
+          <RefreshCw className="h-3 w-3" />
+        )}
+      </button>
     </div>
   );
 }

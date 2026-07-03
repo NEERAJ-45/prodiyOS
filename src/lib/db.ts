@@ -9,8 +9,26 @@ if (!globalWithMongoose.mongooseCache) {
 }
 const connectionsCache = globalWithMongoose.mongooseCache;
 
+export function resolveMongoUri(mode?: string): string | null {
+  if (mode === 'OFFICE') {
+    return process.env.MONGODB_URI_OFFICE || process.env.MONGODB_URI || null;
+  }
+  return process.env.MONGODB_URI_HOME || process.env.MONGODB_URI || null;
+}
+
 export async function connectToDatabase(customUri?: string) {
-  const uri = customUri || process.env.MONGODB_URI;
+  let uri: string | undefined = customUri;
+
+  if (!uri) {
+    try {
+      const { cookies } = await import('next/headers');
+      const cookieStore = await cookies();
+      const mode = cookieStore.get('mode')?.value;
+      uri = resolveMongoUri(mode) || undefined;
+    } catch {
+      uri = process.env.MONGODB_URI || undefined;
+    }
+  }
 
   if (!uri) {
     return null;

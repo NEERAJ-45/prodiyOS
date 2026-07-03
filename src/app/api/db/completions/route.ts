@@ -58,9 +58,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing storagePrefix or itemId' }, { status: 400 });
     }
 
-    const displayName = title || itemId;
-    const source = sourceDisplayName(storagePrefix);
-
     const Completion = conn.model<ICompletion>('Completion');
     if (completedAt) {
       const doc = await Completion.findOneAndUpdate(

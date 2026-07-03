@@ -4,12 +4,14 @@ import React, { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useProfile } from '@/components/providers/ProfileProvider';
 import { signOut } from 'next-auth/react';
-import { Database, LogOut, User, CheckCircle2, AlertTriangle, X, ChevronRight, CalendarDays, Flame } from 'lucide-react';
+import { Database, LogOut, User, CheckCircle2, AlertTriangle, X, CalendarDays, Flame, Wifi, WifiOff } from 'lucide-react';
 import { toast } from '@/components/ui/toast';
 import { quotes } from '../../../quotes';
 import { cn } from '@/lib/utils';
 import { SpotlightCard } from '@/components/ui/SpotlightCard';
 import { GlobalSearch } from '@/components/shared/GlobalSearch';
+import { ModeToggle } from '@/components/layout/mode-toggle';
+import { useModeStore } from '@/lib/stores/mode-store';
 
 export function Navbar({ global = false }: { global?: boolean }) {
   if (!global) return null;
@@ -20,7 +22,8 @@ export function Navbar({ global = false }: { global?: boolean }) {
   const [newEmail, setNewEmail] = useState('');
   const [emailPassword, setEmailPassword] = useState('');
   const [emailLoading, setEmailLoading] = useState(false);
-  const dbConnected = true; // Secured and active via main Atlas URI now
+  const { mode } = useModeStore();
+  const isOffice = mode === 'OFFICE';
   
   const today = new Date();
   const dateStr = today.toLocaleDateString('en-US', {
@@ -77,17 +80,22 @@ export function Navbar({ global = false }: { global?: boolean }) {
               <span className="font-medium text-zinc-300">{dateStr}</span>
             </div>
 
+            {/* Mode Toggle */}
+            <div className="hidden sm:flex items-center border-r border-zinc-800 pr-3 mr-1">
+              <ModeToggle />
+            </div>
+
             {/* DB Status Badge - hidden on small mobile */}
             <div className={`hidden sm:flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-semibold border ${
-                dbConnected 
-                  ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
-                  : 'bg-amber-500/10 border-amber-500/20 text-amber-400'
+                isOffice
+                  ? 'bg-amber-500/10 border-amber-500/20 text-amber-400'
+                  : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
               }`}
-              title={dbConnected ? "Connected to database" : "Fallback to local storage"}
+              title={isOffice ? "Office mode — local MongoDB" : "Home mode — Atlas cluster"}
             >
-              <Database className="h-3 w-3" />
+              {isOffice ? <WifiOff className="h-3 w-3" /> : <Wifi className="h-3 w-3" />}
               <span className="h-1.5 w-1.5 rounded-full bg-current animate-pulse" />
-              <span>{dbConnected ? "Cloud DB" : "Offline Mode"}</span>
+              <span>{isOffice ? "Office" : "Home"}</span>
             </div>
 
             {/* Quote Button */}
@@ -218,14 +226,14 @@ export function Navbar({ global = false }: { global?: boolean }) {
                 </div>
 
                 <div className="space-y-1">
-                  <span className="text-zinc-500 font-semibold uppercase tracking-wider text-[10px]">Database Connection Status</span>
-                  <div className={`flex items-center justify-between bg-zinc-900 px-3 py-2.5 rounded-lg border border-zinc-850 ${dbConnected ? 'text-emerald-400' : 'text-amber-400'}`}>
+                  <span className="text-zinc-500 font-semibold uppercase tracking-wider text-[10px]">Database Connection</span>
+                  <div className={`flex items-center justify-between bg-zinc-900 px-3 py-2.5 rounded-lg border border-zinc-850 ${isOffice ? 'text-amber-400' : 'text-emerald-400'}`}>
                     <div className="flex items-center gap-2">
-                       {dbConnected ? <CheckCircle2 size={14} /> : <AlertTriangle size={14} />}
-                       <span>{dbConnected ? "Active Database Sync" : "LocalStorage Fallback Mode"}</span>
+                       {isOffice ? <WifiOff size={14} /> : <Wifi size={14} />}
+                       <span>{isOffice ? "Office — Local MongoDB" : "Home — Atlas Cluster"}</span>
                     </div>
                     <span className="text-[10px] text-zinc-500 font-semibold">
-                      {dbConnected ? "Cloud Instance" : "Offline"}
+                      {isOffice ? "Local" : "Cloud"}
                     </span>
                   </div>
                 </div>
