@@ -30,7 +30,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ dbConnected: false, error: 'Database not configured' }, { status: 400 });
     }
     const body = await request.json();
-    const { storagePrefix, itemId, note, resetAll } = body;
+    const { storagePrefix, itemId, note, resetAll, itemTitle } = body;
     const userEmail = body.userEmail || request.headers.get('x-user-email') || 'NEERAJ';
 
     if (resetAll) {
@@ -54,11 +54,11 @@ export async function POST(request: Request) {
         { note },
         { upsert: true, new: true }
       );
-      logActivity(userEmail, `Added note to "${itemId}" in ${storagePrefix}`);
+      logActivity(userEmail, `Added note to "${itemTitle || itemId}" in ${storagePrefix}`);
       return NextResponse.json({ success: true, data: doc });
     } else {
       await Note.deleteOne({ storagePrefix, itemId, userEmail });
-      logActivity(userEmail, `Removed note from "${itemId}" in ${storagePrefix}`);
+      logActivity(userEmail, `Removed note from "${itemTitle || itemId}" in ${storagePrefix}`);
       return NextResponse.json({ success: true, deleted: true });
     }
   } catch (error: any) {

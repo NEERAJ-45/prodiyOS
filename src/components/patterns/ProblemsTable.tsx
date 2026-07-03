@@ -246,12 +246,14 @@ export function ProblemsTable({
           const merged = { ...initialNotes, ...dbNoteMap };
           setNotesMap(merged);
           saveData(patternName, "notes", merged);
+          const allSyncedItems = [...(propEasy ?? []), ...(propMedium ?? []), ...(propHard ?? []), ...initialCustom];
           for (const [id, noteText] of Object.entries(initialNotes)) {
             if (!dbNoteMap[id]) {
+              const syncedItem = allSyncedItems.find(p => p.id === Number(id));
               fetch("/api/db/notes", {
                 method: "POST",
                 headers,
-                body: JSON.stringify({ storagePrefix: `notes-${patternName}`, itemId: id, note: noteText, userEmail }),
+                body: JSON.stringify({ storagePrefix: `notes-${patternName}`, itemId: id, note: noteText, userEmail, itemTitle: syncedItem?.title }),
               }).catch(() => { toast({ variant: 'destructive', title: 'Failed to sync notes' }); });
             }
           }
@@ -308,9 +310,10 @@ export function ProblemsTable({
       const next = { ...prev }; delete next[String(id)]; saveData(patternName, "notes", next); return next;
     });
     const headers = getRequestHeaders();
+    const deletedProblem = customProblems.find(p => p.id === id);
     fetch(`/api/db/custom-topics?storagePrefix=${patternName}-custom-problems&id=${id}&userEmail=${encodeURIComponent(userEmail)}`, { method: "DELETE", headers }).catch(() => { toast({ variant: 'destructive', title: 'Failed to delete custom problem' }); });
     fetch("/api/db/completions", { method: "POST", headers, body: JSON.stringify({ storagePrefix: `completed-${patternName}`, itemId: String(id), userEmail }) }).catch(() => { toast({ variant: 'destructive', title: 'Failed to sync completion data' }); });
-    fetch("/api/db/notes", { method: "POST", headers, body: JSON.stringify({ storagePrefix: `notes-${patternName}`, itemId: String(id), userEmail }) }).catch(() => { toast({ variant: 'destructive', title: 'Failed to sync notes data' }); });
+    fetch("/api/db/notes", { method: "POST", headers, body: JSON.stringify({ storagePrefix: `notes-${patternName}`, itemId: String(id), userEmail, itemTitle: deletedProblem?.title }) }).catch(() => { toast({ variant: 'destructive', title: 'Failed to sync notes data' }); });
   }, [customProblems, saveCustomProblems, patternName, getRequestHeaders, userEmail]);
 
   const toggleCompleted = useCallback((id: number) => {
@@ -338,11 +341,13 @@ export function ProblemsTable({
       saveData(patternName, "notes", next);
       return next;
     });
+    const allItems = [...(propEasy ?? []), ...(propMedium ?? []), ...(propHard ?? []), ...customProblems];
+    const itemTitle = allItems.find(p => p.id === id)?.title;
     fetch("/api/db/notes", {
       method: "POST", headers: getRequestHeaders(),
-      body: JSON.stringify({ storagePrefix: `notes-${patternName}`, itemId: String(id), note: value || undefined, userEmail }),
+      body: JSON.stringify({ storagePrefix: `notes-${patternName}`, itemId: String(id), note: value || undefined, userEmail, itemTitle }),
     }).catch(() => { toast({ variant: 'destructive', title: 'Failed to save note' }); });
-  }, [patternName, getRequestHeaders, userEmail]);
+  }, [patternName, getRequestHeaders, userEmail, propEasy, propMedium, propHard, customProblems]);
 
   const apiProblems: ProblemWithDifficulty[] = useMemo(() => {
     if (!apiData?.problems) return [];

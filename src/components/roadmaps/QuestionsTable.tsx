@@ -323,6 +323,8 @@ export default function QuestionsTable({
 
           for (const [id, noteText] of Object.entries(initialNotes)) {
             if (!dbNoteMap[id]) {
+              const noteId = Number(id);
+              const syncedItem = [...questions, ...customQuestions].find(q => q.id === noteId);
               fetch('/api/db/notes', {
                 method: 'POST',
                 headers,
@@ -331,6 +333,7 @@ export default function QuestionsTable({
                   itemId: id,
                   note: noteText,
                   userEmail,
+                  itemTitle: syncedItem?.title,
                 }),
               }).catch(() => {});
             }
@@ -449,6 +452,7 @@ export default function QuestionsTable({
       }),
     }).catch(() => {});
 
+    const deletedItem = customQuestions.find(q => q.id === id);
     fetch('/api/db/notes', {
       method: 'POST',
       headers,
@@ -456,6 +460,7 @@ export default function QuestionsTable({
         storagePrefix: `${storagePrefix}-notes`,
         itemId: String(id),
         userEmail,
+        itemTitle: deletedItem?.title,
       }),
     }).catch(() => {});
   }, [customQuestions, saveCustomQuestions, saveData, storagePrefix, getRequestHeaders, userEmail]);
@@ -518,6 +523,9 @@ export default function QuestionsTable({
       return next;
     });
 
+    const item = [...questions, ...customQuestions].find(q => q.id === id);
+    const itemTitle = item?.title;
+
     fetch('/api/db/notes', {
       method: 'POST',
       headers: getRequestHeaders(),
@@ -526,9 +534,10 @@ export default function QuestionsTable({
         itemId: String(id),
         note: value || undefined,
         userEmail,
+        itemTitle,
       }),
     }).catch(() => {});
-  }, [saveData, storagePrefix, getRequestHeaders, userEmail]);
+  }, [saveData, storagePrefix, getRequestHeaders, userEmail, questions, customQuestions]);
 
   const filteredQuestions = useMemo(() => {
     const all = [...questions, ...customQuestions];
