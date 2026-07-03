@@ -5,35 +5,36 @@
 
 @layer base {
   :root {
-    --color-background: #09090b;
-    --color-foreground: #fafafa;
-    --color-card: #18181b;
-    --color-card-foreground: #fafafa;
-    --color-popover: #18181b;
-    --color-popover-foreground: #fafafa;
-    --color-primary: #fafafa;
-    --color-primary-foreground: #09090b;
-    --color-secondary: #27272a;
-    --color-secondary-foreground: #fafafa;
-    --color-muted: #27272a;
-    --color-muted-foreground: #a1a1aa;
-    --color-accent: #27272a;
-    --color-accent-foreground: #fafafa;
-    --color-destructive: #7f1d1d;
-    --color-destructive-foreground: #fafafa;
-    --color-border: #27272a;
-    --color-input: #27272a;
-    --color-ring: #3b82f6;
+    --background: 240 10% 4%;
+    --foreground: 0 0% 98%;
+    --card: 240 6% 10%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 6% 10%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 10% 4%;
+    --secondary: 240 5% 16%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 5% 16%;
+    --muted-foreground: 240 4% 65%;
+    --accent: 240 5% 16%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5% 16%;
+    --input: 240 5% 16%;
+    --ring: 217 91% 60%;
+    --radius: 0.5rem;
   }
 }
 
 * {
-  border-color: var(--color-border);
+  border-color: hsl(var(--border));
 }
 
 body {
-  background-color: var(--color-background);
-  color: var(--color-foreground);
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
   font-family: 'Inter', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
