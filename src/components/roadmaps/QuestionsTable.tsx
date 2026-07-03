@@ -570,7 +570,7 @@ export default function QuestionsTable({
             const done = !!completedMap[id];
             return (
               <button
-                onClick={() => toggleCompleted(id, info.row.original.title)}
+                onClick={() => toggleCompleted(id)}
                 className="inline-flex items-center justify-center rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground"
               >
                 {done ? (
