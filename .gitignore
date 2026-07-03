@@ -40,3 +40,4 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 lint_output.txt
+AUDIT_REPORT.md
