@@ -35,23 +35,23 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { label: "Command Center", href: "/command-center", icon: LayoutDashboard },
- 
-  { label: "DSA Patterns", href: "/patterns", icon: GitBranch },
-  { label: "Learning Roadmaps", href: "/roadmaps", icon: Map },
-  { label: "Mastery Tracking", href: "/mastery", icon: Target },
-  { label: "Revision Engine", href: "/revision", icon: RefreshCw },
-  { label: "Project Hub", href: "/projects", icon: FolderKanban },
-  { label: "Interview Hub", href: "/interview", icon: Briefcase },
-  { label: "Job Tracker", href: "/interviews", icon: Briefcase },
-  { label: "Books & Research", href: "/books", icon: BookOpen },
-  { label: "Daily Execution", href: "/daily", icon: CalendarCheck },
-  { label: "Weekly Schedule", href: "/weekly", icon: Calendar },
-  { label: "Daily History", href: "/history", icon: CalendarDays },
-  { label: "Task Tracker", href: "/tasks", icon: ListChecks },
-  { label: "Analytics Center", href: "/analytics", icon: BarChart3 },
-   { label: "Sticky Notes", href: "/sticky-notes", icon: StickyNote },
-  { label: "Career Mission Control", href: "/career", icon: Rocket },
+  { label: "Dashboard", href: "/command-center", icon: LayoutDashboard },
+
+  { label: "Patterns Library", href: "/patterns", icon: GitBranch },
+  { label: "Roadmaps", href: "/roadmaps", icon: Map },
+  { label: "Mastery Tracker", href: "/mastery", icon: Target },
+  { label: "Revision System", href: "/revision", icon: RefreshCw },
+  { label: "Projects", href: "/projects", icon: FolderKanban },
+  { label: "Interview Prep", href: "/interview", icon: Briefcase },
+  { label: "Job Applications", href: "/interviews", icon: Briefcase },
+  { label: "Research Library", href: "/books", icon: BookOpen },
+  { label: "Daily Planner", href: "/daily", icon: CalendarCheck },
+  { label: "Weekly Overview", href: "/weekly", icon: Calendar },
+  { label: "Activity Log", href: "/history", icon: CalendarDays },
+  { label: "Task Manager", href: "/tasks", icon: ListChecks },
+  { label: "Analytics", href: "/analytics", icon: BarChart3 },
+  { label: "Quick Notes", href: "/sticky-notes", icon: StickyNote },
+  { label: "Career Hub", href: "/career", icon: Rocket },
 ];
 
 export function Sidebar() {
