@@ -43,14 +43,14 @@ export function Navbar({ global = false }: { global?: boolean }) {
 
   return (
     <>
-      <header className="sticky top-0 z-30 flex h-14 w-full justify-center border-b border-zinc-800/80 bg-zinc-950/50 backdrop-blur-sm shrink-0">
+      <header className="sticky top-0 z-30 flex h-14 w-full justify-center border-b border-zinc-800/60 bg-zinc-950/60 backdrop-blur-md shrink-0">
         <div className="flex h-full w-full max-w-7xl items-center justify-between px-4 md:px-6">
           {/* Path Breadcrumbs - full on desktop, short on mobile */}
           <div className="hidden md:flex items-center gap-1.5 text-xs font-medium text-zinc-400 min-w-0">
             <span className="text-zinc-500 hover:text-zinc-300 cursor-pointer shrink-0">ProdigyOS</span>
             {breadcrumbs.map((crumb, idx) => (
               <React.Fragment key={idx}>
-                <span className="text-zinc-650 font-normal shrink-0">/</span>
+                <span className="text-zinc-600 font-normal shrink-0">/</span>
                 <span className={cn(
                   "truncate",
                   idx === breadcrumbs.length - 1 ? "text-zinc-200 font-semibold" : "text-zinc-400"
@@ -113,7 +113,7 @@ export function Navbar({ global = false }: { global?: boolean }) {
             {/* User Badge */}
             <button 
               onClick={() => setProfileOpen(true)}
-              className="flex items-center justify-center rounded-lg bg-zinc-900 border border-zinc-800 hover:bg-zinc-850 p-1.5 transition-colors cursor-pointer"
+              className="flex items-center justify-center rounded-lg bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 p-1.5 transition-colors cursor-pointer"
             >
               <div className="flex h-5 w-5 items-center justify-center rounded-full bg-zinc-600 text-zinc-300">
                 <User className="h-3 w-3" />
@@ -210,7 +210,7 @@ export function Navbar({ global = false }: { global?: boolean }) {
                       </div>
                     </div>
                   ) : (
-                    <div className="group flex items-center justify-between bg-zinc-900 px-3 py-2.5 rounded-lg border border-zinc-850 text-zinc-300 font-mono select-text">
+                    <div className="group flex items-center justify-between bg-zinc-900 px-3 py-2.5 rounded-lg border border-zinc-800 text-zinc-300 font-mono select-text">
                       <span className="truncate">{userEmail}</span>
                       <button
                         onClick={() => { setEditingEmail(true); setNewEmail(userEmail); setEmailPassword(''); }}
@@ -227,7 +227,7 @@ export function Navbar({ global = false }: { global?: boolean }) {
 
                 <div className="space-y-1">
                   <span className="text-zinc-500 font-semibold uppercase tracking-wider text-[10px]">Database Connection</span>
-                  <div className={`flex items-center justify-between bg-zinc-900 px-3 py-2.5 rounded-lg border border-zinc-850 ${isOffice ? 'text-amber-400' : 'text-emerald-400'}`}>
+                  <div className={`flex items-center justify-between bg-zinc-900 px-3 py-2.5 rounded-lg border border-zinc-800 ${isOffice ? 'text-amber-400' : 'text-emerald-400'}`}>
                     <div className="flex items-center gap-2">
                        {isOffice ? <WifiOff size={14} /> : <Wifi size={14} />}
                        <span>{isOffice ? "Office — Local MongoDB" : "Home — Atlas Cluster"}</span>
