@@ -44,7 +44,7 @@ export function Navbar({ global = false }: { global?: boolean }) {
 
   return (
     <>
-      <header className="sticky top-0 z-30 flex h-14 w-full justify-center border-b border-zinc-800/60 bg-zinc-950/60 backdrop-blur-md shrink-0">
+      <header className="sticky top-0 z-30 flex h-14 w-full justify-center border-b border-border bg-background/80 backdrop-blur-md shrink-0">
         <div className="flex h-full w-full max-w-7xl items-center justify-between px-4 md:px-6">
           {/* Path Breadcrumbs - full on desktop, short on mobile */}
           <div className="hidden md:flex items-center gap-1.5 text-xs font-medium text-zinc-400 min-w-0">
@@ -76,13 +76,13 @@ export function Navbar({ global = false }: { global?: boolean }) {
           {/* Database Status & User Badge */}
           <div className="flex items-center gap-2 md:gap-4">
             {/* Date Display */}
-            <div className="hidden sm:flex items-center gap-1.5 text-xs text-zinc-400 border-r border-zinc-800 pr-4">
+            <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground border-r border-border pr-4">
               <CalendarDays className="h-3.5 w-3.5 text-zinc-500" />
               <span className="font-medium text-zinc-300">{dateStr}</span>
             </div>
 
             {/* Mode Toggle */}
-            <div className="hidden sm:flex items-center border-r border-zinc-800 pr-3 mr-1">
+            <div className="hidden sm:flex items-center border-r border-border pr-3 mr-1">
               <ModeToggle />
             </div>
 
@@ -105,7 +105,7 @@ export function Navbar({ global = false }: { global?: boolean }) {
                 const q = quotes[Math.floor(Math.random() * quotes.length)];
                 toast({ title: q.text, description: `— ${q.author}` });
               }}
-              className="flex items-center justify-center rounded-lg border border-zinc-800 hover:border-amber-500/30 hover:bg-amber-500/5 p-1.5 text-zinc-500 hover:text-amber-400 transition-colors cursor-pointer"
+              className="flex items-center justify-center rounded-lg border border-border hover:border-amber-500/30 hover:bg-amber-500/5 p-1.5 text-muted-foreground hover:text-amber-400 transition-colors cursor-pointer"
               title="Inspire me"
             >
               <Flame className="h-3.5 w-3.5" />
@@ -114,7 +114,7 @@ export function Navbar({ global = false }: { global?: boolean }) {
             {/* User Badge */}
             <button 
               onClick={() => setProfileOpen(true)}
-              className="flex items-center justify-center rounded-lg bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 p-1.5 transition-colors cursor-pointer"
+              className="flex items-center justify-center rounded-lg bg-accent border border-border hover:bg-accent/80 p-1.5 transition-colors cursor-pointer"
             >
               <div className="flex h-5 w-5 items-center justify-center rounded-full bg-zinc-600 text-zinc-300">
                 <User className="h-3 w-3" />
@@ -124,7 +124,7 @@ export function Navbar({ global = false }: { global?: boolean }) {
             {/* Logout */}
             <button
               onClick={() => logout()}
-              className="flex items-center justify-center rounded-lg border border-zinc-800 hover:border-red-500/30 hover:bg-red-500/5 p-1.5 text-zinc-500 hover:text-red-400 transition-colors cursor-pointer"
+              className="flex items-center justify-center rounded-lg border border-border hover:border-red-500/30 hover:bg-red-500/5 p-1.5 text-muted-foreground hover:text-red-400 transition-colors cursor-pointer"
               title="Sign out"
             >
               <LogOut className="h-3.5 w-3.5" />

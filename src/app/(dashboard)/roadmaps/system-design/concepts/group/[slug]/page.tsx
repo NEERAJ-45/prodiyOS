@@ -24,7 +24,7 @@ export default function GroupDetailPage() {
 
   if (!group) {
     return (
-      <div className="flex flex-col h-full bg-zinc-950 text-zinc-100 min-h-screen">
+      <div className="flex flex-col h-full ">
         <div className="flex-1 p-4 md:p-6 overflow-y-auto max-w-7xl mx-auto w-full">
           <Link
             href="/roadmaps/system-design/concepts"
@@ -49,7 +49,7 @@ export default function GroupDetailPage() {
   }));
 
   return (
-    <div className="flex flex-col h-full bg-zinc-950 text-zinc-100 min-h-screen">
+    <div className="flex flex-col h-full ">
       <div className="flex-1 p-4 md:p-6 overflow-y-auto max-w-7xl mx-auto w-full">
         <div className="mb-6">
           <Link

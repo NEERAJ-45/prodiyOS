@@ -9,12 +9,14 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen bg-background">
       <Sidebar />
       <div className="flex flex-1 flex-col min-w-0">
         <Navbar global />
         <main className="flex-1 overflow-y-auto">
-          {children}
+          <div className="h-full w-full">
+            {children}
+          </div>
         </main>
       </div>
       <MobileNav />

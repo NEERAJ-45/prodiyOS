@@ -87,10 +87,10 @@ export function MobileNav() {
             onClick={() => setOpen(false)}
           />
           <div className={cn(
-            "absolute left-0 top-0 bottom-0 bg-zinc-950 border-r border-zinc-800 shadow-2xl flex flex-col",
+            "absolute left-0 top-0 bottom-0 bg-background border-r border-border shadow-2xl flex flex-col",
             "w-72 max-w-[85vw] animate-in slide-in-from-left duration-300"
           )}>
-            <div className="flex items-center justify-between h-14 border-b border-zinc-800 px-4 shrink-0">
+            <div className="flex items-center justify-between h-14 border-b border-border px-4 shrink-0">
               <div className="flex items-center gap-2">
                 <div className="flex h-7 w-7 items-center justify-center rounded-md bg-zinc-100">
                   <span className="text-xs font-bold text-zinc-900">N</span>
@@ -112,7 +112,7 @@ export function MobileNav() {
                     onClick={() => setOpen(false)}
                     className={cn(
                       'flex items-center gap-3 rounded-md px-3 py-3 text-sm font-medium transition-colors active:scale-[0.98]',
-                      isActive ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50',
+                      isActive ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-accent/50',
                     )}
                   >
                     <Icon className="h-5 w-5 shrink-0" />
