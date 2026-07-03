@@ -496,7 +496,6 @@ export default function QuestionsTable({
         itemId: String(id),
         completedAt: nowCompleted ? compAtStr : undefined,
         userEmail,
-        ...(title ? { title } : {}),
       }),
     }).catch(() => {});
 
