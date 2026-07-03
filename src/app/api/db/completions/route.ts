@@ -3,7 +3,7 @@ import { connectToDatabase } from '@/lib/db';
 import type { ICompletion } from '@/lib/models/Completion';
 import '@/lib/models/Completion';
 import { auth } from '@/auth';
-import { logActivity } from '@/lib/activity-logger';
+
 
 export async function GET(request: Request) {
   try {
@@ -53,7 +53,6 @@ export async function POST(request: Request) {
       }
       const Completion = conn.model<ICompletion>('Completion');
       await Completion.deleteMany({ storagePrefix, userEmail });
-      logActivity(userEmail, `Reset all completions in ${storagePrefix}`);
       return NextResponse.json({ success: true, deleted: true });
     }
 
@@ -68,11 +67,9 @@ export async function POST(request: Request) {
         { completedAt },
         { upsert: true, new: true }
       );
-      logActivity(userEmail, `Completed "${itemId}" in ${storagePrefix}`);
       return NextResponse.json({ success: true, data: doc });
     } else {
       await Completion.deleteOne({ storagePrefix, itemId, userEmail });
-      logActivity(userEmail, `Uncompleted "${itemId}" in ${storagePrefix}`);
       return NextResponse.json({ success: true, deleted: true });
     }
   } catch (error: any) {
