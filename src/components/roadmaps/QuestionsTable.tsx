@@ -466,17 +466,18 @@ export default function QuestionsTable({
   });
 
   const toggleCompleted = useCallback((id: number) => {
-    let isCompleted = false;
-    let compAtStr = '';
+    const key = String(id);
+    const prevCompleted = loadData<CompletedMap>('completed', {});
+    const wasCompleted = !!prevCompleted[key];
+    const nowCompleted = !wasCompleted;
+    const compAtStr = nowCompleted ? new Date().toISOString() : '';
+
     setCompletedMap((prev) => {
-      const key = String(id);
       const next = { ...prev };
       if (next[key]) {
         delete next[key];
       } else {
-        compAtStr = new Date().toISOString();
         next[key] = compAtStr;
-        isCompleted = true;
       }
       saveData('completed', next);
       return next;
@@ -488,23 +489,25 @@ export default function QuestionsTable({
       body: JSON.stringify({
         storagePrefix: `${storagePrefix}-completed`,
         itemId: String(id),
-        completedAt: isCompleted ? compAtStr : undefined,
+        completedAt: nowCompleted ? compAtStr : undefined,
         userEmail,
       }),
     }).catch(() => {});
 
-    if (isCompleted) {
+    if (nowCompleted) {
       const item = [...questions, ...customQuestions].find(q => q.id === id);
       const title = item?.title ?? `Item #${id}`;
       const from = sourceName ?? storagePrefix.replace(/-/g, ' ');
-      const activityText = `Completed '${title}' from ${from}`;
       fetch('/api/db/activity', {
         method: 'POST',
         headers: getRequestHeaders(),
-        body: JSON.stringify({ userEmail, text: activityText }),
+        body: JSON.stringify({
+          userEmail,
+          text: `Completed '${title}' from ${from}`,
+        }),
       }).catch(() => {});
     }
-  }, [saveData, storagePrefix, getRequestHeaders, userEmail, questions, customQuestions, sourceName]);
+  }, [saveData, storagePrefix, getRequestHeaders, userEmail, questions, customQuestions, sourceName, loadData]);
 
   const updateNote = useCallback((id: number, value: string) => {
     setNotesMap((prev) => {
