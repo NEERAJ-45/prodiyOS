@@ -409,7 +409,7 @@ export default function CommandCenterPage() {
             <CardHeader className="pb-3 flex-row items-center justify-between">
               <CardTitle className="text-sm font-medium">Recent Activity</CardTitle>
               <Link
-                href="/command-center/activity"
+                href="/history?tab=activity"
                 className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
               >
                 Show more
