@@ -2,10 +2,11 @@
 
 import * as React from 'react';
 import { useState, useEffect, useMemo } from 'react';
-import { ArrowLeft, Loader2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { ArrowLeft, Loader2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useProfile } from '@/components/providers/ProfileProvider';
 import { formatRelativeTime } from '@/lib/utils';
+import { toast } from '@/components/ui/toast';
 
 interface ActivityEntry {
   text: string;
@@ -24,7 +25,7 @@ export default function ActivityHistoryPage() {
     if (!userEmail) return;
     setLoading(true);
     const headers: Record<string, string> = { 'Content-Type': 'application/json', 'x-user-email': userEmail };
-    fetch(`/api/db/activity/history?userEmail=${encodeURIComponent(userEmail)}`, { headers })
+    fetch(`/api/db/activity?userEmail=${encodeURIComponent(userEmail)}`, { headers })
       .then(r => r.json())
       .then(data => {
         setActivities(data.activities ?? []);
@@ -32,6 +33,24 @@ export default function ActivityHistoryPage() {
       })
       .catch(() => setLoading(false));
   }, [userEmail]);
+
+  const handleClearHistory = async () => {
+    if (!userEmail) return;
+    if (!confirm('Are you sure you want to clear your entire activity history?')) return;
+    try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json', 'x-user-email': userEmail };
+      const res = await fetch(`/api/db/activity?userEmail=${encodeURIComponent(userEmail)}`, {
+        method: 'DELETE',
+        headers,
+      });
+      if (!res.ok) throw new Error('Failed to clear activity history');
+      setActivities([]);
+      setPage(0);
+      toast({ title: 'Success', description: 'Activity history cleared successfully.' });
+    } catch (err: any) {
+      toast({ variant: 'destructive', title: 'Error', description: err.message });
+    }
+  };
 
   const totalPages = Math.ceil(activities.length / PAGE_SIZE);
   const pageActivities = activities.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
@@ -57,9 +76,20 @@ export default function ActivityHistoryPage() {
           Back to Command Center
         </Link>
 
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold tracking-tight text-zinc-100">Activity History</h1>
-          <p className="text-sm text-zinc-500 mt-1">All your completed items across all roadmaps and sections</p>
+        <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-zinc-100">Activity History</h1>
+            <p className="text-sm text-zinc-500 mt-1">All your completed items across all roadmaps and sections</p>
+          </div>
+          {activities.length > 0 && (
+            <button
+              onClick={handleClearHistory}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-red-800/40 text-red-400 bg-red-950/30 hover:bg-red-950/50 hover:border-red-700/60 transition-colors shrink-0 cursor-pointer self-start sm:self-center"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Clear History
+            </button>
+          )}
         </div>
 
         {loading ? (

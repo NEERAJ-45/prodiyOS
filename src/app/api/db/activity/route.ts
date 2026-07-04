@@ -39,3 +39,21 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const userEmail = searchParams.get('userEmail') || request.headers.get('x-user-email');
+    if (!userEmail) {
+      return NextResponse.json({ error: 'userEmail required' }, { status: 400 });
+    }
+
+    await connectToDatabase();
+    const result = await Activity.deleteMany({ userEmail });
+
+    return NextResponse.json({ success: true, deletedCount: result.deletedCount });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
