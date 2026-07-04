@@ -3,6 +3,18 @@ import { connectToDatabase } from '@/lib/db';
 import type { ICompletion } from '@/lib/models/Completion';
 import '@/lib/models/Completion';
 import { auth } from '@/auth';
+import { logActivity } from '@/lib/activity-logger';
+
+function humanizePrefix(storagePrefix: string): string {
+  return storagePrefix
+    .replace(/-completed$/, '')
+    .replace(/-progress$/, '')
+    .replace(/-checklist$/, '')
+    .replace(/-questions$/, '')
+    .replace(/-topics$/, '')
+    .replace(/-custom$/, '')
+    .replace(/-/g, ' ');
+}
 
 
 export async function GET(request: Request) {
@@ -58,6 +70,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing storagePrefix or itemId' }, { status: 400 });
     }
 
+    const { title } = body;
+    const sectionName = humanizePrefix(storagePrefix);
+    const displayName = title || `#${itemId}`;
+
     const Completion = conn.model<ICompletion>('Completion');
     if (completedAt) {
       const doc = await Completion.findOneAndUpdate(
@@ -65,6 +81,7 @@ export async function POST(request: Request) {
         { completedAt },
         { upsert: true, new: true }
       );
+      logActivity(userEmail, `Completed "${displayName}" in ${sectionName}`);
       return NextResponse.json({ success: true, data: doc });
     } else {
       await Completion.deleteOne({ storagePrefix, itemId, userEmail });
