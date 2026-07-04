@@ -16,6 +16,7 @@ export const STORAGE_KEYS = {
   SYSTEM_DESIGN_PROBLEMS: 'system-design-problems-completed',
   BACKEND_JAVA: 'backend-java-completed',
   BACKEND_SPRINGBOOT: 'backend-springboot-completed',
+  FRONTEND_JAVASCRIPT: 'frontend-javascript-completed',
   FRONTEND_REACT: 'frontend-react-completed',
   FRONTEND_NEXTJS: 'frontend-nextjs-completed',
   FRONTEND_MFE: 'frontend-mfe-completed',

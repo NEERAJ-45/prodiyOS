@@ -1,10 +1,12 @@
 'use client';
 
 import * as React from 'react';
-import { CalendarDays, Sun, Moon, Brain, BookOpen, Server, Network, Container, Code2, Target, Sparkles } from 'lucide-react';
+import Link from 'next/link';
+import { CalendarDays, Sun, Moon, Brain, BookOpen, Server, Network, Container, Code2, Target, Sparkles, ArrowUpRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { getRoadmapLink } from '@/data/schedules';
 
 interface Slot {
   period: string;
@@ -136,6 +138,18 @@ function WeeklyCalendar() {
                     <p className="text-xs font-medium leading-snug">
                       {slot.content}
                     </p>
+                    {(() => {
+                      const roadmapLink = getRoadmapLink(slot.content, slot.period);
+                      return roadmapLink ? (
+                        <Link
+                          href={roadmapLink}
+                          className="inline-flex items-center gap-1 text-[9px] w-fit px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 hover:border-amber-500/30 hover:scale-105 transition-all font-semibold cursor-pointer animate-bounce mt-1 shadow-sm shrink-0"
+                        >
+                          <span>Confused? what to Study:?</span>
+                          <ArrowUpRight className="h-2.5 w-2.5 shrink-0" />
+                        </Link>
+                      ) : null;
+                    })()}
                   </div>
                 );
               })}
@@ -206,11 +220,21 @@ export default function WeeklyPage() {
                       </td>
                       {day.slots.map((slot) => {
                         const Icon = slot.icon;
+                        const roadmapLink = getRoadmapLink(slot.content, slot.period);
                         return (
                           <td key={slot.period} className="px-4 py-3">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
                               <Icon className="h-3.5 w-3.5 text-zinc-500 shrink-0" />
                               <span className="text-sm text-zinc-300">{slot.content}</span>
+                              {roadmapLink && (
+                                <Link
+                                  href={roadmapLink}
+                                  className="inline-flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 hover:border-amber-500/30 hover:scale-105 transition-all font-semibold cursor-pointer animate-bounce shadow-sm shrink-0 ml-1"
+                                >
+                                  <span>Confused? what to Study:?</span>
+                                  <ArrowUpRight className="h-2.5 w-2.5 shrink-0" />
+                                </Link>
+                              )}
                             </div>
                           </td>
                         );

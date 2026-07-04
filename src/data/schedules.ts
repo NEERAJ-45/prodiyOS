@@ -120,3 +120,69 @@ export function getScheduleDays(scheduleId: ScheduleId): DaySchedule[] {
 }
 
 export const DAY_NAMES = DAYS;
+
+export function getRoadmapLink(topic: string, period?: string): string | null {
+  const t = topic.toLowerCase();
+  const p = period ? period.toLowerCase() : '';
+
+  if (t.includes('dsa') || p.includes('dsa') || p.includes('m1')) {
+    return '/patterns';
+  }
+  if (t.includes('spring')) {
+    return '/roadmaps/backend/springboot';
+  }
+  if (t.includes('java')) {
+    return '/roadmaps/backend/java';
+  }
+  if (t.includes('react machine coding') || t.includes('timed build') || t.includes('rebuild a weak component')) {
+    return '/roadmaps/frontend/machine-coding';
+  }
+  if (t.includes('react')) {
+    return '/roadmaps/frontend/react';
+  }
+  if (t.includes('next.js') || t.includes('nextjs')) {
+    return '/roadmaps/frontend/nextjs';
+  }
+  if (t.includes('js fundamentals') || t.includes('javascript')) {
+    return '/roadmaps/frontend/javascript';
+  }
+  if (t.includes('dbms') && t.includes('os')) {
+    return '/roadmaps/foundation';
+  }
+  if (t.includes('dbms')) {
+    return '/roadmaps/foundation/dbms';
+  }
+  if (t.includes('os')) {
+    return '/roadmaps/foundation/os';
+  }
+  if (t.includes('network') || t.includes('cn')) {
+    return '/roadmaps/foundation/cn';
+  }
+  if (t.includes('oop')) {
+    return '/roadmaps/backend/java';
+  }
+  if (t.includes('system design') || t.includes('lld') || t.includes('hld') || t.includes('case study')) {
+    return '/roadmaps/system-design';
+  }
+  if (t.includes('kubernetes') || t.includes('k8s')) {
+    return '/roadmaps/devops-cloud/kubernetes';
+  }
+  if (t.includes('docker')) {
+    return '/roadmaps/devops-cloud/docker';
+  }
+  if (t.includes('devops') || t.includes('aws') || t.includes('cloud')) {
+    return '/roadmaps/devops-cloud';
+  }
+  if (t.includes('aptitude') || t.includes('reasoning')) {
+    return '/roadmaps/aptitude';
+  }
+  if (t.includes('cs revise') || t.includes('cs fundamentals')) {
+    return '/roadmaps/foundation';
+  }
+  if (t.includes('interview')) {
+    return '/interview';
+  }
+
+  return null;
+}
+

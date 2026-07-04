@@ -45,7 +45,7 @@ const reactQuestions: QuestionItem[] = Array.from({ length: 50 }, (_, index) => 
       'React Hooks: useContext and sharing global state',
       'React Hooks: useRef for persistent values and DOM access',
       'React Hooks: useMemo for memoizing expensive calculations',
-      'React Hooks: useCallback for preventing function recreation',
+      'React Hooks: useCallback for preventing function recreation', 
       'React Hooks: useReducer for complex state machines',
       'Writing Custom Hooks in React for code reuse',
       'Rules of Hooks in React: Execution order constraints',

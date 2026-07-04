@@ -33,6 +33,7 @@ import {
   AlertTriangle,
   ChevronDown,
   ChevronRight,
+  ArrowUpRight,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -40,7 +41,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { useProfile } from '@/components/providers/ProfileProvider';
-import { SCHEDULES, SCHEDULE_IDS, getTodaySchedule, getDaySchedule, type ScheduleId, type DaySchedule, type Slot } from '@/data/schedules';
+import { SCHEDULES, SCHEDULE_IDS, getTodaySchedule, getDaySchedule, getRoadmapLink, type ScheduleId, type DaySchedule, type Slot } from '@/data/schedules';
 import { STORAGE_KEYS } from '@/lib/storage-keys';
 
 const SCHEDULE_MODE_KEY = STORAGE_KEYS.DAILY_SCHEDULE_MODE;
@@ -700,6 +701,21 @@ export default function DailyPage() {
                               <span className={cn('text-sm font-medium', isDone ? 'text-zinc-500 line-through' : 'text-zinc-200')}>
                                 {slot.topic}
                               </span>
+                               {(() => {
+                                 const roadmapLink = getRoadmapLink(slot.topic, slot.period);
+                                 return roadmapLink ? (
+                                   <Link
+                                     href={roadmapLink}
+                                     className={cn(
+                                       "inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 hover:border-amber-500/30 hover:scale-105 active:scale-95 transition-all font-semibold cursor-pointer animate-bounce shadow-sm ml-1.5 shrink-0",
+                                       isDone && "opacity-50 pointer-events-none"
+                                     )}
+                                   >
+                                     <span>Confused? what to Study:?</span>
+                                     <ArrowUpRight className="h-3 w-3 shrink-0" />
+                                   </Link>
+                                 ) : null;
+                               })()}
                             </div>
                             {slot.description && (
                               <p className="text-[11px] text-zinc-600 mt-0.5">{slot.description}</p>
@@ -778,6 +794,21 @@ export default function DailyPage() {
                                 <span className={cn('text-xs', isNowDone ? 'text-zinc-500 line-through' : 'text-zinc-300')}>
                                   {missed.slot.topic}
                                 </span>
+                                {(() => {
+                                  const roadmapLink = getRoadmapLink(missed.slot.topic, missed.slot.period);
+                                  return roadmapLink ? (
+                                    <Link
+                                      href={roadmapLink}
+                                      className={cn(
+                                        "inline-flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 hover:border-amber-500/30 hover:scale-105 active:scale-95 transition-all font-semibold cursor-pointer animate-bounce shadow-sm ml-1.5 shrink-0",
+                                        isNowDone && "opacity-50 pointer-events-none"
+                                      )}
+                                    >
+                                      <span>Confused? what to Study:?</span>
+                                      <ArrowUpRight className="h-2.5 w-2.5 shrink-0" />
+                                    </Link>
+                                  ) : null;
+                                })()}
                               </div>
                             </div>
                           </div>

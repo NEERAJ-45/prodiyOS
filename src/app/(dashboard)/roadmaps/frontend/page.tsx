@@ -1,14 +1,207 @@
 'use client';
 
 import * as React from 'react';
-import { Clock, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Clock, ArrowLeft, ArrowRight, ShieldAlert, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
+import { useSearchParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
+const QuestionsTable = dynamic(() => import('@/components/roadmaps/QuestionsTable'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex flex-col items-center justify-center p-12 space-y-4">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <p className="text-sm text-zinc-500">Loading JavaScript topics...</p>
+    </div>
+  ),
+});
+
+interface QuestionItem {
+  id: number;
+  title: string;
+  difficulty: string;
+  link: string;
+}
+
+const coreTitles = [
+  'What is the Execution Context and what are its phases?',
+  'Understanding the Call Stack and how JS executes code',
+  'Lexical Scope vs Dynamic Scope in JavaScript',
+  'var vs let vs const: Scoping differences explained',
+  'Hoisting in JavaScript: Variables, functions, and the Temporal Dead Zone',
+  'Primitive Types vs Reference Types in JavaScript',
+  'Type Coercion: == vs === and how JS compares values',
+  'Truthy and Falsy values: The complete list',
+  'Function Declarations vs Function Expressions vs Arrow Functions',
+  'Arrow Functions: Key differences beyond syntax (this, arguments, prototype)',
+  'IIFE (Immediately Invoked Function Expressions) and their use cases',
+  'Closures in JavaScript: How they work and why they matter',
+  'The classic var vs let closure problem in loops with setTimeout',
+  'Understanding this keyword: Global, function, and method context',
+  'call, apply, and bind: Explicit function binding',
+  'Prototype Chain and Prototypal Inheritance',
+  '__proto__ vs prototype: Clearing the confusion',
+  'ES6 Classes: Syntactic sugar over prototypes',
+  'extends and super in JavaScript classes',
+  'Object Property Descriptors: writable, enumerable, configurable',
+  'Object.freeze vs Object.seal vs Object.preventExtensions',
+  'Shallow Copy vs Deep Copy: Spread, Object.assign, structuredClone',
+  'Destructuring Objects and Arrays with defaults',
+  'Optional Chaining (?.) and Nullish Coalescing (??)',
+  'Array Methods Deep Dive: map, filter, reduce, find, some, every',
+  'The Event Loop: Call Stack, Microtask Queue, and Macrotask Queue',
+  'Execution Order: Synchronous code, Microtasks, and Macrotasks',
+  'Callbacks and the problem of Callback Hell',
+  'Promises: States, Chaining, and Error Propagation',
+  'Promise.all vs Promise.race vs Promise.allSettled vs Promise.any',
+  'async/await: How it desugars to Promises under the hood',
+  'Error Handling in Async Code: try/catch and unhandled rejections',
+  'CommonJS vs ES Modules: import/export differences',
+  'Map and Set vs Object and Array: When to use which',
+  'WeakMap and WeakSet: Purpose and garbage collection benefits',
+  'Symbols in JavaScript: What they are and why they exist',
+  'Iterators and the Iterator Protocol',
+  'Generators: function* and yield explained',
+  'Garbage Collection in JavaScript: Mark-and-Sweep algorithm',
+  'Common Memory Leak Patterns in JavaScript',
+  'Debouncing vs Throttling: Concepts and implementation',
+  'Event Delegation, Bubbling, and Capturing',
+  'Custom Error Classes: Extending the Error object',
+  'Currying and Partial Application in JavaScript',
+  'Pure Functions and the concept of Side Effects',
+  'Implementing Polyfills: bind, call, apply, and Promise.all from scratch'
+];
+
+const advancedTitles = [
+  'Event Object Deep Dive: preventDefault, stopPropagation, stopImmediatePropagation',
+  'addEventListener options: capture, once, passive',
+  'DOM Traversal and Manipulation basics (parentNode, childNodes, closest)',
+  'requestAnimationFrame vs setTimeout for animations',
+  'Intersection Observer and Mutation Observer APIs',
+  'Fetch API: Request/Response objects, headers, and error handling',
+  'AbortController: Cancelling fetch requests',
+  'CORS from a JavaScript perspective: Preflight requests, common errors',
+  'Cross-Site Scripting (XSS): How it happens and how JS code prevents it',
+  'Prototype Pollution: What it is and how to guard against it',
+  'eval() and new Function(): Why they are dangerous',
+  'Content Security Policy (CSP) basics as it relates to JS execution',
+  'Array.at(), structuredClone(), and other recent ES additions',
+  'Logical Assignment Operators: ||=, &&=, ??=',
+  'Private Class Fields (#field) in JavaScript classes',
+  'Optional Catch Binding: try {} catch {} without an error param',
+  'Top-level await in ES Modules',
+  'JIT Compilation Basics: How V8 optimizes JavaScript (hidden classes, inline caching)',
+  'Testing Fundamentals: Writing testable JS (pure functions, dependency injection)',
+  'Mocking in Jest/Vitest: Spies, mocks, and stubs explained'
+];
+
+const drillTitles = [
+  'Implement debounce and throttle from scratch',
+  'Implement Promise.all and Promise.race polyfills from scratch',
+  'Implement bind, call, and apply polyfills from scratch',
+  'Implement Deep Clone from scratch',
+  'Implement curry from scratch',
+  'Implement EventEmitter from scratch',
+  'Implement Array.prototype.map and Array.prototype.reduce polyfills from scratch'
+];
+
+function getLinkForTopic(title: string): string {
+  const t = title.toLowerCase();
+  if (t.includes('execution context')) return 'https://javascript.info/closure';
+  if (t.includes('call stack')) return 'https://developer.mozilla.org/en-US/docs/Glossary/Call_stack';
+  if (t.includes('lexical scope')) return 'https://javascript.info/closure';
+  if (t.includes('var vs let')) return 'https://javascript.info/variables';
+  if (t.includes('hoisting')) return 'https://developer.mozilla.org/en-US/docs/Glossary/Hoisting';
+  if (t.includes('primitive types')) return 'https://javascript.info/object-copy';
+  if (t.includes('coercion')) return 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Equality_comparisons_and_sameness';
+  if (t.includes('truthy')) return 'https://developer.mozilla.org/en-US/docs/Glossary/Falsy';
+  if (t.includes('declarations vs')) return 'https://javascript.info/function-expressions';
+  if (t.includes('arrow functions')) return 'https://javascript.info/arrow-functions';
+  if (t.includes('iife')) return 'https://developer.mozilla.org/en-US/docs/Glossary/IIFE';
+  if (t.includes('closures')) return 'https://javascript.info/closure';
+  if (t.includes('timeout') || t.includes('interval')) return 'https://javascript.info/settimeout-setinterval';
+  if (t.includes('this keyword') || t.includes('understanding this')) return 'https://javascript.info/object-methods';
+  if (t.includes('call, apply')) return 'https://javascript.info/bind';
+  if (t.includes('prototype')) return 'https://javascript.info/prototypes';
+  if (t.includes('classes')) return 'https://javascript.info/classes';
+  if (t.includes('freeze')) return 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/freeze';
+  if (t.includes('shallow copy')) return 'https://javascript.info/object-copy';
+  if (t.includes('destructuring')) return 'https://javascript.info/destructuring-assignment';
+  if (t.includes('optional chaining')) return 'https://javascript.info/optional-chaining';
+  if (t.includes('array methods')) return 'https://javascript.info/array-methods';
+  if (t.includes('event loop')) return 'https://javascript.info/event-loop';
+  if (t.includes('promises')) return 'https://javascript.info/promise-basics';
+  if (t.includes('promise.')) return 'https://javascript.info/promise-api';
+  if (t.includes('async/await')) return 'https://javascript.info/async-await';
+  if (t.includes('modules')) return 'https://javascript.info/modules-intro';
+  if (t.includes('map and set')) return 'https://javascript.info/map-set';
+  if (t.includes('weakmap')) return 'https://javascript.info/weakmap-weakset';
+  if (t.includes('symbols')) return 'https://javascript.info/symbol';
+  if (t.includes('generators')) return 'https://javascript.info/generators';
+  if (t.includes('garbage collection')) return 'https://javascript.info/garbage-collection';
+  if (t.includes('debounc') || t.includes('throttl')) return 'https://javascript.info/settimeout-setinterval';
+  if (t.includes('delegation')) return 'https://javascript.info/event-delegation';
+  if (t.includes('currying')) return 'https://javascript.info/currying';
+  if (t.includes('pure functions')) return 'https://medium.com/javascript-scene/master-the-javascript-interview-what-is-a-pure-function-d1c8d35d64e5';
+  if (t.includes('polyfills')) return 'https://javascript.info/polyfills';
+  
+  if (t.includes('event object')) return 'https://developer.mozilla.org/en-US/docs/Web/API/Event';
+  if (t.includes('addeventlistener')) return 'https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener';
+  if (t.includes('dom traversal')) return 'https://developer.mozilla.org/en-US/docs/Web/API/Document_Object_Model/Introduction';
+  if (t.includes('requestanimationframe')) return 'https://developer.mozilla.org/en-US/docs/Web/API/window/requestAnimationFrame';
+  if (t.includes('observer')) return 'https://developer.mozilla.org/en-US/docs/Web/API/Intersection_Observer_API';
+  if (t.includes('fetch api')) return 'https://javascript.info/fetch';
+  if (t.includes('abortcontroller')) return 'https://javascript.info/fetch-abort';
+  if (t.includes('cors')) return 'https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS';
+  if (t.includes('xss') || t.includes('cross-site')) return 'https://developer.mozilla.org/en-US/docs/Glossary/Cross-site_scripting';
+  if (t.includes('pollution')) return 'https://learn.snyk.io/lessons/prototype-pollution/javascript/';
+  if (t.includes('eval(')) return 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/eval';
+  if (t.includes('csp') || t.includes('content security')) return 'https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP';
+  if (t.includes('jit') || t.includes('v8')) return 'https://v8.dev/';
+  if (t.includes('testing')) return 'https://jestjs.io/docs/getting-started';
+  if (t.includes('mocking')) return 'https://jestjs.io/docs/mock-functions';
+
+  return 'https://javascript.info/';
+}
+
+const javascriptQuestions: QuestionItem[] = [
+  ...coreTitles.map((title, idx) => ({
+    id: 701 + idx,
+    title,
+    difficulty: idx % 3 === 0 ? 'EASY' : (idx % 3 === 1 ? 'MEDIUM' : 'HARD'),
+    link: getLinkForTopic(title)
+  })),
+  ...advancedTitles.map((title, idx) => ({
+    id: 747 + idx,
+    title,
+    difficulty: 'HARD',
+    link: getLinkForTopic(title)
+  })),
+  ...drillTitles.map((title, idx) => ({
+    id: 767 + idx,
+    title,
+    difficulty: 'ADVANCED',
+    link: getLinkForTopic(title)
+  }))
+];
+
 
 const pillars = [
+  {
+    name: 'JavaScript Fundamentals',
+    slug: 'javascript',
+    progress: 0,
+    hours: 80,
+    difficulty: 'Medium' as const,
+    color: 'from-amber-500 to-yellow-400',
+    domains: [
+      { name: 'Core JS & Mechanics', progress: 0, modules: ['Execution Context', 'Hoisting', 'Closures', 'Prototypes'] },
+      { name: 'Advanced & Async', progress: 0, modules: ['Event Loop', 'Security', 'Engine Internals', 'Drills'] },
+    ],
+  },
   {
     name: 'React',
     slug: 'react',
@@ -116,6 +309,7 @@ function RoadmapCard({
 
 export default function FrontendRoadmapPage() {
   const [progressData, setProgressData] = React.useState({
+    javascript: { overall: 0, core: 0, advanced: 0 },
     react: { overall: 0, core: 0, nextjs: 0 },
     nextjs: { overall: 0, routing: 0, rendering: 0 },
     mfe: { overall: 0, orchestration: 0, isolation: 0 },
@@ -145,6 +339,13 @@ export default function FrontendRoadmapPage() {
         return 0;
       }
     };
+
+    // Javascript splits (IDs 701 to 773)
+    // Core JS & Mechanics: 701 to 746 (46 questions)
+    // Advanced & Async: 747 to 773 (27 questions)
+    const jsOverall = getOverallCount('frontend-javascript');
+    const jsCore = getCompletedCountInRange('frontend-javascript', 701, 746);
+    const jsAdvanced = getCompletedCountInRange('frontend-javascript', 747, 773);
 
     // React splits (IDs 801 to 850)
     // Core React: 801 to 830 (30 questions)
@@ -176,6 +377,11 @@ export default function FrontendRoadmapPage() {
 
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setProgressData({
+      javascript: {
+        overall: Math.round((jsOverall / 73) * 100),
+        core: Math.round((jsCore / 46) * 100),
+        advanced: Math.round((jsAdvanced / 27) * 100),
+      },
       react: {
         overall: Math.round((reactOverall / 50) * 100),
         core: Math.round((reactCore / 30) * 100),
@@ -203,34 +409,42 @@ export default function FrontendRoadmapPage() {
     return [
       {
         ...pillars[0],
-        progress: progressData.react.overall,
+        progress: progressData.javascript.overall,
         domains: [
-          { ...pillars[0].domains[0], progress: progressData.react.core },
-          { ...pillars[0].domains[1], progress: progressData.react.nextjs },
+          { ...pillars[0].domains[0], progress: progressData.javascript.core },
+          { ...pillars[0].domains[1], progress: progressData.javascript.advanced },
         ]
       },
       {
         ...pillars[1],
-        progress: progressData.nextjs.overall,
+        progress: progressData.react.overall,
         domains: [
-          { ...pillars[1].domains[0], progress: progressData.nextjs.routing },
-          { ...pillars[1].domains[1], progress: progressData.nextjs.rendering },
+          { ...pillars[1].domains[0], progress: progressData.react.core },
+          { ...pillars[1].domains[1], progress: progressData.react.nextjs },
         ]
       },
       {
         ...pillars[2],
-        progress: progressData.mfe.overall,
+        progress: progressData.nextjs.overall,
         domains: [
-          { ...pillars[2].domains[0], progress: progressData.mfe.orchestration },
-          { ...pillars[2].domains[1], progress: progressData.mfe.isolation },
+          { ...pillars[2].domains[0], progress: progressData.nextjs.routing },
+          { ...pillars[2].domains[1], progress: progressData.nextjs.rendering },
         ]
       },
       {
         ...pillars[3],
+        progress: progressData.mfe.overall,
+        domains: [
+          { ...pillars[3].domains[0], progress: progressData.mfe.orchestration },
+          { ...pillars[3].domains[1], progress: progressData.mfe.isolation },
+        ]
+      },
+      {
+        ...pillars[4],
         progress: progressData.machineCoding.overall,
         domains: [
-          { ...pillars[3].domains[0], progress: progressData.machineCoding.beginner },
-          { ...pillars[3].domains[1], progress: progressData.machineCoding.advanced },
+          { ...pillars[4].domains[0], progress: progressData.machineCoding.beginner },
+          { ...pillars[4].domains[1], progress: progressData.machineCoding.advanced },
         ]
       }
     ];

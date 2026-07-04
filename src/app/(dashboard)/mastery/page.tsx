@@ -88,6 +88,7 @@ export default function MasteryPage() {
     if (currentFilter === 'FOUNDATION') return key.startsWith('foundation-');
     if (currentFilter === 'SYSTEM_DESIGN') return key.startsWith('system-design-');
     if (currentFilter === 'BACKEND') return key.startsWith('backend-');
+    if (currentFilter === 'JAVASCRIPT') return key.startsWith('frontend-javascript');
     if (currentFilter === 'REACT') return key.startsWith('frontend-react');
     if (currentFilter === 'NEXTJS') return key.startsWith('frontend-nextjs');
     if (currentFilter === 'MFE') return key.startsWith('frontend-mfe');
@@ -211,6 +212,7 @@ export default function MasteryPage() {
     let foundation = 0;
     let systemDesign = 0;
     let backend = 0;
+    let javascript = 0;
     let react = 0;
     let nextjs = 0;
     let mfe = 0;
@@ -224,6 +226,7 @@ export default function MasteryPage() {
       if (item.key.startsWith('foundation-')) foundation++;
       else if (item.key.startsWith('system-design-')) systemDesign++;
       else if (item.key.startsWith('backend-')) backend++;
+      else if (item.key.startsWith('frontend-javascript')) javascript++;
       else if (item.key.startsWith('frontend-react')) react++;
       else if (item.key.startsWith('frontend-nextjs')) nextjs++;
       else if (item.key.startsWith('frontend-mfe')) mfe++;
@@ -238,6 +241,7 @@ export default function MasteryPage() {
       { name: 'Computer Science Foundation', completed: foundation, total: 150, color: 'bg-cyan-500' },
       { name: 'System Design & Architecture', completed: systemDesign, total: 104, color: 'bg-violet-500' },
       { name: 'Backend Development', completed: backend, total: 100, color: 'bg-orange-500' },
+      { name: 'JavaScript Fundamentals', completed: javascript, total: 73, color: 'bg-amber-500' },
       { name: 'React Core', completed: react, total: 50, color: 'bg-sky-500' },
       { name: 'Next.js Development', completed: nextjs, total: 50, color: 'bg-teal-500' },
       { name: 'MicroFrontends Architecture', completed: mfe, total: 50, color: 'bg-indigo-500' },
@@ -297,6 +301,7 @@ export default function MasteryPage() {
                 <option value="FOUNDATION">CS Foundation</option>
                 <option value="SYSTEM_DESIGN">System Design & Architecture</option>
                 <option value="BACKEND">Backend Development</option>
+                <option value="JAVASCRIPT">JavaScript Fundamentals</option>
                 <option value="REACT">React Core</option>
                 <option value="NEXTJS">Next.js Development</option>
                 <option value="MFE">MicroFrontends Architecture</option>
