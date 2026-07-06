@@ -153,7 +153,7 @@ export default function WeeklyPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1 p-4 md:p-6 space-y-6 overflow-y-auto">
+      <div className="flex-1 p-4 md:p-6 space-y-6 md:space-y-8 overflow-y-auto max-w-7xl mx-auto w-full">
         <div className="flex items-center gap-3">
           <CalendarDays className="h-6 w-6 text-zinc-400" />
           <div>

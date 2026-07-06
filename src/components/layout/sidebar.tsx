@@ -66,7 +66,10 @@ export function Sidebar() {
           sidebarCollapsed ? "w-16" : "w-60",
         )}
       >
-        <div className="flex h-14 items-center border-b px-4 overflow-hidden">
+        <div className={cn(
+          "flex h-14 items-center border-b overflow-hidden",
+          sidebarCollapsed ? "justify-center px-2" : "px-4",
+        )}>
           <Link href="/command-center" className="flex items-center gap-2 min-w-0">
             <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary">
               <span className="text-xs font-bold text-primary-foreground">N</span>
@@ -115,12 +118,13 @@ export function Sidebar() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200",
+                  "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-all duration-200 relative",
                   isActive
                     ? "bg-accent text-accent-foreground"
                     : "text-muted-foreground hover:text-foreground hover:bg-accent/50",
                   sidebarCollapsed && "justify-center px-2",
                 )}
+                style={isActive && !sidebarCollapsed ? { boxShadow: 'inset 3px 0 0 0 hsl(var(--ring))' } : undefined}
               >
                 <Icon className="h-4 w-4 shrink-0" />
                 <span

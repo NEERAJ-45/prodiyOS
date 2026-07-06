@@ -158,13 +158,13 @@ export default function RoadmapsPage() {
   }, [progressMap]);
 
   return (
-    <div className="flex flex-col h-full ">
-      <div className="flex-1 p-4 md:p-6 overflow-y-auto max-w-7xl mx-auto w-full">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">
+    <div className="flex flex-col h-full">
+      <div className="flex-1 p-4 md:p-6 space-y-6 md:space-y-8 overflow-y-auto max-w-7xl mx-auto w-full">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
             Learning Roadmaps
           </h1>
-          <p className="text-base text-muted-foreground mt-2 max-w-2xl">
+          <p className="text-sm md:text-base text-muted-foreground mt-1.5 max-w-2xl">
             Structured learning paths designed to take you from fundamentals to advanced engineering concepts.
           </p>
         </div>

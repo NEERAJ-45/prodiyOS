@@ -220,9 +220,9 @@ export default function RevisionPage() {
   }, [items, selectedTab]);
 
   return (
-    <div className="flex flex-col h-full ">
-      <div className="flex-1 p-4 md:p-6 overflow-y-auto max-w-7xl mx-auto w-full">
-        <div className="flex flex-col sm:flex-row justify-between items-start gap-3 mb-8">
+    <div className="flex flex-col h-full">
+      <div className="flex-1 p-4 md:p-6 space-y-6 md:space-y-8 overflow-y-auto max-w-7xl mx-auto w-full">
+        <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
           <div className="min-w-0">
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-100">Revision Engine</h1>
             <p className="text-xs sm:text-sm text-zinc-500 mt-1">
@@ -289,7 +289,7 @@ export default function RevisionPage() {
         </div>
 
         {/* Stats Section */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-3 gap-4">
           {[
             { label: 'Due', value: stats.due, color: 'text-red-400' },
             { label: 'Completed', value: stats.completed, color: 'text-emerald-400' },

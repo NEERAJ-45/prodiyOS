@@ -231,7 +231,7 @@ export default function BooksPage() {
       transition={{ duration: 0.4, ease: 'easeOut' }}
       className="flex flex-col h-full"
     >
-      <div className="flex-1 p-4 md:p-6 space-y-4 md:space-y-6 overflow-y-auto">
+      <div className="flex-1 p-4 md:p-6 space-y-6 md:space-y-8 overflow-y-auto max-w-7xl mx-auto w-full">
         <motion.div
           initial={{ opacity: 0, x: -30 }}
           animate={{ opacity: 1, x: 0 }}

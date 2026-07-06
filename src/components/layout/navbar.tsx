@@ -44,7 +44,7 @@ export function Navbar({ global = false }: { global?: boolean }) {
 
   return (
     <>
-      <header className="sticky top-0 z-30 flex h-14 w-full justify-center border-b border-border bg-background/80 backdrop-blur-md shrink-0">
+      <header className="sticky top-0 z-30 flex h-14 w-full justify-center border-b border-border bg-background/80 backdrop-blur-md shrink-0 shadow-[0_1px_0_0_hsl(var(--border)_/_0.4)]">
         <div className="flex h-full w-full max-w-7xl items-center justify-between px-4 md:px-6">
           {/* Path Breadcrumbs - full on desktop, short on mobile */}
           <div className="hidden md:flex items-center gap-1.5 text-xs font-medium text-zinc-400 min-w-0">
