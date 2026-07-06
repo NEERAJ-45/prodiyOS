@@ -25,30 +25,20 @@ import {
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogClose,
-} from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
-import { useBooksQuery, useAddBook, useUpdateBook, useDeleteBook, type BookData } from '@/hooks/use-books';
+import {
+  useBooksQuery,
+  useAddBook,
+  useUpdateBook,
+  useDeleteBook,
+  type BookData,
+  type BookStatus,
+} from '@/hooks/use-books';
+import { BookFormDialog, type BookFormState } from '@/components/books/BookFormDialog';
 import { toast } from '@/components/ui/toast';
 import books, { type BookEntry, categoryLabels } from '@/data/books';
 import BookSlider from '@/components/books/BookSlider';
-
-type BookStatus = 'TO_READ' | 'READING' | 'COMPLETED' | 'REFERENCE';
 
 type PaperStatus = 'TO_READ' | 'READING' | 'COMPLETED';
 
@@ -88,20 +78,35 @@ const categoryOrder = [
   '03-Architecture',
   '04-Performance',
   '05-Deep-Mastery',
-  '06-Meta- ',
+  '06-Meta-Learning',
   '07-Others',
 ];
+
+const emptyFormState: BookFormState = {
+  title: '',
+  author: '',
+  status: 'TO_READ',
+  progress: 0,
+  rating: 0,
+};
 
 function groupBooksByCategory(): Record<string, BookEntry[]> {
   const grouped: Record<string, BookEntry[]> = {};
   for (const book of books) {
-    if (!grouped[book.category]) grouped[book.category] = [];
-    grouped[book.category].push(book);
+    (grouped[book.category] ??= []).push(book);
   }
   return grouped;
 }
 
-function RatingStars({ rating, size = 'sm' }: { rating: number; size?: 'sm' | 'xs' }) {
+// ─── Sub-components ──────────────────────────────────────────────────────────
+
+const RatingStars = React.memo(function RatingStars({
+  rating,
+  size = 'sm',
+}: {
+  rating: number;
+  size?: 'sm' | 'xs';
+}) {
   if (rating === 0) return null;
   const starSize = size === 'xs' ? 'h-3 w-3' : 'h-3.5 w-3.5';
   return (
@@ -117,9 +122,13 @@ function RatingStars({ rating, size = 'sm' }: { rating: number; size?: 'sm' | 'x
       ))}
     </div>
   );
-}
+});
 
-function LibraryBookCard({ book }: { book: BookEntry }) {
+const LibraryBookCard = React.memo(function LibraryBookCard({
+  book,
+}: {
+  book: BookEntry;
+}) {
   return (
     <Link href={`/books/${book.slug}`}>
       <Card className="border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900 hover:border-zinc-700 transition-all cursor-pointer group">
@@ -141,9 +150,9 @@ function LibraryBookCard({ book }: { book: BookEntry }) {
       </Card>
     </Link>
   );
-}
+});
 
-function TrackedBookCard({
+const TrackedBookCard = React.memo(function TrackedBookCard({
   book,
   onEdit,
   onDelete,
@@ -152,7 +161,7 @@ function TrackedBookCard({
   onEdit: (book: BookData) => void;
   onDelete: (id: string) => void;
 }) {
-  const config = bookStatusConfig[book.status as BookStatus] || bookStatusConfig.TO_READ;
+  const config = bookStatusConfig[book.status];
   return (
     <Card className="border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900 transition-colors group">
       <CardHeader className="p-5 pb-3">
@@ -190,6 +199,7 @@ function TrackedBookCard({
               onClick={() => onEdit(book)}
               className="p-1.5 rounded hover:bg-zinc-800 text-zinc-600 hover:text-zinc-300 transition-colors cursor-pointer"
               title="Edit"
+              type="button"
             >
               <Pencil className="h-3.5 w-3.5" />
             </button>
@@ -197,6 +207,7 @@ function TrackedBookCard({
               onClick={() => onDelete(book._id || book.id)}
               className="p-1.5 rounded hover:bg-zinc-800 text-zinc-600 hover:text-red-400 transition-colors cursor-pointer"
               title="Delete"
+              type="button"
             >
               <Trash2 className="h-3.5 w-3.5" />
             </button>
@@ -205,9 +216,13 @@ function TrackedBookCard({
       </CardContent>
     </Card>
   );
-}
+});
 
-function PaperCard({ paper }: { paper: ResearchPaper }) {
+const PaperCard = React.memo(function PaperCard({
+  paper,
+}: {
+  paper: ResearchPaper;
+}) {
   const config = paperStatusConfig[paper.status];
   return (
     <Card className="border-zinc-800 bg-zinc-900/30 hover:bg-zinc-900/50 transition-colors">
@@ -239,7 +254,9 @@ function PaperCard({ paper }: { paper: ResearchPaper }) {
       </CardContent>
     </Card>
   );
-}
+});
+
+// ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function BooksPage() {
   const { data: booksData, isLoading } = useBooksQuery();
@@ -250,15 +267,10 @@ export default function BooksPage() {
   const [searchQuery, setSearchQuery] = React.useState('');
   const grouped = React.useMemo(() => groupBooksByCategory(), []);
 
-  const [isAddOpen, setIsAddOpen] = React.useState(false);
-  const [isEditOpen, setIsEditOpen] = React.useState(false);
+  const [dialogMode, setDialogMode] = React.useState<'add' | 'edit'>('add');
+  const [dialogOpen, setDialogOpen] = React.useState(false);
   const [editingBook, setEditingBook] = React.useState<BookData | null>(null);
-
-  const [formTitle, setFormTitle] = React.useState('');
-  const [formAuthor, setFormAuthor] = React.useState('');
-  const [formStatus, setFormStatus] = React.useState<BookStatus>('TO_READ');
-  const [formProgress, setFormProgress] = React.useState(0);
-  const [formRating, setFormRating] = React.useState(0);
+  const [form, setForm] = React.useState<BookFormState>(emptyFormState);
 
   const trackedBooks: BookData[] = booksData?.books ?? [];
 
@@ -273,73 +285,74 @@ export default function BooksPage() {
     return result;
   }, [grouped, searchQuery]);
 
-  const resetAddForm = () => {
-    setFormTitle('');
-    setFormAuthor('');
-    setFormStatus('TO_READ');
-    setFormProgress(0);
-    setFormRating(0);
-  };
+  function openAddDialog() {
+    setDialogMode('add');
+    setEditingBook(null);
+    setForm(emptyFormState);
+    setDialogOpen(true);
+  }
 
-  const handleAdd = () => {
-    if (!formTitle.trim()) return;
-    addBook.mutate(
-      {
-        title: formTitle.trim(),
-        author: formAuthor.trim(),
-        status: formStatus,
-        progress: formProgress,
-        rating: formRating,
-      },
-      {
-        onSuccess: () => {
-          toast({ title: 'Book added' });
-          setIsAddOpen(false);
-          resetAddForm();
-        },
-        onError: () => toast({ variant: 'destructive', title: 'Failed to add book' }),
-      }
-    );
-  };
-
-  const openEdit = (book: BookData) => {
+  function openEditDialog(book: BookData) {
+    setDialogMode('edit');
     setEditingBook(book);
-    setFormTitle(book.title);
-    setFormAuthor(book.author || '');
-    setFormStatus(book.status as BookStatus);
-    setFormProgress(book.progress);
-    setFormRating(book.rating);
-    setIsEditOpen(true);
-  };
+    setForm({
+      title: book.title,
+      author: book.author || '',
+      status: book.status,
+      progress: book.progress,
+      rating: book.rating,
+    });
+    setDialogOpen(true);
+  }
 
-  const handleEdit = () => {
-    if (!editingBook || !formTitle.trim()) return;
-    updateBook.mutate(
-      {
-        id: editingBook._id || editingBook.id,
-        title: formTitle.trim(),
-        author: formAuthor.trim(),
-        status: formStatus,
-        progress: formProgress,
-        rating: formRating,
-      },
-      {
-        onSuccess: () => {
-          toast({ title: 'Book updated' });
-          setIsEditOpen(false);
-          setEditingBook(null);
+  function handleSave() {
+    if (!form.title.trim()) return;
+
+    if (dialogMode === 'add') {
+      addBook.mutate(
+        {
+          title: form.title.trim(),
+          author: form.author.trim(),
+          status: form.status,
+          progress: form.progress,
+          rating: form.rating,
         },
-        onError: () => toast({ variant: 'destructive', title: 'Failed to update book' }),
-      }
-    );
-  };
+        {
+          onSuccess: () => {
+            toast({ title: 'Book added' });
+            setDialogOpen(false);
+          },
+          onError: () => toast({ variant: 'destructive', title: 'Failed to add book' }),
+        }
+      );
+    } else if (editingBook) {
+      updateBook.mutate(
+        {
+          id: editingBook._id || editingBook.id,
+          title: form.title.trim(),
+          author: form.author.trim(),
+          status: form.status,
+          progress: form.progress,
+          rating: form.rating,
+        },
+        {
+          onSuccess: () => {
+            toast({ title: 'Book updated' });
+            setDialogOpen(false);
+            setEditingBook(null);
+          },
+          onError: () => toast({ variant: 'destructive', title: 'Failed to update book' }),
+        }
+      );
+    }
+  }
 
-  const handleDelete = (id: string) => {
+  function handleDelete(id: string) {
     deleteBook.mutate(id, {
       onSuccess: () => toast({ title: 'Book deleted' }),
       onError: () => toast({ variant: 'destructive', title: 'Failed to delete book' }),
     });
-  };
+  }
 
   return (
     <motion.div
@@ -397,12 +410,7 @@ export default function BooksPage() {
                 Documentation
               </TabsTrigger>
             </TabsList>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => { resetAddForm(); setIsAddOpen(true); }}
-              className="shrink-0"
-            >
+            <Button variant="outline" size="sm" onClick={openAddDialog} className="shrink-0">
               <Plus className="h-3.5 w-3.5 mr-1" />
               Add Book
             </Button>
@@ -448,7 +456,7 @@ export default function BooksPage() {
                   <TrackedBookCard
                     key={book._id || book.id}
                     book={book}
-                    onEdit={openEdit}
+                    onEdit={openEditDialog}
                     onDelete={handleDelete}
                   />
                 ))}
@@ -476,157 +484,15 @@ export default function BooksPage() {
         </Tabs>
       </div>
 
-      {/* Add Book Dialog */}
-      <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-        <DialogContent className="bg-zinc-950 border-zinc-800 sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-zinc-100">Add Book</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-1.5">
-              <label className="text-xs text-zinc-500">Title *</label>
-              <Input
-                value={formTitle}
-                onChange={(e) => setFormTitle(e.target.value)}
-                placeholder="Book title"
-                className="bg-zinc-900 border-zinc-700 text-zinc-100"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs text-zinc-500">Author</label>
-              <Input
-                value={formAuthor}
-                onChange={(e) => setFormAuthor(e.target.value)}
-                placeholder="Author name"
-                className="bg-zinc-900 border-zinc-700 text-zinc-100"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs text-zinc-500">Status</label>
-              <Select
-                value={formStatus}
-                onValueChange={(v) => setFormStatus(v as BookStatus)}
-              >
-                <SelectTrigger className="bg-zinc-900 border-zinc-700 text-zinc-100">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-zinc-900 border-zinc-700 text-zinc-100">
-                  {(['TO_READ', 'READING', 'COMPLETED', 'REFERENCE'] as BookStatus[]).map((s) => (
-                    <SelectItem key={s} value={s} className="text-zinc-300 focus:bg-zinc-800 focus:text-zinc-100">
-                      {bookStatusConfig[s].label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs text-zinc-500">Progress %</label>
-              <Input
-                type="number"
-                min={0}
-                max={100}
-                value={formProgress}
-                onChange={(e) => setFormProgress(Math.min(100, Math.max(0, parseInt(e.target.value) || 0)))}
-                className="bg-zinc-900 border-zinc-700 text-zinc-100"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs text-zinc-500">Rating (0-5)</label>
-              <Input
-                type="number"
-                min={0}
-                max={5}
-                value={formRating}
-                onChange={(e) => setFormRating(Math.min(5, Math.max(0, parseInt(e.target.value) || 0)))}
-                className="bg-zinc-900 border-zinc-700 text-zinc-100"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="outline" size="sm">Cancel</Button>
-            </DialogClose>
-            <Button size="sm" onClick={handleAdd} disabled={!formTitle.trim() || addBook.isPending}>
-              {addBook.isPending ? 'Adding...' : 'Add Book'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Book Dialog */}
-      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="bg-zinc-950 border-zinc-800 sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-zinc-100">Edit Book</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-1.5">
-              <label className="text-xs text-zinc-500">Title *</label>
-              <Input
-                value={formTitle}
-                onChange={(e) => setFormTitle(e.target.value)}
-                className="bg-zinc-900 border-zinc-700 text-zinc-100"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs text-zinc-500">Author</label>
-              <Input
-                value={formAuthor}
-                onChange={(e) => setFormAuthor(e.target.value)}
-                className="bg-zinc-900 border-zinc-700 text-zinc-100"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs text-zinc-500">Status</label>
-              <Select
-                value={formStatus}
-                onValueChange={(v) => setFormStatus(v as BookStatus)}
-              >
-                <SelectTrigger className="bg-zinc-900 border-zinc-700 text-zinc-100">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-zinc-900 border-zinc-700 text-zinc-100">
-                  {(['TO_READ', 'READING', 'COMPLETED', 'REFERENCE'] as BookStatus[]).map((s) => (
-                    <SelectItem key={s} value={s} className="text-zinc-300 focus:bg-zinc-800 focus:text-zinc-100">
-                      {bookStatusConfig[s].label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs text-zinc-500">Progress %</label>
-              <Input
-                type="number"
-                min={0}
-                max={100}
-                value={formProgress}
-                onChange={(e) => setFormProgress(Math.min(100, Math.max(0, parseInt(e.target.value) || 0)))}
-                className="bg-zinc-900 border-zinc-700 text-zinc-100"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs text-zinc-500">Rating (0-5)</label>
-              <Input
-                type="number"
-                min={0}
-                max={5}
-                value={formRating}
-                onChange={(e) => setFormRating(Math.min(5, Math.max(0, parseInt(e.target.value) || 0)))}
-                className="bg-zinc-900 border-zinc-700 text-zinc-100"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="outline" size="sm">Cancel</Button>
-            </DialogClose>
-            <Button size="sm" onClick={handleEdit} disabled={!formTitle.trim() || updateBook.isPending}>
-              {updateBook.isPending ? 'Saving...' : 'Save'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <BookFormDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        mode={dialogMode}
+        form={form}
+        onFormChange={setForm}
+        onSave={handleSave}
+        isPending={addBook.isPending || updateBook.isPending}
+      />
     </motion.div>
   );
 }
