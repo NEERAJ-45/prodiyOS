@@ -32,6 +32,8 @@ export const STORAGE_KEYS = {
   DAILY_SCHEDULE_MODE: 'daily-schedule-mode',
   DAILY_SLOT_COMPLETIONS: 'daily-slot-completions',
   DAILY_SLOT_NOTES: 'daily-slot-notes',
+  ONBOARDED: 'samundar-onboarded',
+  ONBOARDING_DATA: 'samundar-onboarding-data',
 } as const;
 
 export function completedKey(prefix: string): string {

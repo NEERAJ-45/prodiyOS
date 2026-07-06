@@ -1,9 +1,12 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Cpu } from 'lucide-react';
+import { Cpu, Loader2 } from 'lucide-react';
+import { STORAGE_KEYS } from '@/lib/storage-keys';
+
+const OnboardingWizard = lazy(() => import('@/components/onboarding/OnboardingWizard').then((m) => ({ default: m.OnboardingWizard })));
 
 // ─── Context ──────────────────────────────────────────────────────────────────
 interface ProfileContextType {
@@ -113,12 +116,51 @@ function BootScreen({ onDone }: { onDone: () => void }) {
 // ─── Provider ─────────────────────────────────────────────────────────────────
 export function ProfileProvider({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
-  const [booting,  setBooting]  = useState(true);
-  const [mounted,  setMounted]  = useState(false);
+  const [booting,    setBooting]    = useState(true);
+  const [mounted,    setMounted]    = useState(false);
+  const [onboarding, setOnboarding] = useState<'checking' | 'needed' | 'done'>('checking');
 
   useEffect(() => { setMounted(true); }, []);
 
   const handleBootDone = () => setBooting(false);
+
+  // Check onboarding status when session is ready
+  useEffect(() => {
+    if (status !== 'authenticated' || booting) return;
+
+    const checkOnboarding = async () => {
+      // Quick local check first
+      const local = localStorage.getItem(STORAGE_KEYS.ONBOARDED);
+      if (local === 'true') {
+        setOnboarding('done');
+        return;
+      }
+
+      try {
+        const email = session?.user?.email;
+        if (!email) { setOnboarding('done'); return; }
+
+        const res = await fetch(`/api/db/onboarding?email=${encodeURIComponent(email)}`);
+        if (!res.ok) { setOnboarding('done'); return; }
+
+        const data = await res.json();
+        if (data.onboarded) {
+          localStorage.setItem(STORAGE_KEYS.ONBOARDED, 'true');
+          setOnboarding('done');
+        } else {
+          setOnboarding('needed');
+        }
+      } catch {
+        setOnboarding('done');
+      }
+    };
+
+    checkOnboarding();
+  }, [status, session, booting]);
+
+  const handleOnboardingComplete = () => {
+    setOnboarding('done');
+  };
 
   const logout = () => signOut({ callbackUrl: '/login' });
 
@@ -151,6 +193,17 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
 
       {/* Show children only after boot + session loaded */}
       {!booting && status !== 'loading' && children}
+
+      {/* Onboarding wizard for first-time users (lazy loaded) */}
+      {!booting && status === 'authenticated' && onboarding === 'needed' && (
+        <Suspense fallback={
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/95">
+            <Loader2 className="h-6 w-6 animate-spin text-indigo-400" />
+          </div>
+        }>
+          <OnboardingWizard onComplete={handleOnboardingComplete} />
+        </Suspense>
+      )}
     </ProfileContext.Provider>
   );
 }

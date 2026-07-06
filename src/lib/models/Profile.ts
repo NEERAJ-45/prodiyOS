@@ -1,5 +1,13 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
+export interface OnboardingData {
+  role: string;
+  studyHours: string;
+  experience: string;
+  interests: string[];
+  customSchedule?: string;
+}
+
 export interface IProfile extends Document {
   email: string;
   name: string;
@@ -12,6 +20,8 @@ export interface IProfile extends Document {
   activeCategory?: string;
   nextLearningUnit?: string;
   nextLearningDuration?: string;
+  onboarded: boolean;
+  onboardingData?: OnboardingData;
   createdAt: Date;
 }
 
@@ -27,6 +37,8 @@ const ProfileSchema: Schema = new Schema({
   activeCategory:     { type: String, default: 'Trees' },
   nextLearningUnit:   { type: String, default: 'AVL Tree Rotations' },
   nextLearningDuration: { type: String, default: '45 min' },
+  onboarded:          { type: Boolean, default: false },
+  onboardingData:     { type: Schema.Types.Mixed },
   createdAt:          { type: Date, default: Date.now },
 });
 
