@@ -268,15 +268,15 @@ export default function MasteryPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1 p-4 md:p-6 overflow-y-auto max-w-7xl mx-auto w-full">
-        <div className="mb-8">
+      <div className="flex-1 p-4 md:p-6 space-y-6 md:space-y-8 overflow-y-auto max-w-7xl mx-auto w-full">
+        <div>
           <h1 className="text-2xl font-bold tracking-tight text-zinc-100">Mastery Tracking</h1>
           <p className="text-sm text-zinc-500 mt-1">
             Visualizing consistency and progress across all learning paths.
           </p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {statsCards.map((stat) => (
             <Card key={stat.label} className="border-zinc-800/80 bg-zinc-900/40">
               <CardContent className="p-5">
@@ -288,7 +288,7 @@ export default function MasteryPage() {
           ))}
         </div>
 
-        <Card className="border-zinc-800/80 bg-zinc-900/40 mb-8">
+        <Card className="border-zinc-800/80 bg-zinc-900/40">
           <CardHeader className="p-5 pb-3">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <CardTitle className="text-sm font-semibold text-zinc-300">Mastery Calendar Heatmap</CardTitle>

@@ -4,6 +4,18 @@ import type { INote } from '@/lib/models/Note';
 import '@/lib/models/Note';
 import { logActivity } from '@/lib/activity-logger';
 
+function humanizePrefix(storagePrefix: string): string {
+  return storagePrefix
+    .replace(/-notes$/, '')
+    .replace(/-completed$/, '')
+    .replace(/-progress$/, '')
+    .replace(/-checklist$/, '')
+    .replace(/-questions$/, '')
+    .replace(/-topics$/, '')
+    .replace(/-custom$/, '')
+    .replace(/-/g, ' ');
+}
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -48,17 +60,18 @@ export async function POST(request: Request) {
     }
 
     const Note = conn.model<INote>('Note');
+    const sectionName = humanizePrefix(storagePrefix);
+    const displayName = itemTitle || `#${itemId}`;
     if (note) {
       const doc = await Note.findOneAndUpdate(
         { storagePrefix, itemId, userEmail },
         { note },
         { upsert: true, new: true }
       );
-      logActivity(userEmail, `Added note to "${itemTitle || itemId}" in ${storagePrefix}`);
+      logActivity(userEmail, `Added note to "${displayName}" in ${sectionName}`);
       return NextResponse.json({ success: true, data: doc });
     } else {
       await Note.deleteOne({ storagePrefix, itemId, userEmail });
-      logActivity(userEmail, `Removed note from "${itemTitle || itemId}" in ${storagePrefix}`);
       return NextResponse.json({ success: true, deleted: true });
     }
   } catch (error: any) {

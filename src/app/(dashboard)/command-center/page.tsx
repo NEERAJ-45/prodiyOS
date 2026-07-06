@@ -275,7 +275,7 @@ export default function CommandCenterPage() {
   if (!data) return null;
 
   return (
-    <div className="flex flex-col h-full ">
+    <div className="flex flex-col h-full">
       <div className="flex-1 space-y-6 md:space-y-8 p-4 md:p-6 overflow-y-auto max-w-7xl mx-auto w-full">
         <div className="flex items-center justify-between">
           <div>
@@ -409,7 +409,7 @@ export default function CommandCenterPage() {
             <CardHeader className="pb-3 flex-row items-center justify-between">
               <CardTitle className="text-sm font-medium">Recent Activity</CardTitle>
               <Link
-                href="/command-center/activity"
+                href="/history?tab=activity"
                 className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
               >
                 Show more

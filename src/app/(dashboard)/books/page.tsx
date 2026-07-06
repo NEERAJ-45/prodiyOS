@@ -10,9 +10,11 @@ import {
   Star,
   ExternalLink,
   Library,
-  ChevronLeft,
-  ChevronRight,
   Search,
+  Plus,
+  Pencil,
+  Trash2,
+  Loader2,
 } from 'lucide-react';
 import {
   Card,
@@ -22,21 +24,21 @@ import {
   CardDescription,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
+import {
+  useBooksQuery,
+  useAddBook,
+  useUpdateBook,
+  useDeleteBook,
+  type BookData,
+  type BookStatus,
+} from '@/hooks/use-books';
+import { BookFormDialog, type BookFormState } from '@/components/books/BookFormDialog';
+import { toast } from '@/components/ui/toast';
 import books, { type BookEntry, categoryLabels } from '@/data/books';
 import BookSlider from '@/components/books/BookSlider';
-
-type BookStatus = 'TO_READ' | 'READING' | 'COMPLETED' | 'REFERENCE';
-
-interface TrackedBook {
-  id: string;
-  title: string;
-  author: string;
-  status: BookStatus;
-  progress: number;
-  rating: number;
-}
 
 type PaperStatus = 'TO_READ' | 'READING' | 'COMPLETED';
 
@@ -63,14 +65,6 @@ const paperStatusConfig: Record<PaperStatus, { label: string; className: string 
   COMPLETED: { label: 'Completed', className: 'bg-emerald-950 text-emerald-300 border-emerald-800' },
 };
 
-const trackedBooks: TrackedBook[] = [
-  { id: '1', title: 'Designing Data-Intensive Applications', author: 'Martin Kleppmann', status: 'READING', progress: 65, rating: 5 },
-  { id: '2', title: 'Clean Architecture', author: 'Robert C. Martin', status: 'COMPLETED', progress: 100, rating: 4 },
-  { id: '3', title: 'System Design Interview Vol. 1', author: 'Alex Xu', status: 'COMPLETED', progress: 100, rating: 4 },
-  { id: '4', title: 'Database Internals', author: 'Alex Petrov', status: 'TO_READ', progress: 0, rating: 0 },
-  { id: '5', title: 'Staff Engineer', author: 'Will Larson', status: 'READING', progress: 30, rating: 0 },
-];
-
 const papers: ResearchPaper[] = [
   { id: '1', title: 'MapReduce: Simplified Data Processing on Large Clusters', authors: 'Jeffrey Dean, Sanjay Ghemawat', source: 'OSDI', year: 2004, status: 'COMPLETED', url: 'https://research.google/pubs/pub62/' },
   { id: '2', title: 'The Google File System', authors: 'Sanjay Ghemawat, Howard Gobioff, Shun-Tak Leung', source: 'SOSP', year: 2003, status: 'COMPLETED', url: 'https://research.google/pubs/pub51/' },
@@ -84,20 +78,35 @@ const categoryOrder = [
   '03-Architecture',
   '04-Performance',
   '05-Deep-Mastery',
-  '06-Meta- ',
+  '06-Meta-Learning',
   '07-Others',
 ];
+
+const emptyFormState: BookFormState = {
+  title: '',
+  author: '',
+  status: 'TO_READ',
+  progress: 0,
+  rating: 0,
+};
 
 function groupBooksByCategory(): Record<string, BookEntry[]> {
   const grouped: Record<string, BookEntry[]> = {};
   for (const book of books) {
-    if (!grouped[book.category]) grouped[book.category] = [];
-    grouped[book.category].push(book);
+    (grouped[book.category] ??= []).push(book);
   }
   return grouped;
 }
 
-function RatingStars({ rating, size = 'sm' }: { rating: number; size?: 'sm' | 'xs' }) {
+// ─── Sub-components ──────────────────────────────────────────────────────────
+
+const RatingStars = React.memo(function RatingStars({
+  rating,
+  size = 'sm',
+}: {
+  rating: number;
+  size?: 'sm' | 'xs';
+}) {
   if (rating === 0) return null;
   const starSize = size === 'xs' ? 'h-3 w-3' : 'h-3.5 w-3.5';
   return (
@@ -113,9 +122,13 @@ function RatingStars({ rating, size = 'sm' }: { rating: number; size?: 'sm' | 'x
       ))}
     </div>
   );
-}
+});
 
-function LibraryBookCard({ book }: { book: BookEntry }) {
+const LibraryBookCard = React.memo(function LibraryBookCard({
+  book,
+}: {
+  book: BookEntry;
+}) {
   return (
     <Link href={`/books/${book.slug}`}>
       <Card className="border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900 hover:border-zinc-700 transition-all cursor-pointer group">
@@ -137,17 +150,27 @@ function LibraryBookCard({ book }: { book: BookEntry }) {
       </Card>
     </Link>
   );
-}
+});
 
-function TrackedBookCard({ book }: { book: TrackedBook }) {
+const TrackedBookCard = React.memo(function TrackedBookCard({
+  book,
+  onEdit,
+  onDelete,
+}: {
+  book: BookData;
+  onEdit: (book: BookData) => void;
+  onDelete: (id: string) => void;
+}) {
   const config = bookStatusConfig[book.status];
   return (
-    <Card className="border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900 transition-colors">
+    <Card className="border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900 transition-colors group">
       <CardHeader className="p-5 pb-3">
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <CardTitle className="text-sm font-medium text-zinc-100 truncate">{book.title}</CardTitle>
-            <CardDescription className="text-xs text-zinc-500 mt-0.5">{book.author}</CardDescription>
+            {book.author && (
+              <CardDescription className="text-xs text-zinc-500 mt-0.5">{book.author}</CardDescription>
+            )}
           </div>
           <Badge variant="outline" className={cn('text-[10px] font-medium shrink-0', config.className)}>
             {config.label}
@@ -169,13 +192,37 @@ function TrackedBookCard({ book }: { book: TrackedBook }) {
             </div>
           </div>
         )}
-        <RatingStars rating={book.rating} />
+        <div className="flex items-center justify-between">
+          <RatingStars rating={book.rating} />
+          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              onClick={() => onEdit(book)}
+              className="p-1.5 rounded hover:bg-zinc-800 text-zinc-600 hover:text-zinc-300 transition-colors cursor-pointer"
+              title="Edit"
+              type="button"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </button>
+            <button
+              onClick={() => onDelete(book._id || book.id)}
+              className="p-1.5 rounded hover:bg-zinc-800 text-zinc-600 hover:text-red-400 transition-colors cursor-pointer"
+              title="Delete"
+              type="button"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
-}
+});
 
-function PaperCard({ paper }: { paper: ResearchPaper }) {
+const PaperCard = React.memo(function PaperCard({
+  paper,
+}: {
+  paper: ResearchPaper;
+}) {
   const config = paperStatusConfig[paper.status];
   return (
     <Card className="border-zinc-800 bg-zinc-900/30 hover:bg-zinc-900/50 transition-colors">
@@ -207,11 +254,25 @@ function PaperCard({ paper }: { paper: ResearchPaper }) {
       </CardContent>
     </Card>
   );
-}
+});
+
+// ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function BooksPage() {
+  const { data: booksData, isLoading } = useBooksQuery();
+  const addBook = useAddBook();
+  const updateBook = useUpdateBook();
+  const deleteBook = useDeleteBook();
+
   const [searchQuery, setSearchQuery] = React.useState('');
   const grouped = React.useMemo(() => groupBooksByCategory(), []);
+
+  const [dialogMode, setDialogMode] = React.useState<'add' | 'edit'>('add');
+  const [dialogOpen, setDialogOpen] = React.useState(false);
+  const [editingBook, setEditingBook] = React.useState<BookData | null>(null);
+  const [form, setForm] = React.useState<BookFormState>(emptyFormState);
+
+  const trackedBooks: BookData[] = booksData?.books ?? [];
 
   const filteredGrouped = React.useMemo(() => {
     if (!searchQuery.trim()) return grouped;
@@ -224,6 +285,75 @@ export default function BooksPage() {
     return result;
   }, [grouped, searchQuery]);
 
+  function openAddDialog() {
+    setDialogMode('add');
+    setEditingBook(null);
+    setForm(emptyFormState);
+    setDialogOpen(true);
+  }
+
+  function openEditDialog(book: BookData) {
+    setDialogMode('edit');
+    setEditingBook(book);
+    setForm({
+      title: book.title,
+      author: book.author || '',
+      status: book.status,
+      progress: book.progress,
+      rating: book.rating,
+    });
+    setDialogOpen(true);
+  }
+
+  function handleSave() {
+    if (!form.title.trim()) return;
+
+    if (dialogMode === 'add') {
+      addBook.mutate(
+        {
+          title: form.title.trim(),
+          author: form.author.trim(),
+          status: form.status,
+          progress: form.progress,
+          rating: form.rating,
+        },
+        {
+          onSuccess: () => {
+            toast({ title: 'Book added' });
+            setDialogOpen(false);
+          },
+          onError: () => toast({ variant: 'destructive', title: 'Failed to add book' }),
+        }
+      );
+    } else if (editingBook) {
+      updateBook.mutate(
+        {
+          id: editingBook._id || editingBook.id,
+          title: form.title.trim(),
+          author: form.author.trim(),
+          status: form.status,
+          progress: form.progress,
+          rating: form.rating,
+        },
+        {
+          onSuccess: () => {
+            toast({ title: 'Book updated' });
+            setDialogOpen(false);
+            setEditingBook(null);
+          },
+          onError: () => toast({ variant: 'destructive', title: 'Failed to update book' }),
+        }
+      );
+    }
+  }
+
+  function handleDelete(id: string) {
+    deleteBook.mutate(id, {
+      onSuccess: () => toast({ title: 'Book deleted' }),
+      onError: () => toast({ variant: 'destructive', title: 'Failed to delete book' }),
+    });
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, x: 60 }}
@@ -231,14 +361,17 @@ export default function BooksPage() {
       transition={{ duration: 0.4, ease: 'easeOut' }}
       className="flex flex-col h-full"
     >
-      <div className="flex-1 p-4 md:p-6 space-y-4 md:space-y-6 overflow-y-auto">
+      <div className="flex-1 p-4 md:p-6 space-y-6 md:space-y-8 overflow-y-auto max-w-7xl mx-auto w-full">
         <motion.div
           initial={{ opacity: 0, x: -30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.1, duration: 0.35, ease: 'easeOut' }}
+          className="flex items-start justify-between"
         >
-          <h1 className="text-2xl font-semibold tracking-tight text-zinc-100">Books & Research</h1>
-          <p className="text-sm text-zinc-500 mt-1">Read, track, and organize your knowledge</p>
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight text-zinc-100">Books & Research</h1>
+            <p className="text-sm text-zinc-500 mt-1">Read, track, and organize your knowledge</p>
+          </div>
         </motion.div>
 
         <motion.div
@@ -256,25 +389,32 @@ export default function BooksPage() {
             className="w-full bg-zinc-900/40 border border-zinc-800 rounded-lg pl-9 pr-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-600 outline-none focus:border-primary/50 focus:bg-zinc-900/80 transition-all"
           />
         </motion.div>
+
         <Tabs defaultValue="library" className="space-y-6">
-          <TabsList className="bg-zinc-900 border border-zinc-800 overflow-x-auto flex-nowrap w-full justify-start">
-            <TabsTrigger value="library" className="data-[state=active]:bg-zinc-800 data-[state=active]:text-zinc-100 text-zinc-500 text-xs gap-2">
-              <Library className="h-3.5 w-3.5" />
-              Library
-            </TabsTrigger>
-            <TabsTrigger value="books" className="data-[state=active]:bg-zinc-800 data-[state=active]:text-zinc-100 text-zinc-500 text-xs gap-2">
-              <BookOpen className="h-3.5 w-3.5" />
-              Reading
-            </TabsTrigger>
-            <TabsTrigger value="papers" className="data-[state=active]:bg-zinc-800 data-[state=active]:text-zinc-100 text-zinc-500 text-xs gap-2">
-              <FileText className="h-3.5 w-3.5" />
-              Research Papers
-            </TabsTrigger>
-            <TabsTrigger value="docs" className="data-[state=active]:bg-zinc-800 data-[state=active]:text-zinc-100 text-zinc-500 text-xs gap-2">
-              <FileCode className="h-3.5 w-3.5" />
-              Documentation
-            </TabsTrigger>
-          </TabsList>
+          <div className="flex items-center justify-between gap-4">
+            <TabsList className="bg-zinc-900 border border-zinc-800 overflow-x-auto flex-nowrap">
+              <TabsTrigger value="library" className="data-[state=active]:bg-zinc-800 data-[state=active]:text-zinc-100 text-zinc-500 text-xs gap-2">
+                <Library className="h-3.5 w-3.5" />
+                Library
+              </TabsTrigger>
+              <TabsTrigger value="books" className="data-[state=active]:bg-zinc-800 data-[state=active]:text-zinc-100 text-zinc-500 text-xs gap-2">
+                <BookOpen className="h-3.5 w-3.5" />
+                Reading
+              </TabsTrigger>
+              <TabsTrigger value="papers" className="data-[state=active]:bg-zinc-800 data-[state=active]:text-zinc-100 text-zinc-500 text-xs gap-2">
+                <FileText className="h-3.5 w-3.5" />
+                Research Papers
+              </TabsTrigger>
+              <TabsTrigger value="docs" className="data-[state=active]:bg-zinc-800 data-[state=active]:text-zinc-100 text-zinc-500 text-xs gap-2">
+                <FileCode className="h-3.5 w-3.5" />
+                Documentation
+              </TabsTrigger>
+            </TabsList>
+            <Button variant="outline" size="sm" onClick={openAddDialog} className="shrink-0">
+              <Plus className="h-3.5 w-3.5 mr-1" />
+              Add Book
+            </Button>
+          </div>
 
           <TabsContent value="library" className="mt-0 space-y-8">
             {categoryOrder.map((cat) => {
@@ -298,11 +438,30 @@ export default function BooksPage() {
           </TabsContent>
 
           <TabsContent value="books" className="mt-0 space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {trackedBooks.map((book) => (
-                <TrackedBookCard key={book.id} book={book} />
-              ))}
-            </div>
+            {isLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-6 w-6 animate-spin text-zinc-500" />
+              </div>
+            ) : trackedBooks.length === 0 ? (
+              <Card className="border-zinc-800 bg-zinc-900/30">
+                <CardContent className="p-12 flex flex-col items-center justify-center text-center">
+                  <BookOpen className="h-10 w-10 text-zinc-700 mb-3" />
+                  <p className="text-sm font-medium text-zinc-400">No books tracked yet</p>
+                  <p className="text-xs text-zinc-600 mt-1">Click &ldquo;Add Book&rdquo; to start tracking your reading</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {trackedBooks.map((book) => (
+                  <TrackedBookCard
+                    key={book._id || book.id}
+                    book={book}
+                    onEdit={openEditDialog}
+                    onDelete={handleDelete}
+                  />
+                ))}
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="papers" className="mt-0 space-y-4">
@@ -323,7 +482,17 @@ export default function BooksPage() {
             </Card>
           </TabsContent>
         </Tabs>
-        </div>
-      </motion.div>
+      </div>
+
+      <BookFormDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        mode={dialogMode}
+        form={form}
+        onFormChange={setForm}
+        onSave={handleSave}
+        isPending={addBook.isPending || updateBook.isPending}
+      />
+    </motion.div>
   );
 }

@@ -452,6 +452,9 @@ export default function QuestionsTable({
     const nowCompleted = !wasCompleted;
     const compAtStr = nowCompleted ? new Date().toISOString() : '';
 
+    const item = [...questions, ...customQuestions].find(q => q.id === id);
+    const itemTitle = item?.title;
+
     setCompletedMap((prev) => {
       const next = { ...prev };
       if (next[key]) {
@@ -463,8 +466,8 @@ export default function QuestionsTable({
       return next;
     });
 
-    toggleCompletion.mutate({ storagePrefix: `${storagePrefix}-completed`, itemId: String(id), completedAt: nowCompleted ? compAtStr : undefined });
-  }, [saveData, storagePrefix, toggleCompletion, loadData]);
+    toggleCompletion.mutate({ storagePrefix: `${storagePrefix}-completed`, itemId: String(id), completedAt: nowCompleted ? compAtStr : undefined, title: itemTitle });
+  }, [saveData, storagePrefix, toggleCompletion, loadData, questions, customQuestions]);
 
   const updateNote = useCallback((id: number, value: string) => {
     setNotesMap((prev) => {

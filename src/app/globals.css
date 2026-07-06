@@ -26,18 +26,52 @@
     --ring: 217 91% 60%;
     --radius: 0.5rem;
   }
+
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  ::selection {
+    background-color: hsl(217 91% 60% / 0.25);
+    color: hsl(var(--foreground));
+  }
+
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring) / 0.5);
+    outline-offset: 2px;
+  }
+
+  html {
+    background-color: hsl(var(--background));
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
 }
 
-* {
-  border-color: hsl(var(--border));
-}
+@layer utilities {
+  .bg-grid {
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
 
-body {
-  background-color: hsl(var(--background));
-  color: hsl(var(--foreground));
-  font-family: 'Inter', system-ui, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  .bg-gradient-radial {
+    background-image: radial-gradient(ellipse at 50% 0%, hsl(var(--primary) / 0.03), transparent 60%);
+  }
+
+  .card-hover {
+    @apply transition-all duration-200;
+  }
+
+  .card-hover:hover {
+    @apply border-zinc-700/80 shadow-[0_0_24px_rgba(255,255,255,0.02)];
+  }
 }
 
 ::-webkit-scrollbar {
@@ -61,9 +95,6 @@ body {
 .font-handwritten {
   font-family: 'Caveat', 'Kalam', cursive;
 }
-
-
-
 
 [data-state="loading"] {
   transform: translateX(calc(-100% + var(--progress-value) * 1%));

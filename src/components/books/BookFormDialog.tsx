@@ -1,0 +1,153 @@
+'use client';
+
+import * as React from 'react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogClose,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { BOOK_STATUSES, type BookStatus } from '@/hooks/use-books';
+
+const STATUS_LABELS: Record<BookStatus, string> = {
+  TO_READ: 'To Read',
+  READING: 'Reading',
+  COMPLETED: 'Completed',
+  REFERENCE: 'Reference',
+};
+
+interface BookFormState {
+  title: string;
+  author: string;
+  status: BookStatus;
+  progress: number;
+  rating: number;
+}
+
+interface BookFormDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  mode: 'add' | 'edit';
+  form: BookFormState;
+  onFormChange: (form: BookFormState) => void;
+  onSave: () => void;
+  isPending: boolean;
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value || 0));
+}
+
+export type { BookFormState };
+
+export function BookFormDialog({
+  open,
+  onOpenChange,
+  mode,
+  form,
+  onFormChange,
+  onSave,
+  isPending,
+}: BookFormDialogProps) {
+  const set = (field: keyof BookFormState, value: string | number) => {
+    onFormChange({ ...form, [field]: value });
+  };
+
+  const isValid = form.title.trim().length > 0;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="bg-zinc-950 border-zinc-800 sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-zinc-100">
+            {mode === 'add' ? 'Add Book' : 'Edit Book'}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <Field label="Title *">
+            <Input
+              value={form.title}
+              onChange={(e) => set('title', e.target.value)}
+              placeholder="Book title"
+              className="bg-zinc-900 border-zinc-700 text-zinc-100"
+            />
+          </Field>
+          <Field label="Author">
+            <Input
+              value={form.author}
+              onChange={(e) => set('author', e.target.value)}
+              placeholder="Author name"
+              className="bg-zinc-900 border-zinc-700 text-zinc-100"
+            />
+          </Field>
+          <Field label="Status">
+            <Select value={form.status} onValueChange={(v) => set('status', v as BookStatus)}>
+              <SelectTrigger className="bg-zinc-900 border-zinc-700 text-zinc-100">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-zinc-900 border-zinc-700 text-zinc-100">
+                {BOOK_STATUSES.map((s) => (
+                  <SelectItem
+                    key={s}
+                    value={s}
+                    className="text-zinc-300 focus:bg-zinc-800 focus:text-zinc-100"
+                  >
+                    {STATUS_LABELS[s]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label="Progress %">
+            <Input
+              type="number"
+              min={0}
+              max={100}
+              value={form.progress}
+              onChange={(e) => set('progress', clamp(parseInt(e.target.value, 10), 0, 100))}
+              className="bg-zinc-900 border-zinc-700 text-zinc-100"
+            />
+          </Field>
+          <Field label="Rating (0-5)">
+            <Input
+              type="number"
+              min={0}
+              max={5}
+              value={form.rating}
+              onChange={(e) => set('rating', clamp(parseInt(e.target.value, 10), 0, 5))}
+              className="bg-zinc-900 border-zinc-700 text-zinc-100"
+            />
+          </Field>
+        </div>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="outline" size="sm">Cancel</Button>
+          </DialogClose>
+          <Button size="sm" onClick={onSave} disabled={!isValid || isPending}>
+            {isPending ? (mode === 'add' ? 'Adding...' : 'Saving...') : (mode === 'add' ? 'Add Book' : 'Save')}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1.5">
+      <label className="text-xs text-zinc-500">{label}</label>
+      {children}
+    </div>
+  );
+}
