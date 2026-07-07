@@ -2,156 +2,38 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { CalendarDays, Moon, Brain, BookOpen, Server, Network, Container, Code2, Sparkles, BookMarked } from 'lucide-react';
+import { CalendarDays, Moon, Brain, BookOpen, Sparkles, BookMarked } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { SCHEDULES, SCHEDULE_IDS, type ScheduleId } from '@/data/schedules';
 
-
-interface Slot {
-  period: string;
-  icon: React.ElementType;
-  content: string;
-  color: string;
-}
-
-interface DaySchedule {
-  day: string;
-  slots: Slot[];
-}
-
-const schedule: DaySchedule[] = [
-  {
-    day: 'Mon',
-    slots: [
-      { period: 'M1 – DSA', icon: Brain, content: 'DSA', color: 'bg-blue-500/10 text-blue-400 border-blue-500/30' },
-      { period: 'M2', icon: BookOpen, content: 'Spring Boot', color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' },
-      { period: 'Night', icon: Network, content: 'CS Fundamentals – OS', color: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30' },
-    ],
-  },
-  {
-    day: 'Tue',
-    slots: [
-      { period: 'M1 – DSA', icon: Brain, content: 'DSA', color: 'bg-blue-500/10 text-blue-400 border-blue-500/30' },
-      { period: 'M2', icon: BookOpen, content: 'Spring Boot', color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' },
-      { period: 'Night', icon: Server, content: 'System Design', color: 'bg-violet-500/10 text-violet-400 border-violet-500/30' },
-    ],
-  },
-  {
-    day: 'Wed',
-    slots: [
-      { period: 'M1 – DSA', icon: Brain, content: 'DSA', color: 'bg-blue-500/10 text-blue-400 border-blue-500/30' },
-      { period: 'M2', icon: BookOpen, content: 'Spring Boot', color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' },
-      { period: 'Night', icon: Network, content: 'CS Fundamentals – DBMS', color: 'bg-sky-500/10 text-sky-400 border-sky-500/30' },
-    ],
-  },
-  {
-    day: 'Thu',
-    slots: [
-      { period: 'M1 – DSA', icon: Brain, content: 'DSA', color: 'bg-blue-500/10 text-blue-400 border-blue-500/30' },
-      { period: 'M2', icon: Server, content: 'System Design', color: 'bg-violet-500/10 text-violet-400 border-violet-500/30' },
-      { period: 'Night', icon: Container, content: 'Docker / K8s', color: 'bg-blue-500/10 text-blue-400 border-blue-500/30' },
-    ],
-  },
-  {
-    day: 'Fri',
-    slots: [
-      { period: 'M1 – DSA', icon: Brain, content: 'DSA', color: 'bg-blue-500/10 text-blue-400 border-blue-500/30' },
-      { period: 'M2', icon: BookOpen, content: 'Spring Boot', color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' },
-      { period: 'Night', icon: Network, content: 'CS Fundamentals – Networks / OOP', color: 'bg-teal-500/10 text-teal-400 border-teal-500/30' },
-    ],
-  },
-  {
-    day: 'Sat',
-    slots: [
-      { period: 'M1 – DSA', icon: Brain, content: 'DSA (harder set)', color: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30' },
-      { period: 'M2', icon: Server, content: 'System Design (case study)', color: 'bg-violet-500/10 text-violet-400 border-violet-500/30' },
-      { period: 'Night', icon: Container, content: 'Docker / K8s', color: 'bg-blue-500/10 text-blue-400 border-blue-500/30' },
-    ],
-  },
-  {
-    day: 'Sun',
-    slots: [
-      { period: 'M1 – DSA', icon: Brain, content: 'DSA (weak-topic revision)', color: 'bg-amber-500/10 text-amber-400 border-amber-500/30' },
-      { period: 'M2', icon: BookOpen, content: 'Spring Boot catch-up', color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' },
-      { period: 'Night', icon: Code2, content: 'Mock interview Q&A / review notes', color: 'bg-rose-500/10 text-rose-400 border-rose-500/30' },
-    ],
-  },
+const SCHEDULE_TABS: { id: ScheduleId; label: string; color: string }[] = [
+  { id: 'steady', label: 'Steady', color: 'text-blue-400 border-blue-500/30 bg-blue-500/10' },
+  { id: 'react', label: 'React', color: 'text-cyan-400 border-cyan-500/30 bg-cyan-500/10' },
+  { id: 'java', label: 'Java', color: 'text-amber-400 border-amber-500/30 bg-amber-500/10' },
+  { id: 'devops', label: 'DevOps', color: 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10' },
 ];
 
-const periodIcons: Record<string, React.ElementType> = {
+const SLOT_ICONS: Record<string, React.ElementType> = {
   'M1 – DSA': Brain,
   'M2': BookOpen,
-  'Night': Moon,
+  'Night – CS Fundamentals': Moon,
 };
 
-function WeeklyCalendar() {
-  const today = new Date();
-  const dayIndex = today.getDay();
-  const todayLabel = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][dayIndex];
-
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3">
-      {schedule.map((day) => {
-        const isToday = day.day === todayLabel;
-        return (
-          <Card
-            key={day.day}
-            className={cn(
-              'border-zinc-800/80 bg-zinc-900/40',
-              isToday && 'ring-1 ring-primary/50 border-primary/30'
-            )}
-          >
-            <CardHeader className={cn(
-              'p-3 pb-0',
-              isToday && 'bg-primary/5'
-            )}>
-              <CardTitle className={cn(
-                'text-sm font-semibold text-zinc-300 flex items-center gap-2',
-                isToday && 'text-primary'
-              )}>
-                {day.day}
-                {isToday && (
-                  <span className="text-[10px] font-normal text-primary/70 bg-primary/10 px-1.5 py-0.5 rounded-full">
-                    today
-                  </span>
-                )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-3 space-y-2">
-              {day.slots.map((slot) => {
-                const Icon = slot.icon;
-                return (
-                  <div
-                    key={slot.period}
-                    className={cn(
-                      'rounded-lg border p-2.5 space-y-1',
-                      slot.color
-                    )}
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <Icon className="h-3 w-3 shrink-0 opacity-70" />
-                      <span className="text-[10px] font-medium uppercase tracking-wider opacity-70">
-                        {slot.period}
-                      </span>
-                    </div>
-                    <p className="text-xs font-medium leading-snug">
-                      {slot.content}
-                    </p>
-                  </div>
-                );
-              })}
-            </CardContent>
-          </Card>
-        );
-      })}
-    </div>
-  );
-}
+const SLOT_COLORS: Record<string, string> = {
+  'M1 – DSA': 'bg-blue-500/10 text-blue-400 border-blue-500/30',
+  'M2': 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
+  'Night – CS Fundamentals': 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30',
+};
 
 export default function WeeklyPage() {
+  const [scheduleId, setScheduleId] = React.useState<ScheduleId>('steady');
   const today = new Date();
   const dateStr = today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+  const dayIndex = today.getDay();
+  const todayLabel = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][dayIndex];
+  const schedule = SCHEDULES[scheduleId];
+  const days = schedule?.days ?? [];
 
   return (
     <div className="flex flex-col h-full">
@@ -177,13 +59,90 @@ export default function WeeklyPage() {
           </Link>
         </div>
 
-        <WeeklyCalendar />
+        {/* Schedule Tabs */}
+        <div className="flex flex-wrap gap-1.5">
+          {SCHEDULE_TABS.map((tab) => {
+            const isActive = scheduleId === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setScheduleId(tab.id)}
+                className={cn(
+                  'px-3 py-1.5 rounded-lg text-xs font-medium border transition-all cursor-pointer',
+                  isActive
+                    ? tab.color
+                    : 'border-zinc-800 text-zinc-500 hover:text-zinc-300 hover:border-zinc-700 bg-zinc-900/50',
+                )}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
 
+        {/* Weekly Calendar Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3">
+          {days.map((day) => {
+            const isToday = day.day === todayLabel;
+            return (
+              <Card
+                key={day.day}
+                className={cn(
+                  'border-zinc-800/80 bg-zinc-900/40',
+                  isToday && 'ring-1 ring-primary/50 border-primary/30'
+                )}
+              >
+                <CardHeader className={cn('p-3 pb-0', isToday && 'bg-primary/5')}>
+                  <CardTitle className={cn(
+                    'text-sm font-semibold text-zinc-300 flex items-center gap-2',
+                    isToday && 'text-primary'
+                  )}>
+                    {day.day}
+                    {isToday && (
+                      <span className="text-[10px] font-normal text-primary/70 bg-primary/10 px-1.5 py-0.5 rounded-full">
+                        today
+                      </span>
+                    )}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-3 space-y-2">
+                  {day.slots.map((slot) => {
+                    const Icon = SLOT_ICONS[slot.period] || Brain;
+                    return (
+                      <div
+                        key={slot.period}
+                        className={cn(
+                          'rounded-lg border p-2.5 space-y-1',
+                          SLOT_COLORS[slot.period] || 'bg-zinc-800/30 text-zinc-400 border-zinc-700/50'
+                        )}
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <Icon className="h-3 w-3 shrink-0 opacity-70" />
+                          <span className="text-[10px] font-medium uppercase tracking-wider opacity-70">
+                            {slot.period}
+                          </span>
+                        </div>
+                        <p className="text-xs font-medium leading-snug">
+                          {slot.topic}
+                        </p>
+                        {slot.description && (
+                          <p className="text-[10px] opacity-60">{slot.description}</p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+
+        {/* Rotation Overview Table */}
         <Card className="border-zinc-800/80 bg-zinc-900/40">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-zinc-500" />
-              Rotation Overview
+              Rotation Overview — {schedule?.label}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0 overflow-x-auto">
@@ -197,10 +156,9 @@ export default function WeeklyPage() {
                 </tr>
               </thead>
               <tbody>
-                {schedule.map((day) => {
-                  const dayIndex = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(day.day);
-                  const todayIndex = new Date().getDay();
-                  const isToday = dayIndex === todayIndex;
+                {days.map((day) => {
+                  const dayIdx = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(day.day);
+                  const isToday = dayIdx === dayIndex;
                   return (
                     <tr
                       key={day.day}
@@ -216,12 +174,12 @@ export default function WeeklyPage() {
                         {day.day}
                       </td>
                       {day.slots.map((slot) => {
-                        const Icon = slot.icon;
+                        const Icon = SLOT_ICONS[slot.period] || Brain;
                         return (
                           <td key={slot.period} className="px-4 py-3">
                             <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
                               <Icon className="h-3.5 w-3.5 text-zinc-500 shrink-0" />
-                              <span className="text-sm text-zinc-300">{slot.content}</span>
+                              <span className="text-sm text-zinc-300">{slot.topic}</span>
                             </div>
                           </td>
                         );
@@ -233,7 +191,6 @@ export default function WeeklyPage() {
             </table>
           </CardContent>
         </Card>
-
       </div>
     </div>
   );
