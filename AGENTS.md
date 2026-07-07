@@ -42,7 +42,7 @@ A full-stack learning progress tracking platform built with Next.js, MongoDB, an
 - **Adding a model**: Create Mongoose schema in `src/lib/models/`
 - **Adding a UI component**: Create in `src/components/ui/` following existing patterns (cn() utility, forwardRef for Radix components)
 - **Running lint**: `npm run lint`
-- **Running typecheck**: `npx tsc --noEmit`
+- **Running typecheck**: `npm run typecheck`
 
 ## API Design Guide
 All API messages follow this canonical structure:

@@ -5,6 +5,12 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     '/api/books/**': ['./src/assets/Being-Backend-Prodigy/**/*'],
   },
+  turbopack: {
+    root: process.cwd(),
+  },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
 };
 
 export default nextConfig;
