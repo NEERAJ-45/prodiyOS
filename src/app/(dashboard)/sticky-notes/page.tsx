@@ -188,7 +188,7 @@ export default function StickyNotesPage() {
         {/* Notes Grid Display */}
         <LazyAppear delay={0.1}>
           {mounted && stickyNotes.length === 0 ? (
-            <div className="flex flex-col items-center justify-center p-16 border border-dashed border-zinc-850 rounded-xl bg-zinc-900/10 text-center my-8">
+            <div className="flex flex-col items-center justify-center p-16 border border-dashed border-zinc-800 rounded-xl bg-zinc-900/10 text-center my-8">
               <StickyNote className="h-10 w-10 text-zinc-600 mb-3 animate-bounce" />
               <p className="text-sm text-zinc-500">Your sticky note whiteboard is empty.</p>
               <button

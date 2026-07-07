@@ -114,7 +114,7 @@ function AddTopicDialog({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. B+ Tree Node Structure"
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-300 placeholder:text-zinc-650 outline-none focus:border-primary/50 transition-colors"
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-300 placeholder:text-zinc-500 outline-none focus:border-primary/50 transition-colors"
             />
           </div>
           <div className="space-y-1.5">
@@ -136,12 +136,12 @@ function AddTopicDialog({
               value={link}
               onChange={(e) => setLink(e.target.value)}
               placeholder="e.g. https://www.geeksforgeeks.org/..."
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-300 placeholder:text-zinc-655 outline-none focus:border-primary/50 transition-colors"
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-300 placeholder:text-zinc-500 outline-none focus:border-primary/50 transition-colors"
             />
           </div>
           <DialogFooter className="gap-2 pt-2">
             <DialogClose asChild>
-              <button type="button" className="px-3.5 py-2 rounded-lg text-xs font-semibold border border-zinc-850 hover:bg-zinc-900 transition-colors text-zinc-400 cursor-pointer">
+              <button type="button" className="px-3.5 py-2 rounded-lg text-xs font-semibold border border-zinc-800 hover:bg-zinc-900 transition-colors text-zinc-400 cursor-pointer">
                 Cancel
               </button>
             </DialogClose>

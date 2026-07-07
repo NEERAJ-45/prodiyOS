@@ -260,7 +260,7 @@ export default function RevisionPage() {
                     value={formConcept}
                     onChange={(e) => setFormConcept(e.target.value)}
                     placeholder="e.g. JVM Memory Pools & gc Tuning"
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-300 placeholder:text-zinc-650 outline-none focus:border-primary/50 transition-colors"
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-300 placeholder:text-zinc-500 outline-none focus:border-primary/50 transition-colors"
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -275,7 +275,7 @@ export default function RevisionPage() {
                 </div>
                 <DialogFooter className="gap-2 pt-2">
                   <DialogClose asChild>
-                    <button type="button" className="px-3.5 py-2 rounded-lg text-xs font-semibold border border-zinc-850 hover:bg-zinc-900 transition-colors text-zinc-400 cursor-pointer">
+                    <button type="button" className="px-3.5 py-2 rounded-lg text-xs font-semibold border border-zinc-800 hover:bg-zinc-900 transition-colors text-zinc-400 cursor-pointer">
                       Cancel
                     </button>
                   </DialogClose>
@@ -399,7 +399,7 @@ export default function RevisionPage() {
               </div>
               <DialogFooter className="gap-2 pt-2">
                 <DialogClose asChild>
-                  <button type="button" className="px-3.5 py-2 rounded-lg text-xs font-semibold border border-zinc-850 hover:bg-zinc-900 transition-colors text-zinc-400 cursor-pointer">
+                  <button type="button" className="px-3.5 py-2 rounded-lg text-xs font-semibold border border-zinc-800 hover:bg-zinc-900 transition-colors text-zinc-400 cursor-pointer">
                     Cancel
                   </button>
                 </DialogClose>
@@ -508,7 +508,7 @@ function RevisionCard({
         <div className="flex items-center gap-2">
           <button
             onClick={onEdit}
-            className="text-zinc-650 hover:text-zinc-300 p-1.5 rounded hover:bg-zinc-800 transition-colors cursor-pointer"
+            className="text-zinc-500 hover:text-zinc-300 p-1.5 rounded hover:bg-zinc-800 transition-colors cursor-pointer"
             title="Edit Topic"
           >
             <Pencil size={13} />
@@ -516,7 +516,7 @@ function RevisionCard({
 
           <button
             onClick={onDelete}
-            className="text-zinc-650 hover:text-red-400 p-1.5 rounded hover:bg-zinc-800 transition-colors cursor-pointer"
+            className="text-zinc-500 hover:text-red-400 p-1.5 rounded hover:bg-zinc-800 transition-colors cursor-pointer"
             title="Delete Topic"
           >
             <Trash2 size={13} />

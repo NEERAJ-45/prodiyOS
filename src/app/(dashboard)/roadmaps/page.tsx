@@ -181,14 +181,14 @@ export default function RoadmapsPage() {
                   <div className="flex flex-col justify-between h-full space-y-6">
                     <div>
                       <div className="flex justify-between items-start mb-3">
-                        <h3 className="text-lg font-bold text-zinc-150 group-hover:text-white transition-colors duration-200">
+                        <h3 className="text-lg font-bold text-zinc-100 group-hover:text-white transition-colors duration-200">
                           {category.title}
                         </h3>
                         <Badge variant="outline" className={cn('text-xs capitalize font-semibold border', difficultyColors[category.difficulty])}>
                           {category.difficulty}
                         </Badge>
                       </div>
-                      <CardDescription className="text-sm text-zinc-450 leading-relaxed min-h-[72px]">
+                      <CardDescription className="text-sm text-zinc-400 leading-relaxed min-h-[72px]">
                         {category.description}
                       </CardDescription>
                     </div>

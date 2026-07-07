@@ -143,9 +143,9 @@ function WeeklyCalendar() {
                       return roadmapLink ? (
                         <Link
                           href={roadmapLink}
-                          className="inline-flex items-center gap-1 text-[9px] w-fit px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 hover:border-amber-500/30 hover:scale-105 transition-all font-semibold cursor-pointer animate-bounce mt-1 shadow-sm shrink-0"
+                          className="inline-flex items-center gap-1 text-[9px] w-fit px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 hover:border-amber-500/30 transition-all font-semibold cursor-pointer mt-1 shadow-sm shrink-0"
                         >
-                          <span>Confused? what to Study:?</span>
+                          <span>Study Resources</span>
                           <ArrowUpRight className="h-2.5 w-2.5 shrink-0" />
                         </Link>
                       ) : null;
@@ -229,9 +229,9 @@ export default function WeeklyPage() {
                               {roadmapLink && (
                                 <Link
                                   href={roadmapLink}
-                                  className="inline-flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 hover:border-amber-500/30 hover:scale-105 transition-all font-semibold cursor-pointer animate-bounce shadow-sm shrink-0 ml-1"
+                                  className="inline-flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 hover:border-amber-500/30 transition-all font-semibold cursor-pointer shadow-sm shrink-0 ml-1"
                                 >
-                                  <span>Confused? what to Study:?</span>
+                                  <span>Study Resources</span>
                                   <ArrowUpRight className="h-2.5 w-2.5 shrink-0" />
                                 </Link>
                               )}

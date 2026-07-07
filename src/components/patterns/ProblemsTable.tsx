@@ -112,7 +112,7 @@ function AddProblemDialog({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Merge K Sorted Lists"
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-300 placeholder:text-zinc-650 outline-none focus:border-primary/50 transition-colors"
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-300 placeholder:text-zinc-500 outline-none focus:border-primary/50 transition-colors"
             />
           </div>
           <div className="space-y-1.5">
@@ -134,12 +134,12 @@ function AddProblemDialog({
               value={link}
               onChange={(e) => setLink(e.target.value)}
               placeholder="e.g. https://leetcode.com/problems/..."
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-300 placeholder:text-zinc-655 outline-none focus:border-primary/50 transition-colors"
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-300 placeholder:text-zinc-500 outline-none focus:border-primary/50 transition-colors"
             />
           </div>
           <DialogFooter className="gap-2 pt-2">
             <DialogClose asChild>
-              <button type="button" className="px-3.5 py-2 rounded-lg text-xs font-semibold border border-zinc-850 hover:bg-zinc-900 transition-colors text-zinc-400 cursor-pointer">
+              <button type="button" className="px-3.5 py-2 rounded-lg text-xs font-semibold border border-zinc-800 hover:bg-zinc-900 transition-colors text-zinc-400 cursor-pointer">
                 Cancel
               </button>
             </DialogClose>
@@ -423,7 +423,7 @@ export function ProblemsTable({
               {isCustom && (
                 <button
                   onClick={() => handleDeleteProblem(id)}
-                  className="text-zinc-650 hover:text-red-400 transition-colors p-1 rounded hover:bg-zinc-800 shrink-0"
+                  className="text-zinc-500 hover:text-red-400 transition-colors p-1 rounded hover:bg-zinc-800 shrink-0"
                   title="Delete"
                 >
                   <Trash2 size={13} />
