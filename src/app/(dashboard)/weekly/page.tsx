@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { CalendarDays, Sun, Moon, Brain, BookOpen, Server, Network, Container, Code2, Target, Sparkles, BookMarked } from 'lucide-react';
+import { CalendarDays, Moon, Brain, BookOpen, Server, Network, Container, Code2, Sparkles, BookMarked } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -234,26 +234,6 @@ export default function WeeklyPage() {
           </CardContent>
         </Card>
 
-        <div className="flex flex-wrap gap-3 text-xs text-zinc-500">
-          <div className="flex items-center gap-1.5">
-            <Brain className="h-3.5 w-3.5 text-blue-400" /> DSA
-          </div>
-          <div className="flex items-center gap-1.5">
-            <BookOpen className="h-3.5 w-3.5 text-emerald-400" /> Spring Boot
-          </div>
-          <div className="flex items-center gap-1.5">
-            <Server className="h-3.5 w-3.5 text-violet-400" /> System Design
-          </div>
-          <div className="flex items-center gap-1.5">
-            <Network className="h-3.5 w-3.5 text-cyan-400" /> CS Fundamentals
-          </div>
-          <div className="flex items-center gap-1.5">
-            <Container className="h-3.5 w-3.5 text-blue-400" /> Docker / K8s
-          </div>
-          <div className="flex items-center gap-1.5">
-            <Code2 className="h-3.5 w-3.5 text-rose-400" /> Interview Prep
-          </div>
-        </div>
       </div>
     </div>
   );
