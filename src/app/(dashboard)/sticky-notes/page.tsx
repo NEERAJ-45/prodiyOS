@@ -237,7 +237,7 @@ export default function StickyNotesPage() {
                         onChange={(e) => handleTextChange(note.id, e.target.value, note.color)}
                         placeholder="Write something down..."
                         className={cn(
-                          "w-full min-h-[130px] bg-transparent border-none p-0 text-xl placeholder:text-black/35 outline-none focus:outline-none resize-none font-handwritten leading-relaxed select-text cursor-text",
+                          "w-full min-h-[130px] bg-transparent border-none p-0 text-xl placeholder:text-zinc-500/60 outline-none focus:outline-none resize-none font-handwritten leading-relaxed select-text cursor-text",
                           style.input
                         )}
                       />

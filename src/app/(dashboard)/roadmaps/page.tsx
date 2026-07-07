@@ -177,7 +177,7 @@ export default function RoadmapsPage() {
               yOffset={15}
             >
               <Link href={category.href} className="group block">
-                <SpotlightCard className="h-full hover:border-zinc-700/80 transition-all duration-350" spotlightColor={category.glow}>
+                <SpotlightCard className="h-full hover:border-zinc-700/80 transition-all duration-300" spotlightColor={category.glow}>
                   <div className="flex flex-col justify-between h-full space-y-6">
                     <div>
                       <div className="flex justify-between items-start mb-3">

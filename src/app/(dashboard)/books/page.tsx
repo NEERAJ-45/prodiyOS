@@ -116,7 +116,7 @@ const RatingStars = React.memo(function RatingStars({
           key={i}
           className={cn(
             starSize,
-            i < rating ? 'text-amber-400 fill-amber-400' : 'text-zinc-800'
+            i < rating ? 'text-amber-400 fill-amber-400' : 'text-zinc-600'
           )}
         />
       ))}
