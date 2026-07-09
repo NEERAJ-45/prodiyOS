@@ -142,6 +142,7 @@ const SCHEDULE_TABS: { id: ScheduleId; label: string; color: string }[] = [
   { id: 'react', label: 'React', color: 'text-cyan-400 border-cyan-500/30 bg-cyan-500/10' },
   { id: 'java', label: 'Java', color: 'text-amber-400 border-amber-500/30 bg-amber-500/10' },
   { id: 'devops', label: 'DevOps', color: 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10' },
+  { id: 'custom', label: 'Custom', color: 'text-purple-400 border-purple-500/30 bg-purple-500/10' },
 ];
 
 const SLOT_ICONS: Record<string, React.ElementType> = {

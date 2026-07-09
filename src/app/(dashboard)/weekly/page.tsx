@@ -12,6 +12,7 @@ const SCHEDULE_TABS: { id: ScheduleId; label: string; color: string }[] = [
   { id: 'react', label: 'React', color: 'text-cyan-400 border-cyan-500/30 bg-cyan-500/10' },
   { id: 'java', label: 'Java', color: 'text-amber-400 border-amber-500/30 bg-amber-500/10' },
   { id: 'devops', label: 'DevOps', color: 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10' },
+  { id: 'custom', label: 'Custom', color: 'text-purple-400 border-purple-500/30 bg-purple-500/10' },
 ];
 
 const SLOT_ICONS: Record<string, React.ElementType> = {
@@ -28,12 +29,26 @@ const SLOT_COLORS: Record<string, string> = {
 
 export default function WeeklyPage() {
   const [scheduleId, setScheduleId] = React.useState<ScheduleId>('steady');
+  const [customSchedule, setCustomSchedule] = React.useState<typeof SCHEDULES.custom | null>(null);
   const today = new Date();
   const dateStr = today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
   const dayIndex = today.getDay();
   const todayLabel = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][dayIndex];
-  const schedule = SCHEDULES[scheduleId];
+  const schedule = scheduleId === 'custom' && customSchedule ? customSchedule : SCHEDULES[scheduleId];
   const days = schedule?.days ?? [];
+
+  React.useEffect(() => {
+    const saved = localStorage.getItem('weekly-custom-schedule');
+    if (saved) {
+      try { setCustomSchedule(JSON.parse(saved)); } catch {}
+    }
+  }, []);
+
+  React.useEffect(() => {
+    if (scheduleId === 'custom' && customSchedule) {
+      localStorage.setItem('weekly-custom-schedule', JSON.stringify(customSchedule));
+    }
+  }, [customSchedule, scheduleId]);
 
   return (
     <div className="flex flex-col h-full">

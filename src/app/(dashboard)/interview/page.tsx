@@ -5,6 +5,7 @@ import { useMounted } from '@/hooks/useMounted';
 import {
   Search, Brain, Target, Code2, Server, BarChart3,
   Plus, Pencil, Trash2, CheckCircle, X, GripVertical, BookOpen,
+  Sparkles,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -16,6 +17,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useProfile } from '@/components/providers/ProfileProvider';
 import CategoryBrowser from '@/components/roadmaps/CategoryBrowser';
+import CustomQAViewer from '@/components/interview/CustomQAViewer';
 
 function log(userEmail: string, text: string) {
   fetch('/api/db/activity', {
@@ -77,7 +79,7 @@ const allTypes: QuestionType[] = ['DSA', 'SYSTEM_DESIGN', 'BEHAVIORAL', 'CORE_CS
 
 export default function InterviewPage() {
   const { userEmail } = useProfile();
-  const [activeTab, setActiveTab] = React.useState<'questions' | 'theory'>('questions');
+  const [activeTab, setActiveTab] = React.useState<'questions' | 'theory' | 'custom'>('questions');
   const [questions, setQuestions] = React.useState<InterviewQuestion[]>([]);
   const [search, setSearch] = React.useState('');
   const mounted = useMounted();
@@ -211,6 +213,17 @@ export default function InterviewPage() {
             <BookOpen className="h-4 w-4" />
             Theory Roadmaps
           </button>
+          <button
+            onClick={() => setActiveTab('custom')}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+              activeTab === 'custom'
+                ? 'border-indigo-500 text-indigo-400 bg-indigo-950/10'
+                : 'border-transparent text-zinc-400 hover:text-zinc-200'
+            }`}
+          >
+            <Sparkles className="h-4 w-4" />
+            Custom Q&A Viewer
+          </button>
         </div>
 
         {/* ─── My Questions Tab ───────────────────────────── */}
@@ -334,6 +347,10 @@ export default function InterviewPage() {
           <div className="space-y-4">
             <CategoryBrowser />
           </div>
+        )}
+
+        {activeTab === 'custom' && (
+          <CustomQAViewer />
         )}
       </div>
 

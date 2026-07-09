@@ -1,4 +1,4 @@
-export type ScheduleId = 'steady' | 'react' | 'java' | 'devops';
+export type ScheduleId = 'steady' | 'react' | 'java' | 'devops' | 'custom';
 
 export interface Slot {
   period: 'M1 – DSA' | 'M2' | 'Night – CS Fundamentals';
@@ -98,9 +98,25 @@ export const SCHEDULES: Record<ScheduleId, StudySchedule> = {
       day('Sun', 'Docker/K8s catch-up', 'CS Revise', 'DSA (revise)'),
     ],
   },
+  custom: {
+    id: 'custom',
+    label: 'Custom',
+    shortLabel: 'Custom',
+    icon: 'Settings',
+    description: 'Your custom schedule — topics stored locally.',
+    days: [
+      day('Mon', 'Your topic', 'Your topic'),
+      day('Tue', 'Your topic', 'Your topic'),
+      day('Wed', 'Your topic', 'Your topic'),
+      day('Thu', 'Your topic', 'Your topic'),
+      day('Fri', 'Your topic', 'Your topic'),
+      day('Sat', 'Your topic', 'Your topic'),
+      day('Sun', 'Your topic', 'Your topic'),
+    ],
+  },
 };
 
-export const SCHEDULE_IDS: ScheduleId[] = ['steady', 'react', 'java', 'devops'];
+export const SCHEDULE_IDS: ScheduleId[] = ['steady', 'react', 'java', 'devops', 'custom'];
 
 export function getTodaySchedule(scheduleId: ScheduleId): DaySchedule | null {
   const schedule = SCHEDULES[scheduleId];
