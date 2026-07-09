@@ -26,7 +26,7 @@ import {
   Plus,
   Loader2,
   ListOrdered,
-  Info,
+  
   RotateCcw,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -170,7 +170,6 @@ export default function QuestionsTable({
   const [notesMap, setNotesMap] = useState<NotesMap>({});
   const [customQuestions, setCustomQuestions] = useState<QuestionItem[]>([]);
   const [dbConnected, setDbConnected] = useState(false);
-  const [showDescription, setShowDescription] = useState(true);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const completionsQuery = useCompletionsQuery(`${storagePrefix}-completed`);
   const notesQuery = useNotesQuery(`${storagePrefix}-notes`);
@@ -535,7 +534,6 @@ export default function QuestionsTable({
             const id = info.row.original.id;
             const done = !!completedMap[id];
             const isCustom = info.row.original.isCustom;
-            const desc = info.row.original.description;
             return (
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-2 min-w-0">
@@ -547,44 +545,7 @@ export default function QuestionsTable({
                   >
                     {info.getValue()}
                   </span>
-                  {desc && (
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <button
-                          onClick={(e) => e.stopPropagation()}
-                          className="text-zinc-600 hover:text-zinc-300 transition-colors p-0.5 rounded shrink-0"
-                        >
-                          <Info size={13} />
-                        </button>
-                      </DialogTrigger>
-                      <DialogContent className="border-zinc-800 bg-zinc-950 text-zinc-100 sm:max-w-[425px]">
-                        <DialogHeader>
-                          <DialogTitle className="text-zinc-100 flex items-center gap-2">
-                            <Info size={16} className="text-primary" />
-                            {info.row.original.title}
-                          </DialogTitle>
-                        </DialogHeader>
-                        <DialogDescription className="text-sm text-zinc-400 leading-relaxed pt-2">
-                          {desc}
-                        </DialogDescription>
-                        <div className="flex items-center gap-3 pt-2">
-                          <a
-                            href={info.row.original.link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-primary/10 text-primary border border-primary/30 hover:bg-primary/20 transition-colors"
-                          >
-                            Open Question
-                          </a>
-                          <DialogClose asChild>
-                            <button className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 transition-colors">
-                              Close
-                            </button>
-                          </DialogClose>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-                  )}
+                  
                 </div>
                 {isCustom && (
                   <button
@@ -603,32 +564,7 @@ export default function QuestionsTable({
         }),
       ];
 
-      if (showDescription) {
-        cols.push(
-          columnHelper.accessor('description', {
-            header: () => (
-              <button
-                onClick={() => setShowDescription(false)}
-                className="inline-flex items-center gap-1 text-zinc-400 hover:text-zinc-200 transition-colors"
-              >
-                Description
-                <span className="text-[10px] opacity-60">✕</span>
-              </button>
-            ),
-            cell: (info) => {
-              const desc = info.getValue();
-              if (!desc) return null;
-              return (
-                <span className="text-xs text-zinc-500 leading-relaxed line-clamp-2">
-                  {desc}
-                </span>
-              );
-            },
-            size: 260,
-            minSize: 140,
-          })
-        );
-      }
+      
 
       cols.push(
         columnHelper.display({
@@ -734,7 +670,7 @@ export default function QuestionsTable({
       );
       return cols;
     },
-    [completedMap, toggleCompleted, notesMap, updateNote, handleDeleteQuestion, storagePrefix, saveData, pagination.pageIndex, pagination.pageSize, showDescription]
+    [completedMap, toggleCompleted, notesMap, updateNote, handleDeleteQuestion, storagePrefix, saveData, pagination.pageIndex, pagination.pageSize]
   );
 
   const table = useReactTable({
@@ -775,18 +711,6 @@ export default function QuestionsTable({
                 className="w-full bg-transparent py-2.5 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none"
               />
             </div>
-            <button
-              onClick={() => setShowDescription((v) => !v)}
-              className={cn(
-                'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-colors shrink-0',
-                showDescription
-                  ? 'bg-primary/10 text-primary border-primary/30 hover:bg-primary/20'
-                  : 'bg-zinc-900/60 text-zinc-500 border-zinc-800 hover:text-zinc-300 hover:border-zinc-700'
-              )}
-            >
-              <Info size={13} />
-              Desc
-            </button>
             <AddTopicDialog onAdd={handleAddQuestion} />
             <button
               onClick={() => setShowResetConfirm(true)}
