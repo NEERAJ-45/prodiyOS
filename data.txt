@@ -1,0 +1,10 @@
+# MongoDB Connection String (Replace with your Atlas or Local Cluster URI)
+MONGODB_URI=mongodb://neeraj:pass%401234@ac-pnuf5t8-shard-00-00.ufs4i1u.mongodb.net:27017,ac-pnuf5t8-shard-00-01.ufs4i1u.mongodb.net:27017,ac-pnuf5t8-shard-00-02.ufs4i1u.mongodb.net:27017/prodigyos?authSource=admin&replicaSet=atlas-sz2t1k-shard-0&retryWrites=true&w=majority&tls=true&appName=ProdigyOS
+
+# NextAuth
+AUTH_SECRET=USBs0rxTTHIiSduiNniF6limtenpOLPy6OV4ubvi4BM=
+NEXTAUTH_URL=http://localhost:3000
+
+# Vercel — opt into Large Functions beta for api/books/[slug] (844MB PDFs)
+VERCEL_SUPPORT_LARGE_FUNCTIONS=1
+`````````````````````````
