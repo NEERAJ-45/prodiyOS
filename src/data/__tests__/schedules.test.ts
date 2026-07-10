@@ -9,8 +9,8 @@ import {
 } from '@/data/schedules';
 
 describe('schedules', () => {
-  it('has all 4 schedules', () => {
-    expect(SCHEDULE_IDS).toEqual(['steady', 'react', 'java', 'devops']);
+  it('has all schedules', () => {
+    expect(SCHEDULE_IDS).toEqual(['steady', 'react', 'java', 'devops', 'custom']);
   });
 
   it('each schedule has 7 days', () => {
