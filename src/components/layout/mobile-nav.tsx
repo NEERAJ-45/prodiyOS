@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, LayoutDashboard, GitBranch, Map, Target, RefreshCw, FolderKanban, Briefcase, BookOpen, CalendarCheck, BarChart3, StickyNote, Rocket } from 'lucide-react';
+import { Menu, X, LayoutDashboard, GitBranch, Map, Target, RefreshCw, FolderKanban, Briefcase, BookOpen, CalendarCheck, BarChart3, StickyNote, Rocket, CalendarDays, History, ListChecks, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -14,8 +14,12 @@ const navItems = [
   { label: 'Revision System', href: '/revision', icon: RefreshCw },
   { label: 'Projects', href: '/projects', icon: FolderKanban },
   { label: 'Interview Prep', href: '/interview', icon: Briefcase },
+  { label: 'Job Applications', href: '/interviews', icon: FileText },
   { label: 'Research Library', href: '/books', icon: BookOpen },
   { label: 'Daily Planner', href: '/daily', icon: CalendarCheck },
+  { label: 'Weekly Overview', href: '/weekly', icon: CalendarDays },
+  { label: 'Activity Log', href: '/history', icon: History },
+  { label: 'Task Manager', href: '/tasks', icon: ListChecks },
   { label: 'Analytics', href: '/analytics', icon: BarChart3 },
   { label: 'Quick Notes', href: '/sticky-notes', icon: StickyNote },
   { label: 'Career Hub', href: '/career', icon: Rocket },

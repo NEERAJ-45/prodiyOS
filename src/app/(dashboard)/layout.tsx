@@ -14,7 +14,7 @@ export default function DashboardLayout({
       <Sidebar />
       <div className="flex flex-1 flex-col min-w-0">
         <Navbar global />
-        <main className="flex-1 overflow-y-auto bg-grid bg-gradient-radial">
+        <main className="flex-1 overflow-y-auto">
           <PageTransition>{children}</PageTransition>
         </main>
       </div>
