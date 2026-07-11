@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, LayoutDashboard, GitBranch, Map, Target, RefreshCw, FolderKanban, Briefcase, BookOpen, CalendarCheck, BarChart3, StickyNote, Rocket, CalendarDays, History, ListChecks, FileText } from 'lucide-react';
+import { Menu, X, LayoutDashboard, GitBranch, Map, Target, RefreshCw, FolderKanban, Briefcase, BookOpen, CalendarCheck, BarChart3, StickyNote, Rocket, CalendarDays, History, ListChecks, FileText, FileCode } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -23,6 +23,7 @@ const navItems = [
   { label: 'Analytics', href: '/analytics', icon: BarChart3 },
   { label: 'Quick Notes', href: '/sticky-notes', icon: StickyNote },
   { label: 'Career Hub', href: '/career', icon: Rocket },
+  { label: 'Resume ', href: '/latex', icon: FileCode },
 ];
 
 export function MobileNav() {

@@ -26,6 +26,7 @@ import {
   StickyNote,
   ListChecks,
   Calendar,
+  FileText,
 } from "lucide-react";
 
 interface NavItem {
@@ -52,6 +53,7 @@ const navItems: NavItem[] = [
   { label: "Analytics", href: "/analytics", icon: BarChart3 },
   { label: "Quick Notes", href: "/sticky-notes", icon: StickyNote },
   { label: "Career Hub", href: "/career", icon: Rocket },
+  { label: "Resume ", href: "/latex", icon: FileText },
 ];
 
 export function Sidebar() {

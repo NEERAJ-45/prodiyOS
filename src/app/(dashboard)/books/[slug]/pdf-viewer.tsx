@@ -16,6 +16,7 @@ interface PdfViewerProps {
   scale: number;
   rotation: number;
   onLoadSuccess: ({ numPages }: { numPages: number }) => void;
+  onTextClick?: (text: string) => void;
 }
 
 export default function PdfViewer({
@@ -24,6 +25,7 @@ export default function PdfViewer({
   scale,
   rotation,
   onLoadSuccess,
+  onTextClick,
 }: PdfViewerProps) {
   const options = React.useMemo(
     () => ({
@@ -32,6 +34,23 @@ export default function PdfViewer({
     }),
     [],
   );
+
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const el = containerRef.current;
+    if (!el || !onTextClick) return;
+
+    function handleClick(e: MouseEvent) {
+      const span = (e.target as HTMLElement)?.closest('.react-pdf__Page__textContent span');
+      if (span?.textContent) {
+        onTextClick(span.textContent.trim());
+      }
+    }
+
+    el.addEventListener('click', handleClick);
+    return () => el.removeEventListener('click', handleClick);
+  }, [onTextClick]);
 
   function onLoadError(error: Error) {
     console.error('PDF load error:', error);
@@ -57,22 +76,24 @@ export default function PdfViewer({
         </div>
       }
     >
-      <Page
-        pageNumber={pageNumber}
-        scale={scale}
-        rotate={rotation}
-        renderTextLayer={true}
-        renderAnnotationLayer={true}
-        loading={
-          <div className="flex items-center justify-center py-20">
-            <div className="flex flex-col items-center gap-3 text-zinc-500">
-              <div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-700 border-t-zinc-400" />
-              <p className="text-sm">Rendering page...</p>
+      <div ref={containerRef} className="overflow-y-auto min-h-0 max-h-full">
+        <Page
+          pageNumber={pageNumber}
+          scale={scale}
+          rotate={rotation}
+          renderTextLayer={true}
+          renderAnnotationLayer={true}
+          loading={
+            <div className="flex items-center justify-center py-20">
+              <div className="flex flex-col items-center gap-3 text-zinc-500">
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-700 border-t-zinc-400" />
+                <p className="text-sm">Rendering page...</p>
+              </div>
             </div>
-          </div>
-        }
-        className="shadow-2xl"
-      />
+          }
+          className="shadow-2xl"
+        />
+      </div>
     </Document>
   );
 }

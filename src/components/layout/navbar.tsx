@@ -46,25 +46,10 @@ export function Navbar({ global = false }: { global?: boolean }) {
     <>
       <header className="sticky top-0 z-30 flex h-14 w-full justify-center border-b border-border bg-background/80 backdrop-blur-md shrink-0 shadow-[0_1px_0_0_hsl(var(--border)_/_0.4)]">
         <div className="flex h-full w-full max-w-7xl items-center justify-between px-4 md:px-6">
-          {/* Path Breadcrumbs - full on desktop, short on mobile */}
-          <div className="hidden md:flex items-center gap-1.5 text-xs font-medium text-zinc-400 min-w-0">
-            <span className="text-zinc-500 hover:text-zinc-300 cursor-pointer shrink-0">ProdigyOS</span>
-            {breadcrumbs.map((crumb, idx) => (
-              <React.Fragment key={idx}>
-                <span className="text-zinc-600 font-normal shrink-0">/</span>
-                <span className={cn(
-                  "truncate",
-                  idx === breadcrumbs.length - 1 ? "text-zinc-200 font-semibold" : "text-zinc-400"
-                )}>
-                  {crumb}
-                </span>
-              </React.Fragment>
-            ))}
-          </div>
-          {/* Mobile breadcrumb - just current page */}
-          <div className="md:hidden flex items-center text-xs font-medium text-zinc-400 min-w-0">
+          {/* Current page label */}
+          <div className="flex items-center text-xs font-medium text-zinc-400 min-w-0">
             <span className="truncate text-zinc-200 font-semibold">
-              {breadcrumbs[breadcrumbs.length - 1] || 'Dashboard'}
+          
             </span>
           </div>
 
