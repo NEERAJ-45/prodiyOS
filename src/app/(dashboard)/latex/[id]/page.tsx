@@ -312,7 +312,7 @@ export default function ResumeEditor() {
       className="flex flex-col bg-zinc-950"
       style={{ height: 'calc(100vh - 3.5rem)' }}
     >
-      <header className="shrink-0 flex items-center gap-3 px-4 h-11 bg-zinc-900/80 border-b border-zinc-800/50">
+      <header className="shrink-0 flex items-center gap-1.5 sm:gap-3 px-2 sm:px-4 h-11 bg-zinc-900/80 border-b border-zinc-800/50">
         <button
           onClick={() => router.push('/latex')}
           className="p-1 rounded text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
@@ -320,43 +320,43 @@ export default function ResumeEditor() {
           <ArrowLeft className="h-4 w-4" />
         </button>
         <div className="w-px h-4 bg-zinc-800" />
-        <FileText className="h-4 w-4 text-zinc-600 shrink-0" />
+        <FileText className="h-4 w-4 text-zinc-600 shrink-0 hidden sm:inline" />
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="bg-transparent border-none outline-none text-sm font-medium text-zinc-200 placeholder:text-zinc-700 w-36 sm:w-48"
+          className="bg-transparent border-none outline-none text-sm font-medium text-zinc-200 placeholder:text-zinc-700 w-20 sm:w-48 min-w-0"
           placeholder="Untitled"
         />
-        <div className="hidden sm:flex items-center gap-2 ml-2">
-          <span className="text-[11px] text-zinc-700 font-medium uppercase tracking-wider">Target</span>
+        <div className="flex items-center gap-1.5 sm:gap-2 ml-2 min-w-0">
+          <span className="text-[11px] text-zinc-700 font-medium uppercase tracking-wider shrink-0 hidden sm:inline">Target</span>
           <input
             value={company}
             onChange={(e) => setCompany(e.target.value)}
             placeholder="e.g. Google"
-            className="bg-zinc-900 border border-zinc-800 rounded px-2 py-0.5 text-xs text-zinc-300 placeholder:text-zinc-700 outline-none focus:border-zinc-700 w-28"
+            className="bg-zinc-900 border border-zinc-800 rounded px-2 py-0.5 text-xs text-zinc-300 placeholder:text-zinc-700 outline-none focus:border-zinc-700 w-20 sm:w-28"
           />
         </div>
-        <div className="ml-auto flex items-center gap-1.5">
+        <div className="ml-auto flex items-center gap-1">
           <Button
             variant="ghost"
             size="sm"
             onClick={handleCompile}
             disabled={compiling}
-            className="text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 text-xs h-7 px-2.5"
+            className="text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 text-xs h-7 px-1.5 sm:px-2.5"
           >
             {compiling ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
-              <Play className="h-3.5 w-3.5 mr-1" />
+              <Play className="h-3.5 w-3.5" />
             )}
-            Compile
+            <span className="hidden sm:inline ml-1">Compile</span>
           </Button>
           {hasAnyPdf && (
             <Button
               variant="ghost"
               size="sm"
               onClick={handleDownload}
-              className="text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 h-7 px-2"
+              className="text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 h-7 px-1.5 sm:px-2"
             >
               <Download className="h-3.5 w-3.5" />
             </Button>
@@ -366,10 +366,10 @@ export default function ResumeEditor() {
             size="sm"
             onClick={handleSave}
             disabled={saving}
-            className="bg-blue-600 hover:bg-blue-500 text-white text-xs h-7 px-3 shadow-sm shadow-blue-600/15"
+            className="bg-blue-600 hover:bg-blue-500 text-white text-xs h-7 px-2 sm:px-3 shadow-sm shadow-blue-600/15"
           >
-            {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Save className="h-3.5 w-3.5 mr-1" />}
-            Save
+            {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+            <span className="hidden sm:inline ml-1">Save</span>
           </Button>
           {resumeId && (
             <Button
@@ -377,7 +377,7 @@ export default function ResumeEditor() {
               size="sm"
               onClick={handleDelete}
               disabled={deleting}
-              className="text-zinc-500 hover:text-red-400 hover:bg-red-950/30 h-7 px-2"
+              className="text-zinc-500 hover:text-red-400 hover:bg-red-950/30 h-7 px-1.5 sm:px-2"
             >
               {deleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
             </Button>
@@ -385,20 +385,8 @@ export default function ResumeEditor() {
         </div>
       </header>
 
-      <div ref={containerRef} className="flex flex-1 min-h-0 flex-col md:flex-row">
+      <div ref={containerRef} className="flex flex-1 min-h-0 flex-row">
         <div className="flex flex-col min-w-0" style={{ width: `${splitPercent}%` }}>
-          <div className="flex items-center gap-3 px-4 py-1.5 border-b border-zinc-800/30 shrink-0 md:hidden">
-            <span className="text-[11px] text-zinc-600 font-mono">{source.split('\n').length} lines</span>
-            <div className="ml-auto flex items-center gap-2">
-              <span className="text-[11px] text-zinc-700">Target</span>
-              <input
-                value={company}
-                onChange={(e) => setCompany(e.target.value)}
-                placeholder="Company"
-                className="bg-zinc-900 border border-zinc-800 rounded px-2 py-0.5 text-xs text-zinc-300 placeholder:text-zinc-700 outline-none focus:border-zinc-700 w-24"
-              />
-            </div>
-          </div>
           <div className="flex-1 min-h-0 relative">
             <textarea
               ref={textareaRef}
@@ -413,14 +401,14 @@ export default function ResumeEditor() {
 
         <div
           onMouseDown={onSlideMouseDown}
-          className="hidden md:flex items-center justify-center w-1.5 cursor-col-resize shrink-0 hover:bg-zinc-800/50 active:bg-blue-500/30 transition-colors group relative"
+          className="flex items-center justify-center w-1.5 cursor-col-resize shrink-0 hover:bg-zinc-800/50 active:bg-blue-500/30 transition-colors group relative"
         >
           <div className="w-0.5 h-8 rounded-full bg-zinc-800 group-hover:bg-zinc-600 transition-colors" />
         </div>
 
         <div
-          className={`min-w-0 flex flex-col bg-zinc-900/10 border-t md:border-t-0 border-zinc-800/50 ${
-            pdfExpanded ? 'fixed inset-0 z-50 md:static' : 'h-[45vh] md:h-auto'
+          className={`min-w-0 flex flex-col bg-zinc-900/10 border-l border-zinc-800/50 ${
+            pdfExpanded ? 'fixed inset-0 z-50 md:static' : ''
           }`}
           style={{ width: pdfExpanded ? undefined : `${100 - splitPercent}%` }}
         >

@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  FileText, Plus, Trash2, ExternalLink, Clock,
+  FileText, Plus, Trash2, Clock,
   Loader2, Search, AlertCircle, FileDown, Inbox,
 } from 'lucide-react';
 import {
@@ -83,6 +83,27 @@ export default function LatexDashboard() {
     });
   }
 
+  function handleDownloadPdf(e: React.MouseEvent, row: ResumeData) {
+    e.stopPropagation();
+    const filename = `${row.title.replace(/[^a-zA-Z0-9_-]/g, '_')}.pdf`;
+    const a = document.createElement('a');
+    a.href = `/api/db/resumes/pdf/${row._id}`;
+    a.download = filename;
+    a.click();
+  }
+
+  function handleDownloadLatex(e: React.MouseEvent, row: ResumeData) {
+    e.stopPropagation();
+    const filename = `${row.title.replace(/[^a-zA-Z0-9_-]/g, '_')}.tex`;
+    const blob = new Blob([row.latexSource], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   React.useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
@@ -116,44 +137,43 @@ export default function LatexDashboard() {
       },
       size: 130,
     }),
-    columnHelper.display({
-      id: 'lines',
-      header: 'Size',
-      cell: (info) => (
-        <span className="text-xs text-zinc-600 tabular-nums">{info.row.original.latexSource.split('\n').length} lines</span>
-      ),
-      size: 80,
-    }),
     columnHelper.accessor('updatedAt', {
       header: 'Updated',
       cell: (info) => (
         <span className="text-xs text-zinc-600 tabular-nums">{formatDate(new Date(info.getValue()))}</span>
       ),
-      size: 90,
+      size: 75,
     }),
     columnHelper.display({
       id: 'actions',
       header: '',
       cell: (info) => (
-        <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        <div className="flex items-center justify-end gap-1">
           <button
-            onClick={(e) => { e.stopPropagation(); handleOpen(info.row.original._id); }}
-            className="p-1.5 rounded hover:bg-zinc-800 text-zinc-600 hover:text-zinc-200 transition-colors"
-            title="Open"
+            onClick={(e) => handleDownloadPdf(e, info.row.original)}
+            className="p-2 rounded-md hover:bg-zinc-800 text-zinc-500 hover:text-zinc-200 transition-colors"
+            title="Download PDF"
           >
-            <ExternalLink className="h-3.5 w-3.5" />
+            <FileDown className="h-4 w-4" />
+          </button>
+          <button
+            onClick={(e) => handleDownloadLatex(e, info.row.original)}
+            className="p-2 rounded-md hover:bg-zinc-800 text-zinc-500 hover:text-zinc-200 transition-colors"
+            title="Download LaTeX"
+          >
+            <FileText className="h-4 w-4" />
           </button>
           <button
             onClick={(e) => handleDelete(e, info.row.original._id)}
             disabled={deleteResume.isPending}
-            className="p-1.5 rounded hover:bg-zinc-800 text-zinc-600 hover:text-red-400 transition-colors"
+            className="p-2 rounded-md hover:bg-zinc-800 text-zinc-500 hover:text-red-400 transition-colors"
             title="Delete"
           >
-            <Trash2 className="h-3.5 w-3.5" />
+            <Trash2 className="h-4 w-4" />
           </button>
         </div>
       ),
-      size: 70,
+      size: 100,
     }),
   ], []);
 
@@ -273,7 +293,7 @@ export default function LatexDashboard() {
                       {row.getVisibleCells().map((cell) => (
                         <td
                           key={cell.id}
-                          className="px-4 py-3 border-b border-zinc-800/30 group-last:border-0"
+                          className="px-3 py-2.5 border-b border-zinc-800/30 group-last:border-0"
                           style={{ width: cell.column.getSize() }}
                         >
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
