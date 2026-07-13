@@ -1,10 +1,7 @@
 'use client';
 
-import { useMemo, useState, useEffect, useCallback, useRef } from 'react';
+import { useMemo, useState } from 'react';
 import { useMounted } from '@/hooks/useMounted';
-import { useToggleCompletion } from '@/hooks/use-completions';
-import { useSaveNote } from '@/hooks/use-notes';
-import { useAddCustomTopic, useDeleteCustomTopic } from '@/hooks/use-custom-topics';
 import {
   useReactTable,
   getCoreRowModel,
@@ -23,18 +20,17 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Trash2,
-  Plus,
   Loader2,
   ListOrdered,
-  
   RotateCcw,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NotesDialog } from '@/components/shared/NotesDialog';
+import { AddItemDialog } from '@/components/shared/AddItemDialog';
+import { CompletionDatePicker } from '@/components/shared/CompletionDatePicker';
 import { cn } from '@/lib/utils';
 import {
   Dialog,
-  DialogTrigger,
   DialogContent,
   DialogHeader,
   DialogTitle,
@@ -42,7 +38,7 @@ import {
   DialogFooter,
   DialogClose,
 } from '@/components/ui/dialog';
-import { useProfile } from '@/components/providers/ProfileProvider';
+import { useTableSync } from '@/hooks/use-table-sync';
 
 export interface QuestionItem {
   id: number;
@@ -61,99 +57,11 @@ interface QuestionsTableProps {
   sourceName?: string;
 }
 
-type CompletedMap = Record<string, string>;
-type NotesMap = Record<string, string>;
-
-const diffOrder: Record<string, number> = {
-  EASY: 0,
-  MEDIUM: 1,
-  HARD: 2,
-};
-
-function AddTopicDialog({
-  onAdd,
-}: {
-  onAdd: (title: string, difficulty: string, link: string) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const [title, setTitle] = useState('');
-  const [difficulty, setDifficulty] = useState('MEDIUM');
-  const [link, setLink] = useState('');
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!title.trim()) return;
-    onAdd(title.trim(), difficulty, link.trim());
-    setTitle('');
-    setDifficulty('MEDIUM');
-    setLink('');
-    setOpen(false);
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors cursor-pointer shrink-0 ml-2">
-          <Plus size={14} />
-          Add Topic
-        </button>
-      </DialogTrigger>
-      <DialogContent className="border-zinc-800 bg-zinc-950 text-zinc-100 sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle className="text-zinc-100 flex items-center gap-2">
-            <Plus size={18} className="text-primary" />
-            Add Custom Topic
-          </DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4 py-4">
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-zinc-400">Topic Title</label>
-            <input
-              type="text"
-              required
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. B+ Tree Node Structure"
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-300 placeholder:text-zinc-500 outline-none focus:border-primary/50 transition-colors"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-zinc-400">Difficulty</label>
-            <select
-              value={difficulty}
-              onChange={(e) => setDifficulty(e.target.value)}
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-300 outline-none focus:border-primary/50 transition-colors"
-            >
-              <option value="EASY">Easy</option>
-              <option value="MEDIUM">Medium</option>
-              <option value="HARD">Hard</option>
-            </select>
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-zinc-400">Reference Link (Optional)</label>
-            <input
-              type="url"
-              value={link}
-              onChange={(e) => setLink(e.target.value)}
-              placeholder="e.g. https://www.geeksforgeeks.org/..."
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-300 placeholder:text-zinc-500 outline-none focus:border-primary/50 transition-colors"
-            />
-          </div>
-          <DialogFooter className="gap-2 pt-2">
-            <DialogClose asChild>
-              <button type="button" className="px-3.5 py-2 rounded-lg text-xs font-semibold border border-zinc-800 hover:bg-zinc-900 transition-colors text-zinc-400 cursor-pointer">
-                Cancel
-              </button>
-            </DialogClose>
-            <button type="submit" className="px-3.5 py-2 rounded-lg text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/95 transition-colors cursor-pointer">
-              Add Topic
-            </button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
+export function useDefaultCompletedIds(ids?: number[]) {
+  return ids ?? [];
 }
+
+const diffOrder: Record<string, number> = { EASY: 0, MEDIUM: 1, HARD: 2 };
 
 export default function QuestionsTable({
   questions,
@@ -161,330 +69,37 @@ export default function QuestionsTable({
   searchPlaceholder = 'Search topics...',
   defaultCompletedIds = [],
 }: QuestionsTableProps) {
-  const { userEmail, userName, customDbUrl } = useProfile();
+  const mounted = useMounted();
   const [sorting, setSorting] = useState<SortingState>([]);
   const [search, setSearch] = useState('');
-  const mounted = useMounted();
-  const [completedMap, setCompletedMap] = useState<CompletedMap>({});
-  const [notesMap, setNotesMap] = useState<NotesMap>({});
-  const [customQuestions, setCustomQuestions] = useState<QuestionItem[]>([]);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
-  const [dbConnected, setDbConnected] = useState(false);
-  const toggleCompletion = useToggleCompletion();
-  const saveNote = useSaveNote();
-  const addCustomTopic = useAddCustomTopic();
-  const deleteCustomTopic = useDeleteCustomTopic();
 
-  const broadcastProgress = useCallback(() => {
-    try {
-      const bc = new BroadcastChannel('roadmap-progress');
-      bc.postMessage({ storagePrefix, key: 'completed' });
-      bc.close();
-    } catch {}
-  }, [storagePrefix]);
+  const allBaseItems = useMemo(() => questions, [questions]);
 
-  const handleReset = useCallback(() => {
-    localStorage.removeItem(`${storagePrefix}-completed`);
-    localStorage.removeItem(`${storagePrefix}-notes`);
-    localStorage.removeItem(`${storagePrefix}-custom-questions`);
-
-    setCompletedMap({});
-    setNotesMap({});
-    setCustomQuestions([]);
-    broadcastProgress();
-
-    if (userEmail) {
-      const headers = { 'Content-Type': 'application/json', 'x-user-email': userEmail };
-      fetch('/api/db/completions', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ storagePrefix: `${storagePrefix}-completed`, userEmail, resetAll: true }),
-      }).catch(() => {});
-      fetch('/api/db/notes', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ storagePrefix: `${storagePrefix}-notes`, userEmail, resetAll: true }),
-      }).catch(() => {});
-      fetch(`/api/db/custom-topics?storagePrefix=${storagePrefix}-custom-questions&userEmail=${encodeURIComponent(userEmail)}`, {
-        method: 'DELETE',
-        headers,
-      }).catch(() => {});
-    }
-
-    setShowResetConfirm(false);
-  }, [storagePrefix, broadcastProgress, userEmail]);
-
-  const saveData = useCallback(<T,>(key: string, data: T) => {
-    if (typeof window === 'undefined') return;
-    localStorage.setItem(`${storagePrefix}-${key}`, JSON.stringify(data));
-    if (key === 'completed') {
-      broadcastProgress();
-    }
-  }, [storagePrefix, broadcastProgress]);
-
-  const defaultCompletedIdsRef = useRef(defaultCompletedIds);
-  useEffect(() => {
-    defaultCompletedIdsRef.current = defaultCompletedIds;
-  }, [defaultCompletedIds]);
-
-  const loadData = useCallback(<T,>(key: string, fallback: T): T => {
-    if (typeof window === 'undefined') return fallback;
-    try {
-      const raw = localStorage.getItem(`${storagePrefix}-${key}`);
-      if (!raw) {
-        if (key === 'completed' && defaultCompletedIdsRef.current.length > 0) {
-          const initialMap: Record<string, string> = {};
-          const timestamp = new Date().toISOString();
-          defaultCompletedIdsRef.current.forEach((id) => {
-            initialMap[String(id)] = timestamp;
-          });
-          localStorage.setItem(`${storagePrefix}-${key}`, JSON.stringify(initialMap));
-          return initialMap as unknown as T;
-        }
-        return fallback;
-      }
-      return JSON.parse(raw) as T;
-    } catch {
-      return fallback;
-    }
-  }, [storagePrefix]);
-
-  const getRequestHeaders = useCallback(() => {
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      'x-user-email': userEmail,
-    };
-    if (customDbUrl) {
-      headers['x-mongodb-url'] = customDbUrl;
-    }
-    return headers;
-  }, [userEmail, customDbUrl]);
-
-  useEffect(() => {
-    const initialCompleted = loadData<CompletedMap>('completed', {});
-    const initialNotes = loadData<NotesMap>('notes', {});
-    let initialCustom: QuestionItem[] = [];
-    if (typeof window !== 'undefined') {
-      const rawCustom = localStorage.getItem(`${storagePrefix}-custom-questions`);
-      if (rawCustom) {
-        try {
-          initialCustom = JSON.parse(rawCustom);
-        } catch {}
-      }
-    }
-
-    setCompletedMap(initialCompleted);
-    setNotesMap(initialNotes);
-    setCustomQuestions(initialCustom);
-
-    async function syncWithDB() {
-      try {
-        const headers = getRequestHeaders();
-
-        const compRes = await fetch(`/api/db/completions?userEmail=${encodeURIComponent(userEmail)}`, { headers });
-        const compData = await compRes.json();
-        if (compData.dbConnected) {
-          setDbConnected(true);
-          const dbComps = compData.data.filter(
-            (x: { storagePrefix: string; itemId: string; completedAt?: string }) => x.storagePrefix === `${storagePrefix}-completed`
-          );
-          const dbCompMap: CompletedMap = {};
-          dbComps.forEach((x: { storagePrefix: string; itemId: string; completedAt?: string }) => {
-            dbCompMap[x.itemId] = x.completedAt || '';
-          });
-          const mergedComps = { ...initialCompleted, ...dbCompMap };
-          setCompletedMap(mergedComps);
-          saveData('completed', mergedComps);
-
-          for (const [id, dateStr] of Object.entries(initialCompleted)) {
-            if (!dbCompMap[id]) {
-              fetch('/api/db/completions', {
-                method: 'POST',
-                headers,
-                body: JSON.stringify({
-                  storagePrefix: `${storagePrefix}-completed`,
-                  itemId: id,
-                  completedAt: dateStr,
-                  userEmail,
-                }),
-              }).catch(() => {});
-            }
-          }
-        }
-
-        const noteRes = await fetch(`/api/db/notes?userEmail=${encodeURIComponent(userEmail)}`, { headers });
-        const noteData = await noteRes.json();
-        if (noteData.dbConnected) {
-          const dbNotes = noteData.data.filter(
-            (x: { storagePrefix: string; itemId: string; note?: string }) => x.storagePrefix === `${storagePrefix}-notes`
-          );
-          const dbNoteMap: NotesMap = {};
-          dbNotes.forEach((x: { storagePrefix: string; itemId: string; note?: string }) => {
-            dbNoteMap[x.itemId] = x.note || '';
-          });
-          const mergedNotes = { ...initialNotes, ...dbNoteMap };
-          setNotesMap(mergedNotes);
-          saveData('notes', mergedNotes);
-
-          for (const [id, noteText] of Object.entries(initialNotes)) {
-            if (!dbNoteMap[id]) {
-              const noteId = Number(id);
-              const syncedItem = [...questions, ...customQuestions].find(q => q.id === noteId);
-              fetch('/api/db/notes', {
-                method: 'POST',
-                headers,
-                body: JSON.stringify({
-                  storagePrefix: `${storagePrefix}-notes`,
-                  itemId: id,
-                  note: noteText,
-                  userEmail,
-                  itemTitle: syncedItem?.title,
-                }),
-              }).catch(() => {});
-            }
-          }
-        }
-
-        const customRes = await fetch(`/api/db/custom-topics?userEmail=${encodeURIComponent(userEmail)}`, { headers });
-        const customData = await customRes.json();
-        if (customData.dbConnected) {
-          const dbCustoms = customData.data.filter(
-            (x: { storagePrefix: string; id: number; title: string; difficulty: string; link?: string }) => x.storagePrefix === `${storagePrefix}-custom-questions`
-          );
-          const dbCustomMap = new Map(dbCustoms.map((x: { storagePrefix: string; id: number; title: string; difficulty: string; link?: string }) => [x.id, x]));
-          
-          const mergedCustoms = [...initialCustom];
-          dbCustoms.forEach((dbItem: { storagePrefix: string; id: number; title: string; difficulty: string; link?: string }) => {
-            if (!mergedCustoms.some((x) => x.id === dbItem.id)) {
-              mergedCustoms.push({
-                id: dbItem.id,
-                title: dbItem.title,
-                difficulty: dbItem.difficulty || 'MEDIUM',
-                link: dbItem.link || '',
-                isCustom: true,
-              });
-            }
-          });
-          setCustomQuestions(mergedCustoms);
-          localStorage.setItem(`${storagePrefix}-custom-questions`, JSON.stringify(mergedCustoms));
-
-          for (const item of initialCustom) {
-            if (!dbCustomMap.has(item.id)) {
-              fetch('/api/db/custom-topics', {
-                method: 'POST',
-                headers,
-                body: JSON.stringify({
-                  storagePrefix: `${storagePrefix}-custom-questions`,
-                  id: item.id,
-                  title: item.title,
-                  difficulty: item.difficulty,
-                  link: item.link,
-                  userEmail,
-                }),
-              }).catch(() => {});
-            }
-          }
-        }
-      } catch (err) {
-        console.error('Failed to sync with MongoDB:', err);
-      }
-    }
-    
-    syncWithDB();
-  }, [storagePrefix, userEmail, getRequestHeaders, loadData, saveData, questions, customQuestions]);
-
-  const saveCustomQuestions = useCallback((list: QuestionItem[]) => {
-    localStorage.setItem(`${storagePrefix}-custom-questions`, JSON.stringify(list));
-    setCustomQuestions(list);
-  }, [storagePrefix]);
-
-  const handleAddQuestion = useCallback((title: string, difficulty: string, link: string) => {
-    const newId = Date.now();
-    const newQuestion: QuestionItem = {
-      id: newId,
-      title,
-      difficulty,
-      link,
-      isCustom: true,
-    };
-    const nextList = [...customQuestions, newQuestion];
-    saveCustomQuestions(nextList);
-
-    addCustomTopic.mutate({ storagePrefix: `${storagePrefix}-custom-questions`, id: newId, title, difficulty, link });
-  }, [customQuestions, saveCustomQuestions, storagePrefix, addCustomTopic]);
-
-  const handleDeleteQuestion = useCallback((id: number) => {
-    const nextList = customQuestions.filter((q) => q.id !== id);
-    saveCustomQuestions(nextList);
-    setCompletedMap((prev) => {
-      const next = { ...prev };
-      delete next[String(id)];
-      saveData('completed', next);
-      return next;
-    });
-    setNotesMap((prev) => {
-      const next = { ...prev };
-      delete next[String(id)];
-      saveData('notes', next);
-      return next;
-    });
-
-    const deletedItem = customQuestions.find(q => q.id === id);
-    deleteCustomTopic.mutate({ storagePrefix: `${storagePrefix}-custom-questions`, id });
-    toggleCompletion.mutate({ storagePrefix: `${storagePrefix}-completed`, itemId: String(id) });
-    saveNote.mutate({ storagePrefix: `${storagePrefix}-notes`, itemId: String(id), itemTitle: deletedItem?.title });
-  }, [customQuestions, saveCustomQuestions, saveData, storagePrefix, deleteCustomTopic, toggleCompletion, saveNote]);
-
-  const [pagination, setPagination] = useState({
-    pageIndex: 0,
-    pageSize: 10,
+  const {
+    completedMap,
+    notesMap,
+    customItems,
+    toggleCompleted,
+    updateNote,
+    handleAddItem,
+    handleDeleteItem,
+    resetAll,
+    updateCompletionDate,
+  } = useTableSync({
+    storagePrefix,
+    allItems: allBaseItems,
+    defaultCompletedIds,
   });
 
-  const toggleCompleted = useCallback((id: number) => {
-    const key = String(id);
-    const prevCompleted = loadData<CompletedMap>('completed', {});
-    const wasCompleted = !!prevCompleted[key];
-    const nowCompleted = !wasCompleted;
-    const compAtStr = nowCompleted ? new Date().toISOString() : '';
-
-    const item = [...questions, ...customQuestions].find(q => q.id === id);
-    const itemTitle = item?.title;
-
-    setCompletedMap((prev) => {
-      const next = { ...prev };
-      if (next[key]) {
-        delete next[key];
-      } else {
-        next[key] = compAtStr;
-      }
-      saveData('completed', next);
-      return next;
-    });
-
-    toggleCompletion.mutate({ storagePrefix: `${storagePrefix}-completed`, itemId: String(id), completedAt: nowCompleted ? compAtStr : undefined, title: itemTitle });
-  }, [saveData, storagePrefix, toggleCompletion, loadData, questions, customQuestions]);
-
-  const updateNote = useCallback((id: number, value: string) => {
-    setNotesMap((prev) => {
-      const key = String(id);
-      const next = { ...prev, [key]: value };
-      if (!value) delete next[key];
-      saveData('notes', next);
-      return next;
-    });
-
-    const item = [...questions, ...customQuestions].find(q => q.id === id);
-    const itemTitle = item?.title;
-
-    saveNote.mutate({ storagePrefix: `${storagePrefix}-notes`, itemId: String(id), note: value || undefined, itemTitle });
-  }, [saveData, storagePrefix, questions, customQuestions, saveNote]);
+  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
 
   const filteredQuestions = useMemo(() => {
-    const all = [...questions, ...customQuestions];
+    const all = [...questions, ...customItems] as QuestionItem[];
     return all.filter((q) =>
       q.title.toLowerCase().includes(search.toLowerCase())
     );
-  }, [questions, customQuestions, search]);
+  }, [questions, customItems, search]);
 
   const columnHelper = createColumnHelper<QuestionItem>();
 
@@ -541,11 +156,10 @@ export default function QuestionsTable({
                   >
                     {info.getValue()}
                   </span>
-                  
                 </div>
                 {isCustom && (
                   <button
-                    onClick={() => handleDeleteQuestion(id)}
+                    onClick={() => handleDeleteItem(id)}
                     className="text-zinc-600 hover:text-red-400 transition-colors p-1 rounded hover:bg-zinc-800 shrink-0"
                     title="Delete Custom Topic"
                   >
@@ -560,8 +174,6 @@ export default function QuestionsTable({
         }),
       ];
 
-      
-
       cols.push(
         columnHelper.display({
           id: 'notes',
@@ -570,11 +182,7 @@ export default function QuestionsTable({
             const id = info.row.original.id;
             const val = notesMap[id] ?? '';
             return (
-              <NotesDialog
-                id={id}
-                initialValue={val}
-                onSave={updateNote}
-              />
+              <NotesDialog id={id} initialValue={val} onSave={updateNote} />
             );
           },
           size: 140,
@@ -611,53 +219,11 @@ export default function QuestionsTable({
           cell: (info) => {
             const id = info.row.original.id;
             const dateStr = completedMap[id];
-            
-            const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-              const val = e.target.value;
-              let isoString = '';
-              let hasVal = false;
-              if (val) {
-                isoString = new Date(val).toISOString();
-                hasVal = true;
-                setCompletedMap((prev) => {
-                  const key = String(id);
-                  const next = { ...prev };
-                  next[key] = isoString;
-                  saveData('completed', next);
-                  return next;
-                });
-              } else {
-                setCompletedMap((prev) => {
-                  const key = String(id);
-                  const next = { ...prev };
-                  delete next[key];
-                  saveData('completed', next);
-                  return next;
-                });
-              }
-
-              fetch('/api/db/completions', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  storagePrefix: `${storagePrefix}-completed`,
-                  itemId: String(id),
-                  completedAt: hasVal ? isoString : undefined,
-                }),
-              }).catch(() => {});
-            };
-
-            const inputValue = dateStr ? new Date(dateStr).toISOString().split('T')[0] : '';
-
             return (
-              <div className="flex items-center gap-1.5 justify-center">
-                <input
-                  type="date"
-                  value={inputValue}
-                  onChange={handleDateChange}
-                  className="bg-zinc-800/40 hover:bg-zinc-800/70 border border-zinc-700/30 rounded px-1.5 py-0.5 text-xs text-zinc-300 outline-none focus:border-primary/50 transition-colors cursor-pointer scheme-dark"
-                />
-              </div>
+              <CompletionDatePicker
+                dateStr={dateStr}
+                onChange={(v) => updateCompletionDate(id, v)}
+              />
             );
           },
           size: 135,
@@ -666,10 +232,9 @@ export default function QuestionsTable({
       );
       return cols;
     },
-    [columnHelper, completedMap, toggleCompleted, notesMap, updateNote, handleDeleteQuestion, storagePrefix, saveData, pagination.pageIndex, pagination.pageSize]
+    [columnHelper, completedMap, toggleCompleted, notesMap, updateNote, handleDeleteItem, pagination.pageIndex, pagination.pageSize, updateCompletionDate]
   );
 
-  // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data: filteredQuestions,
     columns,
@@ -684,40 +249,35 @@ export default function QuestionsTable({
 
   const solvedCount = useMemo(() => {
     if (!mounted) return 0;
-    const all = [...questions, ...customQuestions];
+    const all = [...questions, ...customItems] as QuestionItem[];
     return all.filter((q) => completedMap[q.id]).length;
-  }, [completedMap, questions, customQuestions, mounted]);
+  }, [completedMap, questions, customItems, mounted]);
 
-  useEffect(() => {
-    setPagination((p) => ({ ...p, pageIndex: 0 }));
-  }, [search]);
-
-  const totalCount = questions.length + customQuestions.length;
+  const totalCount = questions.length + customItems.length;
 
   return (
     <div className="space-y-6">
-      {/* Progress & Search */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="w-full md:max-w-md flex items-center gap-3">
-            <div className="flex-grow flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900/40 px-3 transition-all duration-200 focus-within:border-primary/50 focus-within:bg-zinc-900/80">
-              <Search className="h-4 w-4 shrink-0 text-zinc-500" />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder={searchPlaceholder}
-                className="w-full bg-transparent py-2.5 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none"
-              />
-            </div>
-            <AddTopicDialog onAdd={handleAddQuestion} />
-            <button
-              onClick={() => setShowResetConfirm(true)}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border border-red-800/40 text-red-400 bg-red-950/30 hover:bg-red-950/50 hover:border-red-700/60 transition-colors shrink-0"
-              title="Reset all progress on this roadmap"
-            >
-              <RotateCcw size={13} />
-              Reset
-            </button>
+        <div className="w-full md:max-w-md flex items-center gap-3">
+          <div className="flex-grow flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900/40 px-3 transition-all duration-200 focus-within:border-primary/50 focus-within:bg-zinc-900/80">
+            <Search className="h-4 w-4 shrink-0 text-zinc-500" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={searchPlaceholder}
+              className="w-full bg-transparent py-2.5 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none"
+            />
           </div>
+          <AddItemDialog onAdd={handleAddItem} />
+          <button
+            onClick={() => setShowResetConfirm(true)}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border border-red-800/40 text-red-400 bg-red-950/30 hover:bg-red-950/50 hover:border-red-700/60 transition-colors shrink-0"
+            title="Reset all progress on this roadmap"
+          >
+            <RotateCcw size={13} />
+            Reset
+          </button>
+        </div>
 
         {mounted && (
           <motion.div
@@ -726,11 +286,6 @@ export default function QuestionsTable({
             transition={{ duration: 0.3 }}
             className="flex items-center gap-4 bg-zinc-900/60 border border-zinc-800 px-4 py-2 rounded-lg shrink-0 self-start md:self-auto"
           >
-            <div className="text-right">
-              <div className="text-xs text-zinc-500 font-medium">User Status</div>
-              <div className="text-sm font-bold text-zinc-200">{userName}</div>
-            </div>
-            <div className="h-8 w-px bg-zinc-800" />
             <div>
               <div className="text-xs text-zinc-500 font-medium">Progress</div>
               <div className="text-sm font-bold text-emerald-400">
@@ -741,7 +296,6 @@ export default function QuestionsTable({
         )}
       </div>
 
-      {/* Table */}
       <div className="overflow-x-auto rounded-lg border border-zinc-800 bg-zinc-900/10">
         <table className="w-full border-collapse">
           <thead>
@@ -763,8 +317,8 @@ export default function QuestionsTable({
                       >
                         {flexRender(header.column.columnDef.header, header.getContext())}
                         {{
-                          asc: ' ⇡',
-                          desc: ' ⇣',
+                          asc: ' \u21e1',
+                          desc: ' \u21e3',
                         }[header.column.getIsSorted() as string] ?? null}
                       </button>
                     )}
@@ -776,12 +330,7 @@ export default function QuestionsTable({
           <tbody>
             <AnimatePresence>
               {!mounted ? (
-                <motion.tr
-                  key="loading"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                >
+                <motion.tr key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                   <td colSpan={columns.length} className="px-4 py-16">
                     <div className="flex flex-col items-center justify-center gap-3 text-zinc-500">
                       <Loader2 className="h-6 w-6 animate-spin" />
@@ -790,12 +339,7 @@ export default function QuestionsTable({
                   </td>
                 </motion.tr>
               ) : filteredQuestions.length === 0 ? (
-                <motion.tr
-                  key="empty"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                >
+                <motion.tr key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                   <td colSpan={columns.length} className="px-4 py-16">
                     <div className="flex flex-col items-center justify-center gap-3 text-zinc-500">
                       <ListOrdered className="h-8 w-8" />
@@ -819,11 +363,7 @@ export default function QuestionsTable({
                       )}
                     >
                       {row.getVisibleCells().map((cell) => (
-                        <td
-                          key={cell.id}
-                          className="px-4 py-2.5"
-                          style={{ width: cell.column.getSize() }}
-                        >
+                        <td key={cell.id} className="px-4 py-2.5" style={{ width: cell.column.getSize() }}>
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
                         </td>
                       ))}
@@ -836,7 +376,6 @@ export default function QuestionsTable({
         </table>
       </div>
 
-      {/* Pagination */}
       {mounted && filteredQuestions.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 8 }}
@@ -866,54 +405,34 @@ export default function QuestionsTable({
               <span className="text-xs">Show</span>
               <select
                 value={table.getState().pagination.pageSize}
-                onChange={(e) => {
-                  table.setPageSize(Number(e.target.value));
-                }}
+                onChange={(e) => table.setPageSize(Number(e.target.value))}
                 className="bg-zinc-950 border border-zinc-800 text-zinc-300 text-xs rounded px-2 py-1 focus:outline-none focus:border-zinc-700 transition-colors"
               >
                 {[10, 20, 30, 40, 50].map((size) => (
-                  <option key={size} value={size}>
-                    {size}
-                  </option>
+                  <option key={size} value={size}>{size}</option>
                 ))}
               </select>
             </div>
 
             <div className="flex items-center gap-1">
-              <button
-                onClick={() => table.setPageIndex(0)}
-                disabled={!table.getCanPreviousPage()}
-                className="p-1.5 rounded border border-zinc-800 bg-zinc-950 hover:bg-zinc-900 hover:text-zinc-200 disabled:opacity-50 disabled:pointer-events-none transition-colors"
-                title="First"
-              >
+              <button onClick={() => table.setPageIndex(0)} disabled={!table.getCanPreviousPage()}
+                className="p-1.5 rounded border border-zinc-800 bg-zinc-950 hover:bg-zinc-900 hover:text-zinc-200 disabled:opacity-50 disabled:pointer-events-none transition-colors" title="First">
                 <ChevronsLeft className="h-4 w-4" />
               </button>
-              <button
-                onClick={() => table.previousPage()}
-                disabled={!table.getCanPreviousPage()}
-                className="p-1.5 rounded border border-zinc-800 bg-zinc-950 hover:bg-zinc-900 hover:text-zinc-200 disabled:opacity-50 disabled:pointer-events-none transition-colors"
-                title="Previous"
-              >
+              <button onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}
+                className="p-1.5 rounded border border-zinc-800 bg-zinc-950 hover:bg-zinc-900 hover:text-zinc-200 disabled:opacity-50 disabled:pointer-events-none transition-colors" title="Previous">
                 <ChevronLeft className="h-4 w-4" />
               </button>
               <span className="text-xs px-2 select-none">
                 Page <strong className="text-zinc-200 font-semibold">{table.getState().pagination.pageIndex + 1}</strong> of{' '}
                 <strong className="text-zinc-200 font-semibold">{table.getPageCount()}</strong>
               </span>
-              <button
-                onClick={() => table.nextPage()}
-                disabled={!table.getCanNextPage()}
-                className="p-1.5 rounded border border-zinc-800 bg-zinc-950 hover:bg-zinc-900 hover:text-zinc-200 disabled:opacity-50 disabled:pointer-events-none transition-colors"
-                title="Next"
-              >
+              <button onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}
+                className="p-1.5 rounded border border-zinc-800 bg-zinc-950 hover:bg-zinc-900 hover:text-zinc-200 disabled:opacity-50 disabled:pointer-events-none transition-colors" title="Next">
                 <ChevronRight className="h-4 w-4" />
               </button>
-              <button
-                onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-                disabled={!table.getCanNextPage()}
-                className="p-1.5 rounded border border-zinc-800 bg-zinc-950 hover:bg-zinc-900 hover:text-zinc-200 disabled:opacity-50 disabled:pointer-events-none transition-colors"
-                title="Last"
-              >
+              <button onClick={() => table.setPageIndex(table.getPageCount() - 1)} disabled={!table.getCanNextPage()}
+                className="p-1.5 rounded border border-zinc-800 bg-zinc-950 hover:bg-zinc-900 hover:text-zinc-200 disabled:opacity-50 disabled:pointer-events-none transition-colors" title="Last">
                 <ChevronsRight className="h-4 w-4" />
               </button>
             </div>
@@ -929,22 +448,14 @@ export default function QuestionsTable({
               Reset Progress
             </DialogTitle>
             <DialogDescription className="text-zinc-500 text-sm pt-2">
-              This will clear all completed topics, notes, and custom topics for this roadmap.
-              This action cannot be undone.
+              This will clear all completed topics, notes, and custom topics for this roadmap. This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2">
             <DialogClose asChild>
-              <button className="px-3.5 py-2 rounded-lg text-xs font-semibold bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition-colors cursor-pointer">
-                Cancel
-              </button>
+              <button className="px-3.5 py-2 rounded-lg text-xs font-semibold bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition-colors cursor-pointer">Cancel</button>
             </DialogClose>
-            <button
-              onClick={handleReset}
-              className="px-3.5 py-2 rounded-lg text-xs font-semibold bg-red-600 text-white hover:bg-red-500 transition-colors cursor-pointer"
-            >
-              Reset
-            </button>
+            <button onClick={resetAll} className="px-3.5 py-2 rounded-lg text-xs font-semibold bg-red-600 text-white hover:bg-red-500 transition-colors cursor-pointer">Reset</button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

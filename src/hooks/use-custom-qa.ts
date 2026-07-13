@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useProfile } from '@/components/providers/ProfileProvider';
 import { useCallback } from 'react';
-import type { CustomQAParsedData } from '@/components/interview/CustomQAViewer';
+import type { CustomQAParsedData } from '@/lib/parsers';
 
 function useRequestHeaders() {
   const { userEmail, customDbUrl } = useProfile();

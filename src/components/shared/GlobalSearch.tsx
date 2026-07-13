@@ -84,11 +84,11 @@ export function GlobalSearch() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-2 rounded-md border border-[#1f1f1f] bg-[#111] px-3 py-1.5 text-sm text-[#6b7280] transition-colors hover:text-[#ededed]"
+        className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
       >
         <Search size={14} strokeWidth={1.5} />
         <span>Search...</span>
-        <kbd className="ml-4 rounded border border-[#1f1f1f] bg-[#0a0a0a] px-1.5 py-0.5 text-[10px] text-[#6b7280]">
+        <kbd className="ml-4 rounded border border-border bg-background px-1.5 py-0.5 text-[10px] text-muted-foreground">
           ⌘K
         </kbd>
       </button>
@@ -111,25 +111,25 @@ export function GlobalSearch() {
               className="fixed left-1/2 top-[20%] z-50 w-full max-w-lg -translate-x-1/2"
             >
               <BackgroundGradient containerClassName="rounded-lg">
-                <div className="rounded-lg border border-[#1f1f1f] bg-[#111]">
-                  <div className="flex items-center gap-2 border-b border-[#1f1f1f] px-4 py-3">
+                <div className="rounded-lg border border-border bg-card">
+                  <div className="flex items-center gap-2 border-b border-border px-4 py-3">
                     <Search
                       size={16}
                       strokeWidth={1.5}
-                      className="text-[#6b7280]"
+                      className="text-muted-foreground"
                     />
                     <input
                       autoFocus
                       value={query}
                       onChange={(e) => setQuery(e.target.value)}
                       placeholder="Search problems and patterns..."
-                      className="flex-1 bg-transparent text-sm text-[#ededed] placeholder:text-[#6b7280] focus:outline-none"
+                      className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
                     />
                   </div>
 
                   {allItems.length > 0 && (
                     <div className="max-h-80 overflow-y-auto p-2">
-                      <p className="px-2 py-1 text-xs text-[#6b7280]">
+                      <p className="px-2 py-1 text-xs text-muted-foreground">
                         Knowledge Nodes
                       </p>
                       {results.patterns.map((p, idx) => (
@@ -146,13 +146,13 @@ export function GlobalSearch() {
                           className={cn(
                             "flex w-full items-center rounded-md px-2 py-1.5 text-left text-sm",
                             selectedIndex === idx
-                              ? "bg-[#1a1a1a] text-white"
-                              : "text-[#ededed] hover:bg-[#1a1a1a]"
+                              ? "bg-accent text-accent-foreground"
+                              : "text-foreground hover:bg-accent"
                           )}
                         >
                           <span>{p.name}</span>
                           {p.description && (
-                            <span className="ml-2 truncate text-xs text-[#6b7280]">
+                            <span className="ml-2 truncate text-xs text-muted-foreground">
                               {p.description}
                             </span>
                           )}
@@ -162,7 +162,7 @@ export function GlobalSearch() {
                   )}
 
                   {query.length >= 2 && allItems.length === 0 && (
-                    <div className="px-4 py-6 text-center text-sm text-[#6b7280]">
+                    <div className="px-4 py-6 text-center text-sm text-muted-foreground">
                       No results found
                     </div>
                   )}

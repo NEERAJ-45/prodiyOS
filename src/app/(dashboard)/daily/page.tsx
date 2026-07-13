@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useMounted } from '@/hooks/useMounted';
 import { useDailyQuery, useSyncDaily, useActivityLog } from '@/hooks/use-daily';
 import { useLoginStreakQuery } from '@/hooks/use-login-streak';
+import { usePomodoro } from '@/hooks/use-pomodoro';
 import {
   CheckCircle2,
   Circle,
@@ -133,6 +134,22 @@ const SLOT_BADGE_COLORS: Record<string, string> = {
   'Night – CS Fundamentals': 'bg-purple-500/10 text-purple-400 border-purple-500/30',
 };
 
+function LinkBadge({ isDone, roadmapLink }: { isDone: boolean; roadmapLink: string | null }) {
+  if (!roadmapLink) return null;
+  return (
+    <Link
+      href={roadmapLink}
+      title="Open topic roadmap"
+      className={cn(
+        "inline-flex items-center justify-center w-5 h-5 rounded bg-zinc-800/50 text-zinc-500 border border-zinc-700/50 hover:bg-zinc-700/50 hover:text-zinc-300 hover:border-zinc-600 transition-all shrink-0 ml-1.5",
+        isDone && "opacity-50 pointer-events-none"
+      )}
+    >
+      <ArrowUpRight className="h-3 w-3" />
+    </Link>
+  );
+}
+
 export default function DailyPage() {
   const { userEmail } = useProfile();
   const mounted = useMounted();
@@ -147,23 +164,30 @@ export default function DailyPage() {
   const [slotNotes, setSlotNotes] = React.useState<Record<string, Record<string, string>>>({});
   const [showCatchUp, setShowCatchUp] = React.useState(true);
 
-  const [timerMode, setTimerMode] = React.useState<'work' | 'break'>('work');
-  const [timerRunning, setTimerRunning] = React.useState(false);
-  const [timerSeconds, setTimerSeconds] = React.useState(25 * 60);
-  const timerRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
-  const [editingTimerPart, setEditingTimerPart] = React.useState<'h' | 'm' | 's' | null>(null);
-  const [editTimerValue, setEditTimerValue] = React.useState('');
-  const audioCtxRef = React.useRef<AudioContext | null>(null);
-  const [workMinutes, setWorkMinutes] = React.useState(25);
-  const [breakMinutes, setBreakMinutes] = React.useState(5);
-  const WORK_TIME = workMinutes * 60;
-  const BREAK_TIME = breakMinutes * 60;
+  const {
+    timerMode,
+    timerRunning,
+    timerSeconds,
+    timerMinutes,
+    timerSecs,
+    timerProgress,
+    editingTimer,
+    editTimerValue,
+    startTimer,
+    pauseTimer,
+    resetTimer,
+    switchTimerMode,
+    startEditingTimer,
+    handleEditTimerChange,
+    handleEditTimerBlur,
+    handleEditTimerKeyDown,
+  } = usePomodoro();
 
   const [editingTaskId, setEditingTaskId] = React.useState<string | null>(null);
   const [editTaskTitle, setEditTaskTitle] = React.useState('');
   const [editTaskTime, setEditTaskTime] = React.useState('');
   const [editTaskDifficulty, setEditTaskDifficulty] = React.useState('');
-  const syncRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const { data: dailyDb } = useDailyQuery(todayKey);
   const syncDaily = useSyncDaily();
   const logActivity = useActivityLog();
@@ -203,6 +227,11 @@ export default function DailyPage() {
     return missed;
   }, [scheduleId, slotData]);
 
+  const syncDailyToServer = React.useCallback((ids: Set<string>, noteText: string) => {
+    if (!userEmail) return;
+    syncDaily.mutate({ date: todayKey, completedTaskIds: Array.from(ids), note: noteText });
+  }, [userEmail, syncDaily]);
+
   React.useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
@@ -230,65 +259,39 @@ export default function DailyPage() {
       try { setCustomTasks(JSON.parse(savedTasks)); } catch {}
     }
   }, []);
+
   React.useEffect(() => {
-    if (dailyDb?.record) {
-      if (dailyDb.record.completedTaskIds?.length) {
-        setCompleted(new Set(dailyDb.record.completedTaskIds));
-      }
-      if (dailyDb.record.note) {
-        setNote(dailyDb.record.note);
-      }
+    if (!dailyDb?.record) return;
+    if (dailyDb.record.completedTaskIds?.length) {
+      setCompleted(new Set(dailyDb.record.completedTaskIds));
+    }
+    if (dailyDb.record.note) {
+      setNote(dailyDb.record.note);
     }
   }, [dailyDb]);
 
-  const syncDailyToServer = React.useCallback((ids: Set<string>, noteText: string) => {
-    if (!userEmail) return;
-    syncDaily.mutate({ date: todayKey, completedTaskIds: Array.from(ids), note: noteText });
-  }, [userEmail, syncDaily]);
-
   React.useEffect(() => {
     if (!mounted) return;
-    const saved: Record<string, string[]> = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-    saved[todayKey] = Array.from(completed);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
-    if (syncRef.current) clearTimeout(syncRef.current);
-    syncRef.current = setTimeout(() => syncDailyToServer(completed, note), 2000);
-  }, [completed, mounted, note, syncDailyToServer]);
 
-  React.useEffect(() => {
-    if (!mounted) return;
-    const saved: Record<string, string> = JSON.parse(localStorage.getItem(NOTES_KEY) || '{}');
-    saved[todayKey] = note;
-    localStorage.setItem(NOTES_KEY, JSON.stringify(saved));
-    if (syncRef.current) clearTimeout(syncRef.current);
-    syncRef.current = setTimeout(() => syncDailyToServer(completed, note), 2000);
-  }, [note, mounted, completed, syncDailyToServer]);
+    const id = setTimeout(() => {
+      const saved: Record<string, string[]> = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      saved[todayKey] = Array.from(completed);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
 
-  React.useEffect(() => {
-    if (!mounted) return;
-    localStorage.setItem(SCHEDULE_MODE_KEY, scheduleId);
-  }, [scheduleId, mounted]);
+      const savedNotes: Record<string, string> = JSON.parse(localStorage.getItem(NOTES_KEY) || '{}');
+      savedNotes[todayKey] = note;
+      localStorage.setItem(NOTES_KEY, JSON.stringify(savedNotes));
 
-  React.useEffect(() => {
-    if (!mounted) return;
-    saveSlotData(slotData);
-  }, [slotData, mounted]);
+      localStorage.setItem(SCHEDULE_MODE_KEY, scheduleId);
+      saveSlotData(slotData);
+      saveSlotNotes(slotNotes);
+      localStorage.setItem('daily-custom-tasks', JSON.stringify(customTasks));
 
-  React.useEffect(() => {
-    if (!mounted) return;
-    saveSlotNotes(slotNotes);
-  }, [slotNotes, mounted]);
+      syncDailyToServer(completed, note);
+    }, 2000);
 
-  React.useEffect(() => {
-    if (!mounted) return;
-    localStorage.setItem('daily-custom-tasks', JSON.stringify(customTasks));
-  }, [customTasks, mounted]);
-
-  React.useEffect(() => {
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, []);
+    return () => clearTimeout(id);
+  }, [completed, note, scheduleId, slotData, slotNotes, customTasks, mounted, syncDailyToServer]);
 
   function toggleSlotCompletion(period: string) {
     setSlotData((prev) => {
@@ -369,107 +372,6 @@ export default function DailyPage() {
     setEditingTaskId(null);
   }
 
-  function startTimer() { setTimerRunning(true); }
-
-  function pauseTimer() {
-    setTimerRunning(false);
-    if (timerRef.current) clearInterval(timerRef.current);
-  }
-
-  function resetTimer() {
-    pauseTimer();
-    setTimerSeconds(timerMode === 'work' ? WORK_TIME : BREAK_TIME);
-  }
-
-  function switchTimerMode() {
-    pauseTimer();
-    const next = timerMode === 'work' ? 'break' : 'work';
-    setTimerMode(next);
-    setTimerSeconds(next === 'work' ? WORK_TIME : BREAK_TIME);
-  }
-
-  React.useEffect(() => {
-    if (!timerRunning) return;
-    timerRef.current = setInterval(() => {
-      setTimerSeconds((prev) => {
-        if (prev <= 1) {
-          clearInterval(timerRef.current!);
-          setTimerRunning(false);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [timerRunning]);
-
-  function getAudioContext() {
-    if (!audioCtxRef.current) {
-      const WebAudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      audioCtxRef.current = new WebAudioCtx();
-    }
-    return audioCtxRef.current;
-  }
-
-  function playDialSound() {
-    const ctx = getAudioContext();
-    const now = ctx.currentTime;
-    for (let i = 0; i < 2; i++) {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(800, now + i * 0.08);
-      gain.gain.setValueAtTime(0.12, now + i * 0.08);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.07);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(now + i * 0.08);
-      osc.stop(now + i * 0.08 + 0.07);
-    }
-  }
-
-  function handleStartEditTimer(part: 'h' | 'm' | 's') {
-    const total = timerMode === 'work' ? workMinutes * 60 : breakMinutes * 60;
-    const h = Math.floor(total / 3600);
-    const m = Math.floor((total % 3600) / 60);
-    const s = total % 60;
-    const vals = { h: String(h).padStart(2, '0'), m: String(m).padStart(2, '0'), s: String(s).padStart(2, '0') };
-    setEditingTimerPart(part);
-    setEditTimerValue(vals[part]);
-    playDialSound();
-  }
-
-  function handleEditTimerChange(val: string) {
-    setEditTimerValue(val.replace(/\D/g, ''));
-    playDialSound();
-  }
-
-  function handleEditTimerBlur() {
-    if (editingTimerPart && editTimerValue !== '') {
-      let total = timerMode === 'work' ? workMinutes * 60 : breakMinutes * 60;
-      const h = Math.floor(total / 3600);
-      const m = Math.floor((total % 3600) / 60);
-      const s = total % 60;
-      const num = parseInt(editTimerValue) || 0;
-      if (editingTimerPart === 'h') { total = num * 3600 + m * 60 + s; }
-      else if (editingTimerPart === 'm') { total = h * 3600 + num * 60 + s; }
-      else if (editingTimerPart === 's') { total = h * 3600 + m * 60 + num; }
-      const minutes = Math.max(1, Math.round(total / 60));
-      if (timerMode === 'work') setWorkMinutes(minutes);
-      else setBreakMinutes(minutes);
-      setTimerSeconds(total);
-    }
-    setEditingTimerPart(null);
-    setEditTimerValue('');
-  }
-
-  function handleEditTimerKeyDown(e: React.KeyboardEvent) {
-    if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
-    else if (e.key === 'Escape') { setEditingTimerPart(null); setEditTimerValue(''); }
-  }
-
   const { data: streakData } = useLoginStreakQuery();
   const dailyStreak = streakData?.streak ?? (() => {
     const saved: Record<string, string[]> = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
@@ -484,16 +386,9 @@ export default function DailyPage() {
     return s;
   })();
 
-  const timerMinutes = Math.floor(timerSeconds / 60);
-  const timerSecs = timerSeconds % 60;
-  const timerProgress = timerMode === 'work'
-    ? ((WORK_TIME - timerSeconds) / WORK_TIME) * 100
-    : ((BREAK_TIME - timerSeconds) / BREAK_TIME) * 100;
-
   const allTasks = customTasks;
   const completedCount = completed.size;
   const totalTasks = allTasks.length;
-
 
   const slotProgressPct = Math.round((todaySlotsDone / totalSlotsToday) * 100);
 
@@ -511,7 +406,6 @@ export default function DailyPage() {
     <div className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto">
         <div className="p-4 md:p-6 space-y-4 md:space-y-6 max-w-7xl mx-auto w-full">
-          {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
             <div>
               <h1 className="text-2xl font-semibold tracking-tight text-zinc-100">Daily Execution</h1>
@@ -519,7 +413,6 @@ export default function DailyPage() {
             </div>
           </div>
 
-          {/* Schedule Mode Tabs */}
           <div className="flex flex-wrap gap-1.5">
             {SCHEDULE_TABS.map((tab) => {
               const isActive = scheduleId === tab.id;
@@ -542,7 +435,6 @@ export default function DailyPage() {
             })}
           </div>
 
-          {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <Card className="bg-card/50 border-zinc-800">
               <CardContent className="p-4 flex items-center gap-3">
@@ -595,7 +487,6 @@ export default function DailyPage() {
             </Card>
           </div>
 
-          {/* Slot Progress */}
           <div className="space-y-1">
             <div className="flex items-center justify-between text-xs">
               <span className="text-zinc-500">Today&apos;s Schedule Progress</span>
@@ -609,11 +500,8 @@ export default function DailyPage() {
             </div>
           </div>
 
-          {/* Main content grid */}
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-            {/* Left column — Schedule + Catch-up */}
             <div className="xl:col-span-2 space-y-4">
-              {/* Today's Plan */}
               <Card className="bg-card/50 border-zinc-800">
                 <CardHeader className="p-4 pb-3">
                   <div className="flex items-center justify-between">
@@ -661,21 +549,7 @@ export default function DailyPage() {
                               <span className={cn('text-sm font-medium', isDone ? 'text-zinc-500 line-through' : 'text-zinc-200')}>
                                 {slot.topic}
                               </span>
-                               {(() => {
-                                 const roadmapLink = getRoadmapLink(slot.topic, slot.period);
-                                 return roadmapLink ? (
-                                   <Link
-                                     href={roadmapLink}
-                                     className={cn(
-                                       "inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 hover:border-amber-500/30 hover:scale-105 active:scale-95 transition-all font-semibold cursor-pointer animate-bounce shadow-sm ml-1.5 shrink-0",
-                                       isDone && "opacity-50 pointer-events-none"
-                                     )}
-                                   >
-                                     <span>Confused? what to Study:?</span>
-                                     <ArrowUpRight className="h-3 w-3 shrink-0" />
-                                   </Link>
-                                 ) : null;
-                               })()}
+                              <LinkBadge isDone={isDone} roadmapLink={getRoadmapLink(slot.topic, slot.period)} />
                             </div>
                             {slot.description && (
                               <p className="text-[11px] text-zinc-600 mt-0.5">{slot.description}</p>
@@ -699,7 +573,6 @@ export default function DailyPage() {
                 </CardContent>
               </Card>
 
-              {/* Catch-up Section */}
               {catchUpMissed.length > 0 && (
                 <Card className="bg-card/50 border-amber-500/20">
                   <CardHeader
@@ -754,21 +627,7 @@ export default function DailyPage() {
                                 <span className={cn('text-xs', isNowDone ? 'text-zinc-500 line-through' : 'text-zinc-300')}>
                                   {missed.slot.topic}
                                 </span>
-                                {(() => {
-                                  const roadmapLink = getRoadmapLink(missed.slot.topic, missed.slot.period);
-                                  return roadmapLink ? (
-                                    <Link
-                                      href={roadmapLink}
-                                      className={cn(
-                                        "inline-flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 hover:border-amber-500/30 hover:scale-105 active:scale-95 transition-all font-semibold cursor-pointer animate-bounce shadow-sm ml-1.5 shrink-0",
-                                        isNowDone && "opacity-50 pointer-events-none"
-                                      )}
-                                    >
-                                      <span>Confused? what to Study:?</span>
-                                      <ArrowUpRight className="h-2.5 w-2.5 shrink-0" />
-                                    </Link>
-                                  ) : null;
-                                })()}
+                                <LinkBadge isDone={isNowDone} roadmapLink={getRoadmapLink(missed.slot.topic, missed.slot.period)} />
                               </div>
                             </div>
                           </div>
@@ -779,7 +638,6 @@ export default function DailyPage() {
                 </Card>
               )}
 
-              {/* Custom Tasks */}
               <Card className="bg-card/50 border-zinc-800">
                 <CardHeader className="p-4 pb-3">
                   <CardTitle className="text-sm font-medium text-zinc-200">Additional Tasks</CardTitle>
@@ -875,9 +733,7 @@ export default function DailyPage() {
               </Card>
             </div>
 
-            {/* Right sidebar */}
             <div className="space-y-4">
-              {/* Focus Timer */}
               <Card className="bg-card/50 border-zinc-800">
                 <CardHeader className="p-4 pb-3">
                   <div className="flex items-center justify-between">
@@ -914,31 +770,24 @@ export default function DailyPage() {
                       />
                     </svg>
                     <div className="absolute inset-0 flex flex-col items-center justify-center -mt-1">
-                      <div className="flex items-baseline gap-0">
-                        {editingTimerPart === 'h' ? (
-                          <input autoFocus value={editTimerValue} onChange={(e) => handleEditTimerChange(e.target.value)} onBlur={handleEditTimerBlur} onKeyDown={handleEditTimerKeyDown} className="w-9 bg-zinc-800/80 text-center rounded-md outline-none ring-2 ring-zinc-600 text-zinc-100 text-2xl font-bold tabular-nums" />
-                        ) : (
-                          <button onClick={() => !timerRunning && handleStartEditTimer('h')} className="hover:bg-zinc-800/60 rounded-md px-1 -mx-1 transition-all text-2xl font-bold text-zinc-100 tabular-nums tracking-wide cursor-pointer" title="Edit hours">
-                            {String(Math.floor(timerSeconds / 3600)).padStart(2, '0')}
-                          </button>
-                        )}
-                        <span className="text-2xl font-bold text-zinc-600 tabular-nums -mx-0.5">:</span>
-                        {editingTimerPart === 'm' ? (
-                          <input autoFocus value={editTimerValue} onChange={(e) => handleEditTimerChange(e.target.value)} onBlur={handleEditTimerBlur} onKeyDown={handleEditTimerKeyDown} className="w-9 bg-zinc-800/80 text-center rounded-md outline-none ring-2 ring-zinc-600 text-zinc-100 text-2xl font-bold tabular-nums" />
-                        ) : (
-                          <button onClick={() => !timerRunning && handleStartEditTimer('m')} className="hover:bg-zinc-800/60 rounded-md px-1 -mx-1 transition-all text-2xl font-bold text-zinc-100 tabular-nums tracking-wide cursor-pointer" title="Edit minutes">
-                            {String(timerMinutes).padStart(2, '0')}
-                          </button>
-                        )}
-                        <span className="text-2xl font-bold text-zinc-600 tabular-nums -mx-0.5">:</span>
-                        {editingTimerPart === 's' ? (
-                          <input autoFocus value={editTimerValue} onChange={(e) => handleEditTimerChange(e.target.value)} onBlur={handleEditTimerBlur} onKeyDown={handleEditTimerKeyDown} className="w-9 bg-zinc-800/80 text-center rounded-md outline-none ring-2 ring-zinc-600 text-zinc-100 text-2xl font-bold tabular-nums" />
-                        ) : (
-                          <button onClick={() => !timerRunning && handleStartEditTimer('s')} className="hover:bg-zinc-800/60 rounded-md px-1 -mx-1 transition-all text-2xl font-bold text-zinc-100 tabular-nums tracking-wide cursor-pointer" title="Edit seconds">
-                            {String(timerSecs).padStart(2, '0')}
-                          </button>
-                        )}
-                      </div>
+                      {editingTimer ? (
+                        <input
+                          autoFocus
+                          value={editTimerValue}
+                          onChange={(e) => handleEditTimerChange(e.target.value)}
+                          onBlur={handleEditTimerBlur}
+                          onKeyDown={handleEditTimerKeyDown}
+                          className="w-16 bg-zinc-800/80 text-center rounded-md outline-none ring-2 ring-zinc-600 text-zinc-100 text-2xl font-bold tabular-nums"
+                        />
+                      ) : (
+                        <button
+                          onClick={() => !timerRunning && startEditingTimer()}
+                          className="hover:bg-zinc-800/60 rounded-md px-2 -mx-2 transition-all text-2xl font-bold text-zinc-100 tabular-nums tracking-wide cursor-pointer"
+                          title="Edit timer"
+                        >
+                          {String(timerMinutes).padStart(2, '0')}:{String(timerSecs).padStart(2, '0')}
+                        </button>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -958,7 +807,6 @@ export default function DailyPage() {
                 </CardContent>
               </Card>
 
-              {/* Daily Notes */}
               <Card className="bg-card/50 border-zinc-800">
                 <CardHeader className="p-4 pb-3">
                   <div className="flex items-center gap-2">
@@ -976,7 +824,6 @@ export default function DailyPage() {
                 </CardContent>
               </Card>
 
-              {/* Quick Legend */}
               <Card className="bg-card/50 border-zinc-800">
                 <CardContent className="p-4 space-y-2">
                   <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Schedule Legend</p>

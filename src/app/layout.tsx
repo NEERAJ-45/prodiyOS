@@ -12,8 +12,13 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="dark" suppressHydrationWarning>
-      <body className="antialiased" suppressHydrationWarning>
+    <html lang="en" className="dark">
+      <head>
+        <script dangerouslySetInnerHTML={{
+          __html: `document.documentElement.classList.add('dark')`,
+        }} />
+      </head>
+      <body className="antialiased">
         <SessionProvider>
           <QueryProvider>
             <ProfileProvider>

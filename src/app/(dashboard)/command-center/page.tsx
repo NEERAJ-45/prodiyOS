@@ -1,7 +1,6 @@
 'use client';
 
-import * as React from 'react';
-import { useState, useEffect, useCallback, useRef, useMemo, type ElementType } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { LazyAppear } from "@/components/shared/LazyAppear";
+import { useCommandCenterQuery, useUpdateFocusItem } from '@/hooks/use-command-center';
 import { useProfile } from "@/components/providers/ProfileProvider";
 import {
   Zap,
@@ -17,47 +17,11 @@ import {
   Calendar,
   BrainCircuit,
   ArrowRight,
-
   Loader2,
   Plus,
   Pencil,
 } from "lucide-react";
 import { cn, formatRelativeTime } from '@/lib/utils';
-
-interface StatItem {
-  icon: ElementType;
-  value: string;
-  label: string;
-  sub: string;
-}
-
-interface FocusItem {
-  label: string;
-  value: string;
-  badge: string;
-}
-
-interface ProjectItem {
-  name: string;
-  status: string;
-  progress: string;
-}
-
-interface ActivityItem {
-  text: string;
-  createdAt: string;
-}
-
-interface DashboardData {
-  stats: StatItem[];
-  focusItems: FocusItem[];
-  projects: ProjectItem[];
-  activities: ActivityItem[];
-}
-
-function cacheKey(email?: string): string {
-  return email ? `samundar-command-center-${email}` : 'samundar-command-center';
-}
 
 const statusStyles: Record<string, { label: string; className: string; bar: string }> = {
   COMPLETED: { label: 'Completed', className: 'bg-emerald-950 text-emerald-300 border-emerald-800', bar: 'bg-emerald-500' },
@@ -67,7 +31,7 @@ const statusStyles: Record<string, { label: string; className: string; bar: stri
   ON_HOLD: { label: 'On Hold', className: 'bg-zinc-800 text-zinc-400 border-zinc-700', bar: 'bg-zinc-500' },
 };
 
-const iconMap: Record<string, ElementType> = {
+const ICON_MAP: Record<string, React.ElementType> = {
   'Current Streak': Zap,
   'Weekly Progress': TrendingUp,
   'Monthly Progress': Calendar,
@@ -93,146 +57,42 @@ function ProjectProgressBar({ progress }: { progress: string }) {
 }
 
 export default function CommandCenterPage() {
-  const { userName, userEmail, customDbUrl } = useProfile();
+  const { userName, userEmail } = useProfile();
   const router = useRouter();
-  const [mounted, setMounted] = useState(false);
-  const [data, setData] = useState<DashboardData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const { data, isLoading, error } = useCommandCenterQuery();
+  const updateFocusItem = useUpdateFocusItem();
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogLabel, setDialogLabel] = useState('');
   const [dialogValue, setDialogValue] = useState('');
   const [dialogBadge, setDialogBadge] = useState('');
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
-  const [resetFlag, setResetFlag] = useState(0);
-  const fetched = useRef<string | null>(null);
 
-  const openFocusDialog = useCallback((label: string, value: string, badge: string) => {
-    setDialogLabel(label);
-    setDialogValue(value);
-    setDialogBadge(badge);
-    setDialogOpen(true);
-  }, []);
-
-  const saveFocusEdit = useCallback(async () => {
-    if (!userEmail || !dialogLabel) {
-      setDialogOpen(false);
-      return;
-    }
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (customDbUrl) headers['x-mongodb-url'] = customDbUrl;
-
-    const body: Record<string, string> = { email: userEmail };
-    if (dialogLabel === 'Active Pillar') {
-      body.activePillar = dialogValue;
-      body.activeCategory = dialogBadge;
-    } else if (dialogLabel === 'Next Learning Unit') {
-      body.nextLearningUnit = dialogValue;
-      body.nextLearningDuration = dialogBadge;
-    }
-
-    try {
-      const res = await fetch('/api/db/profile', {
-        method: 'PATCH',
-        headers,
-        body: JSON.stringify(body),
-      });
-      if (res.ok) {
-        setData((prev) => {
-          if (!prev) return prev;
-          return {
-            ...prev,
-            focusItems: prev.focusItems.map((item) =>
-              item.label === dialogLabel
-                ? { ...item, value: dialogValue, badge: dialogBadge }
-                : item
-            ),
-          };
-        });
-      }
-    } catch {}
-    setDialogOpen(false);
-  }, [userEmail, customDbUrl, dialogLabel, dialogValue, dialogBadge]);
-
-  const loadData = useCallback(async () => {
-    if (!mounted) return;
-    const email = userEmail || '';
-    if (!email) return;
-    if (fetched.current === email) return;
-    fetched.current = email;
-
-    const key = cacheKey(userEmail);
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (userEmail) headers['x-user-email'] = userEmail;
-    if (customDbUrl) headers['x-mongodb-url'] = customDbUrl;
-
-    try {
-      const res = await fetch(`/api/db/command-center?userEmail=${encodeURIComponent(userEmail || '')}`, { headers });
-      const json = await res.json();
-      if (json.dbConnected) {
-        const payload: DashboardData = {
-          stats: json.stats.map((s: { label: string; value: string; sub: string }) => ({ ...s, icon: iconMap[s.label as keyof typeof iconMap] || Zap })),
-          focusItems: json.focusItems,
-          projects: json.projects,
-          activities: json.activities,
-        };
-        setData(payload);
-        localStorage.setItem(key, JSON.stringify(payload));
-        setLoading(false);
-        return;
-      }
-    } catch {
-      setError(true);
-    }
-
-    const cached = localStorage.getItem(key);
-    if (cached) {
-      try {
-        const parsed = JSON.parse(cached);
-        const activities = parsed.activities?.map((a: string | { text: string; createdAt: string }) =>
-          typeof a === 'string' ? { text: a, createdAt: new Date().toISOString() } : a
-        ) ?? [];
-        setData({ ...parsed, activities });
-        setLoading(false);
-        return;
-      } catch {}
-    }
-
-    setData({
-      stats: [
-        { icon: Zap, value: "0", label: "Current Streak", sub: "days" },
-        { icon: TrendingUp, value: "0%", label: "Weekly Progress", sub: "no data" },
-        { icon: Calendar, value: "0%", label: "Monthly Progress", sub: "no data" },
-        { icon: BrainCircuit, value: "0%", label: "Interview Readiness", sub: "Just started" },
-      ],
-      focusItems: [
-        { label: "Active Pillar", value: "Data Structures & Algorithms", badge: "Trees" },
-        { label: "Next Learning Unit", value: "AVL Tree Rotations", badge: "45 min" },
-        { label: "Due Revisions", value: "No pending revisions", badge: "Up to date" },
-      ],
-      projects: [],
-      activities: [{ text: 'Start your journey by completing some tasks!', createdAt: new Date().toISOString() }],
-    });
-    setLoading(false);
-  }, [mounted, userEmail, customDbUrl]);
-
-  useEffect(() => { setMounted(true); }, []);
-  useEffect(() => { loadData(); }, [loadData, resetFlag]);
-
-  // Clean up old global cache key (no longer used)
   useEffect(() => {
     localStorage.removeItem('samundar-command-center');
   }, []);
 
-  const handleReset = useCallback(() => {
-    localStorage.removeItem(cacheKey(userEmail));
+  const openFocusDialog = (label: string, value: string, badge: string) => {
+    setDialogLabel(label);
+    setDialogValue(value);
+    setDialogBadge(badge);
+    setDialogOpen(true);
+  };
+
+  const saveFocusEdit = async () => {
+    if (!userEmail || !dialogLabel) {
+      setDialogOpen(false);
+      return;
+    }
+    updateFocusItem.mutate({ label: dialogLabel, value: dialogValue, badge: dialogBadge });
+    setDialogOpen(false);
+  };
+
+  const handleReset = () => {
+    localStorage.removeItem(`samundar-command-center-${userEmail}`);
     localStorage.removeItem('samundar-command-center');
-    fetched.current = null;
-    setData(null);
-    setLoading(true);
     setResetDialogOpen(false);
-    setResetFlag(f => f + 1);
-  }, [userEmail]);
+  };
 
   const todayActivities = useMemo(() => {
     const today = new Date();
@@ -246,7 +106,7 @@ export default function CommandCenterPage() {
     return (data?.activities ?? []).filter(a => new Date(a.createdAt) < today);
   }, [data?.activities]);
 
-  if (!mounted || loading) {
+  if (isLoading || !data) {
     return (
       <div className="flex flex-col h-full">
         <div className="flex-1 flex items-center justify-center">
@@ -258,8 +118,6 @@ export default function CommandCenterPage() {
       </div>
     );
   }
-
-  if (!data) return null;
 
   return (
     <div className="flex flex-col h-full">
@@ -289,7 +147,7 @@ export default function CommandCenterPage() {
         <LazyAppear>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {data.stats.map((stat) => {
-              const Icon = stat.icon;
+              const Icon = ICON_MAP[stat.label] || Zap;
               return (
                 <Card key={stat.label} className="border-zinc-800/80 bg-zinc-900/40">
                   <CardContent className="p-5">
@@ -338,13 +196,10 @@ export default function CommandCenterPage() {
                           editable && 'group-hover:text-zinc-100 transition-colors'
                         )}>{item.value}</p>
                       </div>
-                      <Badge
-                        variant="secondary"
-                        className={cn(
-                          'text-xs bg-zinc-800 text-zinc-300',
-                          editable && 'group-hover:bg-zinc-700 transition-colors'
-                        )}
-                      >
+                      <Badge variant="secondary" className={cn(
+                        'text-xs bg-zinc-800 text-zinc-300',
+                        editable && 'group-hover:bg-zinc-700 transition-colors'
+                      )}>
                         {item.badge}
                       </Badge>
                     </div>
@@ -370,16 +225,13 @@ export default function CommandCenterPage() {
                   data.projects.map((project) => {
                     const style = statusStyles[project.status] || statusStyles.PLANNING;
                     return (
-                      <div
-                        key={project.name}
+                      <div key={project.name}
                         onClick={() => router.push('/projects')}
                         className="rounded-lg border border-zinc-800/60 bg-zinc-900/20 p-3 space-y-2 hover:border-zinc-700 hover:bg-zinc-900/40 transition-colors cursor-pointer"
                       >
                         <div className="flex items-center justify-between">
                           <p className="text-sm font-medium truncate">{project.name}</p>
-                          <Badge variant="outline" className={cn('text-[10px] px-1.5 py-0', style.className)}>
-                            {style.label}
-                          </Badge>
+                          <Badge variant="outline" className={cn('text-[10px] px-1.5 py-0', style.className)}>{style.label}</Badge>
                         </div>
                         <ProjectProgressBar progress={project.progress} />
                       </div>
@@ -395,12 +247,7 @@ export default function CommandCenterPage() {
           <Card className="border-zinc-800/80 bg-zinc-900/40">
             <CardHeader className="pb-3 flex-row items-center justify-between">
               <CardTitle className="text-sm font-medium">Recent Activity</CardTitle>
-              <Link
-                href="/history?tab=activity"
-                className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
-              >
-                Show more
-              </Link>
+              <Link href="/history?tab=activity" className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors">Show more</Link>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
@@ -411,9 +258,7 @@ export default function CommandCenterPage() {
                       <div key={i} className="flex items-center gap-3">
                         <div className="h-1.5 w-1.5 rounded-full bg-emerald-600 shrink-0" />
                         <p className="text-sm text-zinc-400 flex-1 truncate">{activity.text}</p>
-                        <span className="text-[10px] text-zinc-600 shrink-0 tabular-nums">
-                          {formatRelativeTime(activity.createdAt)}
-                        </span>
+                        <span className="text-[10px] text-zinc-600 shrink-0 tabular-nums">{formatRelativeTime(activity.createdAt)}</span>
                       </div>
                     ))}
                   </>
@@ -425,9 +270,7 @@ export default function CommandCenterPage() {
                       <div key={i} className="flex items-center gap-3">
                         <div className="h-1.5 w-1.5 rounded-full bg-zinc-700 shrink-0" />
                         <p className="text-sm text-zinc-400 flex-1 truncate">{activity.text}</p>
-                        <span className="text-[10px] text-zinc-600 shrink-0 tabular-nums">
-                          {formatRelativeTime(activity.createdAt)}
-                        </span>
+                        <span className="text-[10px] text-zinc-600 shrink-0 tabular-nums">{formatRelativeTime(activity.createdAt)}</span>
                       </div>
                     ))}
                   </>
@@ -436,10 +279,7 @@ export default function CommandCenterPage() {
                   <p className="text-sm text-zinc-600 text-center py-4">No activity yet</p>
                 )}
               </div>
-              <Link
-                href="/history"
-                className="mt-4 inline-flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
-              >
+              <Link href="/history" className="mt-4 inline-flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-300 transition-colors">
                 Show more <ArrowRight className="h-3 w-3" />
               </Link>
             </CardContent>
@@ -455,19 +295,11 @@ export default function CommandCenterPage() {
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
               <label className="text-xs text-zinc-500">Value</label>
-              <Input
-                value={dialogValue}
-                onChange={(e) => setDialogValue(e.target.value)}
-                className="bg-zinc-800 border-zinc-700 text-zinc-100"
-              />
+              <Input value={dialogValue} onChange={(e) => setDialogValue(e.target.value)} className="bg-zinc-800 border-zinc-700 text-zinc-100" />
             </div>
             <div className="space-y-1.5">
               <label className="text-xs text-zinc-500">Badge</label>
-              <Input
-                value={dialogBadge}
-                onChange={(e) => setDialogBadge(e.target.value)}
-                className="bg-zinc-800 border-zinc-700 text-zinc-100"
-              />
+              <Input value={dialogBadge} onChange={(e) => setDialogBadge(e.target.value)} className="bg-zinc-800 border-zinc-700 text-zinc-100" />
             </div>
           </div>
           <DialogFooter>
