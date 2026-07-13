@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useMounted } from '@/hooks/useMounted';
 import {
   FolderOpen, CheckCircle2, Sparkles, Layers,
-  Plus, Pencil, Trash2, X, ExternalLink, Search, FileText,
+  Plus, Pencil, Trash2, X, ExternalLink, Search, FileText, FileDown,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -214,8 +214,30 @@ function ProjectCard({ project, onSelect, onEdit, onDelete }: {
   );
 }
 
+function dataUrlToBlob(dataUrl: string): Blob {
+  const [header, base64] = dataUrl.split(',', 2);
+  const mime = header?.split(':')[1]?.split(';')[0] || 'application/octet-stream';
+  const raw = atob(base64 || '');
+  const len = raw.length;
+  const arr = new Uint8Array(len);
+  for (let i = 0; i < len; i++) arr[i] = raw.charCodeAt(i);
+  return new Blob([arr], { type: mime });
+}
+
 function ExpandedDialog({ project, open, onOpenChange }: { project: Project | null; open: boolean; onOpenChange: (v: boolean) => void }) {
   const [viewingDoc, setViewingDoc] = React.useState<{ name: string; url: string } | null>(null);
+  const [docBlobUrl, setDocBlobUrl] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (!viewingDoc || viewingDoc.url.startsWith('data:image/')) {
+      setDocBlobUrl(null);
+      return;
+    }
+    const blob = dataUrlToBlob(viewingDoc.url);
+    const url = URL.createObjectURL(blob);
+    setDocBlobUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [viewingDoc]);
 
   if (!project) return null;
 
@@ -280,17 +302,34 @@ function ExpandedDialog({ project, open, onOpenChange }: { project: Project | nu
       </Dialog>
 
       <Dialog open={viewingDoc !== null} onOpenChange={(v) => { if (!v) setViewingDoc(null); }}>
-        <DialogContent className="max-w-4xl bg-zinc-900 border-zinc-800 h-[80vh]">
-          <DialogHeader>
-            <DialogTitle className="text-zinc-100 text-sm">{viewingDoc?.name}</DialogTitle>
-          </DialogHeader>
-          {viewingDoc?.url.startsWith('data:image/') ? (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img src={viewingDoc.url} alt={viewingDoc.name} className="w-full h-full object-contain" />
-          ) : (
-            <iframe src={viewingDoc?.url} className="w-full h-full rounded border border-zinc-700" title={viewingDoc?.name} />
-          )}
-        </DialogContent>
+        {viewingDoc && (
+          <DialogContent className="max-w-4xl bg-zinc-900 border-zinc-800 h-[80vh]">
+            <DialogHeader>
+              <DialogTitle className="text-zinc-100 text-sm truncate">{viewingDoc.name}</DialogTitle>
+            </DialogHeader>
+            <div className="flex-1 min-h-0 overflow-hidden">
+              {viewingDoc.url.startsWith('data:image/') ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img src={viewingDoc.url} alt={viewingDoc.name} className="w-full h-full object-contain" />
+              ) : (
+                <embed src={docBlobUrl || viewingDoc.url} type="application/pdf" className="w-full h-full rounded border border-zinc-700" />
+              )}
+            </div>
+            <DialogFooter className="border-t border-zinc-800 pt-3">
+              <div className="flex gap-2 w-full justify-end">
+                <Button variant="outline" size="sm" onClick={() => setViewingDoc(null)}>Close</Button>
+                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => {
+                  const a = document.createElement('a');
+                  a.href = viewingDoc.url;
+                  a.download = viewingDoc.name;
+                  a.click();
+                }}>
+                  <FileDown className="h-3.5 w-3.5" /> Download
+                </Button>
+              </div>
+            </DialogFooter>
+          </DialogContent>
+        )}
       </Dialog>
     </>
   );
