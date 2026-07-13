@@ -56,7 +56,7 @@ export function BookReaderClient({ book }: { book: BookEntry }) {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userEmail, text: `Opened book "${book.title}"` }),
     }).catch(() => {});
-  }, [userEmail]);
+  }, [userEmail, book.title]);
 
   const pdfUrl = `/api/books/${book.slug}`;
 

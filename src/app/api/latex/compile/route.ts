@@ -103,8 +103,8 @@ async function compileViaCloud(source: string): Promise<Buffer> {
       throw new Error('Cloud compiler returned an empty PDF');
     }
     return buffer;
-  } catch (err: any) {
-    if (err.name === 'AbortError') {
+  } catch (err: unknown) {
+    if (err instanceof Error && err.name === 'AbortError') {
       throw new Error('Cloud compilation timed out after 30s');
     }
     throw err;
@@ -126,23 +126,24 @@ export async function POST(request: NextRequest) {
     let pdf: Buffer;
     try {
       pdf = await compileLocally(body.source);
-    } catch (err: any) {
-      if (err.code === 'ENOENT') {
+    } catch (err: unknown) {
+      const nodeErr = err as { code?: string; message?: string };
+      if (nodeErr.code === 'ENOENT') {
         pdf = await compileViaCloud(body.source);
       } else {
-        return NextResponse.json({ error: err.message || 'Local compilation failed' }, { status: 422 });
+        return NextResponse.json({ error: nodeErr.message || 'Local compilation failed' }, { status: 422 });
       }
     }
 
-    return new NextResponse(pdf, {
+    return new NextResponse(new Uint8Array(pdf), {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': 'inline; filename="resume.pdf"',
         'Content-Length': String(pdf.length),
       },
     });
-  } catch (error: any) {
-    const message = error?.message || 'Compilation failed';
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Compilation failed';
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

@@ -30,8 +30,6 @@ Switch.displayName = SwitchPrimitives.Root.displayName;
 const STORAGE_KEY = 'daily-completions';
 const NOTES_KEY = 'daily-notes';
 const SLOT_COMPLETIONS_KEY = 'daily-slot-completions';
-const SLOT_NOTES_KEY = 'daily-slot-notes';
-
 async function pushDailyData() {
   const completionsRaw = localStorage.getItem(STORAGE_KEY);
   const notesRaw = localStorage.getItem(NOTES_KEY);

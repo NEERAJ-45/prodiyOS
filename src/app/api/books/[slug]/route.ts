@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { readFile } from 'fs/promises';
 import { existsSync } from 'fs';
 import { join } from 'path';
-import books, { getBookBySlug } from '@/data/books';
+import { getBookBySlug } from '@/data/books';
 
 const BOOKS_DIR = join(process.cwd(), 'src', 'assets', 'Being-Backend-Prodigy');
 

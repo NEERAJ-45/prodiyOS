@@ -2,9 +2,9 @@
 
 import { useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import { useMounted } from '@/hooks/useMounted';
-import { useCompletionsQuery, useToggleCompletion } from '@/hooks/use-completions';
-import { useNotesQuery, useSaveNote } from '@/hooks/use-notes';
-import { useCustomTopicsQuery, useAddCustomTopic, useDeleteCustomTopic } from '@/hooks/use-custom-topics';
+import { useToggleCompletion } from '@/hooks/use-completions';
+import { useSaveNote } from '@/hooks/use-notes';
+import { useAddCustomTopic, useDeleteCustomTopic } from '@/hooks/use-custom-topics';
 import {
   useReactTable,
   getCoreRowModel,
@@ -160,7 +160,6 @@ export default function QuestionsTable({
   storagePrefix,
   searchPlaceholder = 'Search topics...',
   defaultCompletedIds = [],
-  sourceName,
 }: QuestionsTableProps) {
   const { userEmail, userName, customDbUrl } = useProfile();
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -169,11 +168,8 @@ export default function QuestionsTable({
   const [completedMap, setCompletedMap] = useState<CompletedMap>({});
   const [notesMap, setNotesMap] = useState<NotesMap>({});
   const [customQuestions, setCustomQuestions] = useState<QuestionItem[]>([]);
-  const [dbConnected, setDbConnected] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
-  const completionsQuery = useCompletionsQuery(`${storagePrefix}-completed`);
-  const notesQuery = useNotesQuery(`${storagePrefix}-notes`);
-  const customTopicsQuery = useCustomTopicsQuery(`${storagePrefix}-custom-questions`);
+  const [dbConnected, setDbConnected] = useState(false);
   const toggleCompletion = useToggleCompletion();
   const saveNote = useSaveNote();
   const addCustomTopic = useAddCustomTopic();
@@ -290,11 +286,11 @@ export default function QuestionsTable({
         if (compData.dbConnected) {
           setDbConnected(true);
           const dbComps = compData.data.filter(
-            (x: any) => x.storagePrefix === `${storagePrefix}-completed`
+            (x: { storagePrefix: string; itemId: string; completedAt?: string }) => x.storagePrefix === `${storagePrefix}-completed`
           );
           const dbCompMap: CompletedMap = {};
-          dbComps.forEach((x: any) => {
-            dbCompMap[x.itemId] = x.completedAt;
+          dbComps.forEach((x: { storagePrefix: string; itemId: string; completedAt?: string }) => {
+            dbCompMap[x.itemId] = x.completedAt || '';
           });
           const mergedComps = { ...initialCompleted, ...dbCompMap };
           setCompletedMap(mergedComps);
@@ -320,11 +316,11 @@ export default function QuestionsTable({
         const noteData = await noteRes.json();
         if (noteData.dbConnected) {
           const dbNotes = noteData.data.filter(
-            (x: any) => x.storagePrefix === `${storagePrefix}-notes`
+            (x: { storagePrefix: string; itemId: string; note?: string }) => x.storagePrefix === `${storagePrefix}-notes`
           );
           const dbNoteMap: NotesMap = {};
-          dbNotes.forEach((x: any) => {
-            dbNoteMap[x.itemId] = x.note;
+          dbNotes.forEach((x: { storagePrefix: string; itemId: string; note?: string }) => {
+            dbNoteMap[x.itemId] = x.note || '';
           });
           const mergedNotes = { ...initialNotes, ...dbNoteMap };
           setNotesMap(mergedNotes);
@@ -353,18 +349,18 @@ export default function QuestionsTable({
         const customData = await customRes.json();
         if (customData.dbConnected) {
           const dbCustoms = customData.data.filter(
-            (x: any) => x.storagePrefix === `${storagePrefix}-custom-questions`
+            (x: { storagePrefix: string; id: number; title: string; difficulty: string; link?: string }) => x.storagePrefix === `${storagePrefix}-custom-questions`
           );
-          const dbCustomMap = new Map(dbCustoms.map((x: any) => [x.id, x]));
+          const dbCustomMap = new Map(dbCustoms.map((x: { storagePrefix: string; id: number; title: string; difficulty: string; link?: string }) => [x.id, x]));
           
           const mergedCustoms = [...initialCustom];
-          dbCustoms.forEach((dbItem: any) => {
+          dbCustoms.forEach((dbItem: { storagePrefix: string; id: number; title: string; difficulty: string; link?: string }) => {
             if (!mergedCustoms.some((x) => x.id === dbItem.id)) {
               mergedCustoms.push({
                 id: dbItem.id,
                 title: dbItem.title,
-                difficulty: dbItem.difficulty,
-                link: dbItem.link,
+                difficulty: dbItem.difficulty || 'MEDIUM',
+                link: dbItem.link || '',
                 isCustom: true,
               });
             }
@@ -395,7 +391,7 @@ export default function QuestionsTable({
     }
     
     syncWithDB();
-  }, [storagePrefix, userEmail, getRequestHeaders, loadData, saveData]);
+  }, [storagePrefix, userEmail, getRequestHeaders, loadData, saveData, questions, customQuestions]);
 
   const saveCustomQuestions = useCallback((list: QuestionItem[]) => {
     localStorage.setItem(`${storagePrefix}-custom-questions`, JSON.stringify(list));
@@ -415,7 +411,7 @@ export default function QuestionsTable({
     saveCustomQuestions(nextList);
 
     addCustomTopic.mutate({ storagePrefix: `${storagePrefix}-custom-questions`, id: newId, title, difficulty, link });
-  }, [customQuestions, saveCustomQuestions, storagePrefix, getRequestHeaders, userEmail, addCustomTopic]);
+  }, [customQuestions, saveCustomQuestions, storagePrefix, addCustomTopic]);
 
   const handleDeleteQuestion = useCallback((id: number) => {
     const nextList = customQuestions.filter((q) => q.id !== id);
@@ -437,7 +433,7 @@ export default function QuestionsTable({
     deleteCustomTopic.mutate({ storagePrefix: `${storagePrefix}-custom-questions`, id });
     toggleCompletion.mutate({ storagePrefix: `${storagePrefix}-completed`, itemId: String(id) });
     saveNote.mutate({ storagePrefix: `${storagePrefix}-notes`, itemId: String(id), itemTitle: deletedItem?.title });
-  }, [customQuestions, saveCustomQuestions, saveData, storagePrefix, getRequestHeaders, userEmail, deleteCustomTopic, toggleCompletion, saveNote]);
+  }, [customQuestions, saveCustomQuestions, saveData, storagePrefix, deleteCustomTopic, toggleCompletion, saveNote]);
 
   const [pagination, setPagination] = useState({
     pageIndex: 0,
@@ -481,7 +477,7 @@ export default function QuestionsTable({
     const itemTitle = item?.title;
 
     saveNote.mutate({ storagePrefix: `${storagePrefix}-notes`, itemId: String(id), note: value || undefined, itemTitle });
-  }, [saveData, storagePrefix, getRequestHeaders, userEmail, questions, customQuestions, saveNote]);
+  }, [saveData, storagePrefix, questions, customQuestions, saveNote]);
 
   const filteredQuestions = useMemo(() => {
     const all = [...questions, ...customQuestions];
@@ -670,9 +666,10 @@ export default function QuestionsTable({
       );
       return cols;
     },
-    [completedMap, toggleCompleted, notesMap, updateNote, handleDeleteQuestion, storagePrefix, saveData, pagination.pageIndex, pagination.pageSize]
+    [columnHelper, completedMap, toggleCompleted, notesMap, updateNote, handleDeleteQuestion, storagePrefix, saveData, pagination.pageIndex, pagination.pageSize]
   );
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data: filteredQuestions,
     columns,

@@ -4,10 +4,9 @@ import * as React from 'react';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useMounted } from '@/hooks/useMounted';
 import { cn } from '@/lib/utils';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Plus, Pencil, Trash2, CheckCircle, Circle, RefreshCw, Calendar, BookOpen, RotateCcw } from 'lucide-react';
+import { Plus, Pencil, Trash2, CheckCircle, Circle, Calendar, BookOpen, RotateCcw } from 'lucide-react';
 import {
   Dialog,
   DialogTrigger,

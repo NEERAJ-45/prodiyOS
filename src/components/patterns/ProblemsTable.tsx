@@ -12,9 +12,9 @@ import {
   PaginationState,
 } from "@tanstack/react-table";
 import { useQuery } from "@tanstack/react-query";
-import { useCompletionsQuery, useToggleCompletion } from '@/hooks/use-completions';
-import { useNotesQuery, useSaveNote } from '@/hooks/use-notes';
-import { useCustomTopicsQuery, useAddCustomTopic, useDeleteCustomTopic } from '@/hooks/use-custom-topics';
+import { useToggleCompletion } from '@/hooks/use-completions';
+import { useSaveNote } from '@/hooks/use-notes';
+import { useAddCustomTopic, useDeleteCustomTopic } from '@/hooks/use-custom-topics';
 import {
   ArrowLeft, ExternalLink, CheckCircle, Circle, Trash2, Plus,
   ChevronLeft, ChevronRight,
@@ -23,7 +23,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { ProblemDesc } from "./ProblemDesc";
 import { NotesDialog } from "@/components/shared/NotesDialog";
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { cn } from "@/lib/utils";
 import { useProfile } from "@/components/providers/ProfileProvider";
 import { toast } from "@/components/ui/toast";
@@ -173,9 +173,6 @@ export function ProblemsTable({
   const [notesMap, setNotesMap] = useState<NotesMap>({});
   const [customProblems, setCustomProblems] = useState<ProblemItem[]>([]);
   const [dbConnected, setDbConnected] = useState(false);
-  const completionsQuery = useCompletionsQuery(`completed-${patternName}`);
-  const notesQuery = useNotesQuery(`notes-${patternName}`);
-  const customTopicsQuery = useCustomTopicsQuery(`${patternName}-custom-problems`);
   const toggleCompletion = useToggleCompletion();
   const saveNote = useSaveNote();
   const addCustomTopic = useAddCustomTopic();
@@ -231,9 +228,9 @@ export function ProblemsTable({
         const compData = await compRes.json();
         if (compData.dbConnected) {
           setDbConnected(true);
-          const dbComps = compData.data.filter((x: any) => x.storagePrefix === `completed-${patternName}`);
+          const dbComps = compData.data.filter((x: { storagePrefix: string; itemId: string; completedAt?: string }) => x.storagePrefix === `completed-${patternName}`);
           const dbCompMap: CompletedMap = {};
-          dbComps.forEach((x: any) => { dbCompMap[x.itemId] = x.completedAt; });
+          dbComps.forEach((x: { storagePrefix: string; itemId: string; completedAt?: string }) => { dbCompMap[x.itemId] = x.completedAt || ''; });
           const merged = { ...initialCompleted, ...dbCompMap };
           setCompletedMap(merged);
           saveData(patternName, "completed", merged);
@@ -250,9 +247,9 @@ export function ProblemsTable({
         const noteRes = await fetch(`/api/db/notes?userEmail=${encodeURIComponent(userEmail)}`, { headers });
         const noteData = await noteRes.json();
         if (noteData.dbConnected) {
-          const dbNotes = noteData.data.filter((x: any) => x.storagePrefix === `notes-${patternName}`);
+          const dbNotes = noteData.data.filter((x: { storagePrefix: string; itemId: string; note?: string }) => x.storagePrefix === `notes-${patternName}`);
           const dbNoteMap: NotesMap = {};
-          dbNotes.forEach((x: any) => { dbNoteMap[x.itemId] = x.note; });
+          dbNotes.forEach((x: { storagePrefix: string; itemId: string; note?: string }) => { dbNoteMap[x.itemId] = x.note || ''; });
           const merged = { ...initialNotes, ...dbNoteMap };
           setNotesMap(merged);
           saveData(patternName, "notes", merged);
@@ -271,17 +268,17 @@ export function ProblemsTable({
         const customRes = await fetch(`/api/db/custom-topics?userEmail=${encodeURIComponent(userEmail)}`, { headers });
         const customData = await customRes.json();
         if (customData.dbConnected) {
-          const dbCustoms = customData.data.filter((x: any) => x.storagePrefix === `${patternName}-custom-problems`);
+          const dbCustoms = customData.data.filter((x: { storagePrefix: string; id: number; title: string; difficulty?: string; link?: string }) => x.storagePrefix === `${patternName}-custom-problems`);
           const merged = [...initialCustom];
-          dbCustoms.forEach((dbItem: any) => {
+          dbCustoms.forEach((dbItem: { storagePrefix: string; id: number; title: string; difficulty?: string; link?: string }) => {
             if (!merged.some((x) => x.id === dbItem.id)) {
-              merged.push({ id: dbItem.id, title: dbItem.title, difficulty: dbItem.difficulty || "MEDIUM", link: dbItem.link });
+              merged.push({ id: dbItem.id, title: dbItem.title, difficulty: dbItem.difficulty || "MEDIUM", link: dbItem.link || '' });
             }
           });
           setCustomProblems(merged);
           localStorage.setItem(`${patternName}-custom-problems`, JSON.stringify(merged));
           for (const item of initialCustom) {
-            if (!dbCustoms.some((x: any) => x.id === item.id)) {
+            if (!dbCustoms.some((x: { storagePrefix: string; id: number; title: string; difficulty?: string; link?: string }) => x.id === item.id)) {
               fetch("/api/db/custom-topics", {
                 method: "POST", headers,
                 body: JSON.stringify({ storagePrefix: `${patternName}-custom-problems`, id: item.id, title: item.title, difficulty: item.difficulty || "MEDIUM", link: item.link, userEmail }),
@@ -292,7 +289,7 @@ export function ProblemsTable({
       } catch {}
     }
     syncWithDB();
-  }, [patternName, userEmail, getRequestHeaders]);
+  }, [patternName, userEmail, getRequestHeaders, propEasy, propMedium, propHard]);
 
   const saveCustomProblems = useCallback((list: ProblemItem[]) => {
     localStorage.setItem(`${patternName}-custom-problems`, JSON.stringify(list));
@@ -305,7 +302,7 @@ export function ProblemsTable({
     const nextList = [...customProblems, newProblem];
     saveCustomProblems(nextList);
     addCustomTopic.mutate({ storagePrefix: `${patternName}-custom-problems`, id: newId, title, difficulty, link });
-  }, [customProblems, saveCustomProblems, patternName, getRequestHeaders, userEmail, addCustomTopic]);
+  }, [customProblems, saveCustomProblems, patternName, addCustomTopic]);
 
   const handleDeleteProblem = useCallback((id: number) => {
     const nextList = customProblems.filter((p) => p.id !== id);
@@ -320,7 +317,7 @@ export function ProblemsTable({
     deleteCustomTopic.mutate({ storagePrefix: `${patternName}-custom-problems`, id });
     toggleCompletion.mutate({ storagePrefix: `completed-${patternName}`, itemId: String(id) });
     saveNote.mutate({ storagePrefix: `notes-${patternName}`, itemId: String(id), itemTitle: deletedProblem?.title });
-  }, [customProblems, saveCustomProblems, patternName, getRequestHeaders, userEmail, deleteCustomTopic, toggleCompletion, saveNote]);
+  }, [customProblems, saveCustomProblems, patternName, deleteCustomTopic, toggleCompletion, saveNote]);
 
   const toggleCompleted = useCallback((id: number, title?: string) => {
     let isCompleted = false;
@@ -334,7 +331,7 @@ export function ProblemsTable({
       return next;
     });
     toggleCompletion.mutate({ storagePrefix: `completed-${patternName}`, itemId: String(id), completedAt: isCompleted ? compAtStr : undefined, ...(title ? { title } : {}) });
-  }, [patternName, getRequestHeaders, userEmail, toggleCompletion]);
+  }, [patternName, toggleCompletion]);
 
   const updateNote = useCallback((id: number, value: string) => {
     setNotesMap((prev) => {
@@ -347,11 +344,11 @@ export function ProblemsTable({
     const allItems = [...(propEasy ?? []), ...(propMedium ?? []), ...(propHard ?? []), ...customProblems];
     const itemTitle = allItems.find(p => p.id === id)?.title;
     saveNote.mutate({ storagePrefix: `notes-${patternName}`, itemId: String(id), note: value || undefined, itemTitle });
-  }, [patternName, getRequestHeaders, userEmail, propEasy, propMedium, propHard, customProblems, saveNote]);
+  }, [patternName, propEasy, propMedium, propHard, customProblems, saveNote]);
 
   const apiProblems: ProblemWithDifficulty[] = useMemo(() => {
     if (!apiData?.problems) return [];
-    return apiData.problems.map((p: any) => ({
+    return apiData.problems.map((p: { id: number; title: string; link: string; difficulty: string }) => ({
       ...p,
       _difficultyOrder: p.difficulty === "EASY" ? 0 : p.difficulty === "HARD" ? 2 : 1,
     }));
@@ -373,7 +370,7 @@ export function ProblemsTable({
     return labeled;
   }, [propEasy, propMedium, propHard, customProblems, isServerPaginated, apiProblems]);
 
-  const diffOrder: Record<string, number> = { EASY: 0, MEDIUM: 1, HARD: 2 };
+  const diffOrder = useMemo<Record<string, number>>(() => ({ EASY: 0, MEDIUM: 1, HARD: 2 }), []);
   const displayName = apiData?.name ?? propPatternName ?? patternKey ?? "Problems";
 
   const columnHelper = createColumnHelper<ProblemWithDifficulty>();
@@ -559,12 +556,11 @@ export function ProblemsTable({
         minSize: 36,
       }),
     ],
-    [columnHelper, completedMap, toggleCompleted, notesMap, updateNote, handleDeleteProblem, patternName, isServerPaginated, pagination.pageIndex, pagination.pageSize, displayName]
+    [columnHelper, completedMap, toggleCompleted, notesMap, updateNote, handleDeleteProblem, patternName, isServerPaginated, pagination.pageIndex, pagination.pageSize, displayName, diffOrder]
   );
 
   const tableDisplayData = isServerPaginated ? allProblems : allProblems;
-  const tablePageCount = isServerPaginated ? (apiData?.totalPages ?? -1) : undefined;
-
+  // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data: tableDisplayData,
     columns,

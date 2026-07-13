@@ -29,8 +29,9 @@ export async function GET(request: Request) {
     const Note = conn.model<INote>('Note');
     const list = await Note.find({ userEmail });
     return NextResponse.json({ dbConnected: true, data: list });
-  } catch (error: any) {
-    return NextResponse.json({ dbConnected: false, error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'An error occurred';
+    return NextResponse.json({ dbConnected: false, error: message }, { status: 500 });
   }
 }
 
@@ -74,7 +75,8 @@ export async function POST(request: Request) {
       await Note.deleteOne({ storagePrefix, itemId, userEmail });
       return NextResponse.json({ success: true, deleted: true });
     }
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'An error occurred';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

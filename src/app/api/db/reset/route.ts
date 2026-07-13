@@ -52,8 +52,9 @@ export async function POST(request: Request) {
     ]);
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
-    console.error('[API/db/reset]', error.message);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'An error occurred';
+    console.error('[API/db/reset]', message);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

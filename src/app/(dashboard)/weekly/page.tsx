@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { CalendarDays, Moon, Brain, BookOpen, Sparkles, BookMarked } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { SCHEDULES, SCHEDULE_IDS, type ScheduleId } from '@/data/schedules';
+import { SCHEDULES, type ScheduleId } from '@/data/schedules';
 
 const SCHEDULE_TABS: { id: ScheduleId; label: string; color: string }[] = [
   { id: 'steady', label: 'Steady', color: 'text-blue-400 border-blue-500/30 bg-blue-500/10' },

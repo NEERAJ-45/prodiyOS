@@ -26,8 +26,6 @@ export async function GET(request: Request) {
 
     const userEmail = session.user.email;
     const customUri = request.headers.get('x-mongodb-url') || undefined;
-    const effectiveUri = customUri || process.env.MONGODB_URI || 'NOT SET';
-
     const conn = await connectToDatabase(customUri);
     if (!conn) {
       return NextResponse.json({ dbConnected: false, data: [] });
@@ -35,9 +33,10 @@ export async function GET(request: Request) {
     const Completion = conn.model<ICompletion>('Completion');
     const list = await Completion.find({ userEmail });
     return NextResponse.json({ dbConnected: true, data: list });
-  } catch (error: any) {
-    console.error('[API/completions] Connection error:', error.message);
-    return NextResponse.json({ dbConnected: false, error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'An error occurred';
+    console.error('[API/completions] Connection error:', message);
+    return NextResponse.json({ dbConnected: false, error: message }, { status: 500 });
   }
 }
 
@@ -87,7 +86,8 @@ export async function POST(request: Request) {
       await Completion.deleteOne({ storagePrefix, itemId, userEmail });
       return NextResponse.json({ success: true, deleted: true });
     }
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'An error occurred';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

@@ -116,7 +116,8 @@ export async function GET(request: Request) {
       })),
       activities: activities.map((a: { text: string; createdAt: Date }) => ({ text: a.text, createdAt: a.createdAt })),
     });
-  } catch (error: any) {
-    return NextResponse.json({ dbConnected: false, error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'An error occurred';
+    return NextResponse.json({ dbConnected: false, error: message }, { status: 500 });
   }
 }

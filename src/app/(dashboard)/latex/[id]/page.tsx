@@ -211,7 +211,7 @@ export default function ResumeEditor() {
       setNumPages(0);
       pendingPdfBase64.current = await blobToBase64(blob);
       setHasPersistedPdf(false);
-    } catch (err: any) {
+    } catch (err: unknown) {
       const msg = extractApiError(err);
       setError(msg);
       toast({ variant: 'destructive', title: 'Compilation failed', description: msg });
@@ -248,7 +248,7 @@ export default function ResumeEditor() {
       if (isNew) router.replace(`/latex/${json.data._id}`);
       queryClient.invalidateQueries({ queryKey: ['resumes'] });
       toast({ title: 'Resume saved' });
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast({ variant: 'destructive', title: 'Save failed', description: extractApiError(err) });
     } finally {
       setSaving(false);

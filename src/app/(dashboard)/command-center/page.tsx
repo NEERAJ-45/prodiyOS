@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo, type ElementType } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,8 +17,7 @@ import {
   Calendar,
   BrainCircuit,
   ArrowRight,
-  Circle,
-  CheckCircle2,
+
   Loader2,
   Plus,
   Pencil,
@@ -26,7 +25,7 @@ import {
 import { cn, formatRelativeTime } from '@/lib/utils';
 
 interface StatItem {
-  icon: any;
+  icon: ElementType;
   value: string;
   label: string;
   sub: string;
@@ -68,7 +67,7 @@ const statusStyles: Record<string, { label: string; className: string; bar: stri
   ON_HOLD: { label: 'On Hold', className: 'bg-zinc-800 text-zinc-400 border-zinc-700', bar: 'bg-zinc-500' },
 };
 
-const iconMap: Record<string, any> = {
+const iconMap: Record<string, ElementType> = {
   'Current Streak': Zap,
   'Weekly Progress': TrendingUp,
   'Monthly Progress': Calendar,
@@ -89,18 +88,6 @@ function ProjectProgressBar({ progress }: { progress: string }) {
         />
       </div>
       <span className="text-[10px] text-zinc-500 w-8 text-right tabular-nums">{progress}</span>
-    </div>
-  );
-}
-
-function ProjectCardSkeleton() {
-  return (
-    <div className="flex items-center justify-between p-3 rounded-lg bg-zinc-900/30 border border-zinc-800/50 animate-pulse">
-      <div className="space-y-2 flex-1">
-        <div className="h-4 w-36 rounded bg-zinc-800" />
-        <div className="h-3 w-20 rounded bg-zinc-800/50" />
-      </div>
-      <div className="h-4 w-16 rounded bg-zinc-800" />
     </div>
   );
 }
@@ -184,7 +171,7 @@ export default function CommandCenterPage() {
       const json = await res.json();
       if (json.dbConnected) {
         const payload: DashboardData = {
-          stats: json.stats.map((s: any) => ({ ...s, icon: iconMap[s.label as keyof typeof iconMap] || Zap })),
+          stats: json.stats.map((s: { label: string; value: string; sub: string }) => ({ ...s, icon: iconMap[s.label as keyof typeof iconMap] || Zap })),
           focusItems: json.focusItems,
           projects: json.projects,
           activities: json.activities,
@@ -202,7 +189,7 @@ export default function CommandCenterPage() {
     if (cached) {
       try {
         const parsed = JSON.parse(cached);
-        const activities = parsed.activities?.map((a: any) =>
+        const activities = parsed.activities?.map((a: string | { text: string; createdAt: string }) =>
           typeof a === 'string' ? { text: a, createdAt: new Date().toISOString() } : a
         ) ?? [];
         setData({ ...parsed, activities });

@@ -20,7 +20,6 @@ import {
   CalendarDays,
   BarChart3,
   Rocket,
-  ChevronLeft,
   PanelLeftClose,
   PanelLeft,
   StickyNote,

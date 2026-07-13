@@ -4,8 +4,8 @@ import * as React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, Brain, CheckCircle, X, ChevronDown, ChevronUp,
-  Upload, FileText, Sparkles, Trash2, Copy, Check,
-  FileDown, Info, Bookmark, AlertCircle, RefreshCw, ArrowLeft, Plus, Clock
+  FileText, Trash2, Copy, Check,
+  FileDown, Info, Bookmark, AlertCircle, ArrowLeft, Plus
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -17,7 +17,6 @@ import {
   useCustomQAQuery,
   useSaveCustomQA,
   useSaveCustomQAProgress,
-  useClearCustomQA,
   useDeleteCustomQABook,
   useSelectCustomQABook,
   type CustomQABook
@@ -143,8 +142,6 @@ export default function CustomQAViewer() {
   const selectBookDb = useSelectCustomQABook();
   const deleteBookDb = useDeleteCustomQABook();
   const saveProgressDb = useSaveCustomQAProgress();
-  const clearCustomQADb = useClearCustomQA();
-
   const [inputText, setInputText] = React.useState('');
   const [format, setFormat] = React.useState<'auto' | 'json' | 'csv' | 'txt'>('auto');
   const [search, setSearch] = React.useState('');
@@ -153,6 +150,7 @@ export default function CustomQAViewer() {
   const [expandedQuestions, setExpandedQuestions] = React.useState<Record<string, boolean>>({});
   const [expandedSections, setExpandedSections] = React.useState<Record<string, boolean>>({});
   const [copiedId, setCopiedId] = React.useState<string | null>(null);
+  const [copiedQId, setCopiedQId] = React.useState<string | null>(null);
   const [importOpen, setImportOpen] = React.useState(false);
 
   // Custom uploaded subjects state
@@ -1069,6 +1067,17 @@ export default function CustomQAViewer() {
 
                                   {/* Buttons status indicators */}
                                   <div className="flex items-center gap-1 shrink-0">
+                                    <button
+                                      onClick={() => {
+                                        navigator.clipboard.writeText(q.question);
+                                        setCopiedQId(q.id);
+                                        setTimeout(() => setCopiedQId(null), 2000);
+                                      }}
+                                      className="p-1.5 rounded-lg border border-zinc-800 hover:border-zinc-700 text-zinc-500 hover:text-zinc-200 transition-all"
+                                      title="Copy Question"
+                                    >
+                                      {copiedQId === q.id ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+                                    </button>
                                     <button
                                       onClick={() => toggleMastery(q.question)}
                                       className={`p-1.5 rounded-lg border transition-all ${

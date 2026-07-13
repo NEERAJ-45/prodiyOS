@@ -2,13 +2,14 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { Clock, ArrowRight } from 'lucide-react';
+
 import { cn } from '@/lib/utils';
-import { CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+
+import { CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { LazyAppear } from '@/components/shared/LazyAppear';
 import { SpotlightCard } from '@/components/ui/SpotlightCard';
-import { ROADMAPS } from '@/data/roadmaps';
+
 
 interface CategoryDisplay {
   slug: string;

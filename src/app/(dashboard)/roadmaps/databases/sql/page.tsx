@@ -2,10 +2,9 @@
 
 import * as React from 'react';
 import { useState, useMemo, useEffect } from 'react';
-import { ArrowLeft, Database, FileCode, CheckSquare, Layers } from 'lucide-react';
+import { ArrowLeft, FileCode, Layers } from 'lucide-react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { useProfile } from '@/components/providers/ProfileProvider';
 
 const QuestionsTable = dynamic(() => import('@/components/roadmaps/QuestionsTable'), {
   ssr: false,

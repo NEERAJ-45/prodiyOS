@@ -33,8 +33,9 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json({ dbConnected: true, data: null });
-  } catch (error: any) {
-    return NextResponse.json({ dbConnected: false, error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'An error occurred';
+    return NextResponse.json({ dbConnected: false, error: message }, { status: 500 });
   }
 }
 
@@ -68,13 +69,14 @@ export async function PATCH(request: Request) {
 
     const updated = await Profile.findOne({ email }).lean();
     if (updated) {
-      const { password, ...rest } = updated as any;
+      const { password, ...rest } = updated as Record<string, unknown>;
       return NextResponse.json({ success: true, dbConnected: true, data: rest });
     }
 
     return NextResponse.json({ success: true, dbConnected: true });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'An error occurred';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -131,7 +133,8 @@ export async function POST(request: Request) {
     const profileObj = doc.toObject();
     delete profileObj.password;
     return NextResponse.json({ success: true, dbConnected: true, data: profileObj });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'An error occurred';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

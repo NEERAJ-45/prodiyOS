@@ -181,7 +181,7 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
 
   const userEmail = session?.user?.email ?? '';
   const userName  = session?.user?.name  ?? '';
-  const userRole  = (session?.user as any)?.role ?? 'User';
+  const userRole  = (session?.user as { role?: string } | undefined)?.role ?? 'User';
 
   if (!mounted) return <div className="min-h-screen bg-zinc-950" />;
 

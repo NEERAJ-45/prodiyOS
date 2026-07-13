@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  FileText, Plus, Trash2, Clock,
+  FileText, Plus, Trash2,
   Loader2, Search, AlertCircle, FileDown, Inbox,
 } from 'lucide-react';
 import {
@@ -79,7 +79,7 @@ export default function LatexDashboard() {
     e.stopPropagation();
     deleteResume.mutate(id, {
       onSuccess: () => toast({ title: 'Resume deleted' }),
-      onError: (err: any) => toast({ variant: 'destructive', title: 'Failed to delete', description: err?.message }),
+      onError: (err: Error) => toast({ variant: 'destructive', title: 'Failed to delete', description: err?.message }),
     });
   }
 

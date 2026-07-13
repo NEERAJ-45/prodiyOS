@@ -17,8 +17,9 @@ export async function GET(request: Request) {
     const Revision = conn.model<IRevision>('Revision');
     const list = await Revision.find({ userEmail });
     return NextResponse.json({ dbConnected: true, data: list });
-  } catch (error: any) {
-    return NextResponse.json({ dbConnected: false, error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'An error occurred';
+    return NextResponse.json({ dbConnected: false, error: message }, { status: 500 });
   }
 }
 
@@ -46,8 +47,9 @@ export async function POST(request: Request) {
     );
     logActivity(userEmail, existing ? `Updated revision for "${concept}"` : `Added revision for "${concept}"`);
     return NextResponse.json({ success: true, data: doc });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'An error occurred';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -75,7 +77,8 @@ export async function DELETE(request: Request) {
     await Revision.deleteOne({ id, userEmail });
     logActivity(userEmail, `Removed revision for "${existing?.concept || id}"`);
     return NextResponse.json({ success: true, deleted: true });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'An error occurred';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

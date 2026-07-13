@@ -3,11 +3,11 @@
 import * as React from 'react';
 import { useMounted } from '@/hooks/useMounted';
 import {
-  Search, Brain, Target, Code2, Server, BarChart3,
-  Plus, Pencil, Trash2, CheckCircle, X, GripVertical, BookOpen,
+  Search, Brain, Target, Code2, Server,
+  Plus, Pencil, Trash2, CheckCircle, BookOpen,
   Sparkles,
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

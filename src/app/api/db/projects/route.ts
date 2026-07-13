@@ -56,8 +56,9 @@ export async function POST(request: Request) {
     logActivity(userEmail, `Created project "${projectData.name}"`);
 
     return NextResponse.json({ project }, { status: 201 });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'An error occurred';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -91,8 +92,9 @@ export async function PUT(request: Request) {
     logActivity(existing.userEmail, `Updated project "${project.name}"`);
 
     return NextResponse.json({ project });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'An error occurred';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -118,7 +120,8 @@ export async function DELETE(request: Request) {
 
     await Project.deleteOne({ id });
     return NextResponse.json({ success: true });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'An error occurred';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

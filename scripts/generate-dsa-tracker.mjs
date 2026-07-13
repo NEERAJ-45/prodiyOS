@@ -20,8 +20,7 @@ const dsaDomains = nodes.filter(n => n.type === 'DOMAIN' && n.parentId === 'pill
 const dsaModules = nodes.filter(n => n.type === 'MODULE' && dsaDomains.some(d => d.id === n.parentId));
 
 // --- Helpers ---
-const R = (arr) => arr[Math.random() * arr.length | 0];
-const diffWeight = { BEGINNER: 1, EASY: 2, MEDIUM: 4, HARD: 2, EXPERT: 1 };
+
 
 function mkSig(id, name) {
   return {
@@ -419,7 +418,7 @@ function buildProblems(patternName, problems) {
   }));
 }
 
-function buildPattern(patDef, modId, domainId) {
+function buildPattern(patDef) {
   const pid = `${slug(patDef.name)}`;
   const problems = buildProblems(patDef.name, patDef.problems);
   const easy = problems.filter(p => p.difficulty === 'EASY').length;

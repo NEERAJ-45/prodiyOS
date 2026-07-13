@@ -9,16 +9,13 @@ import {
   Circle,
   Flame,
   Clock,
-  Zap,
   BookOpen,
-  Code,
   Brain,
   RefreshCw,
   Play,
   Pause,
   RotateCcw,
   Target,
-  Sparkles,
   StickyNote,
   Plus,
   Timer,
@@ -27,21 +24,18 @@ import {
   Check,
   X,
   Trash2,
-  Edit,
-  Server,
-  Cloud,
   AlertTriangle,
   ChevronDown,
   ChevronRight,
   ArrowUpRight,
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { useProfile } from '@/components/providers/ProfileProvider';
-import { SCHEDULES, SCHEDULE_IDS, getTodaySchedule, getDaySchedule, getRoadmapLink, type ScheduleId, type DaySchedule, type Slot } from '@/data/schedules';
+import { SCHEDULES, SCHEDULE_IDS, getTodaySchedule, getDaySchedule, getRoadmapLink, type ScheduleId, type Slot } from '@/data/schedules';
 import { STORAGE_KEYS } from '@/lib/storage-keys';
 
 const SCHEDULE_MODE_KEY = STORAGE_KEYS.DAILY_SCHEDULE_MODE;
@@ -71,31 +65,6 @@ interface Task {
   difficulty: string;
   priority: Priority;
   link?: string;
-}
-
-const TIME_SLOTS = [
-  { start: 360, end: 540 },
-  { start: 540, end: 720 },
-  { start: 720, end: 780 },
-  { start: 780, end: 960 },
-  { start: 960, end: 1080 },
-  { start: 1080, end: 1140 },
-];
-
-const priorityConfig: Record<Priority, { label: string; className: string }> = {
-  must: { label: 'Must', className: 'bg-red-950 text-red-300 border-red-800' },
-  should: { label: 'Should', className: 'bg-amber-950 text-amber-300 border-amber-800' },
-  nice: { label: 'Nice', className: 'bg-zinc-800 text-zinc-400 border-zinc-700' },
-};
-
-function difficultyColor(difficulty: string) {
-  switch (difficulty) {
-    case 'Easy': return 'text-green-400 bg-green-500/10 border-green-500/20';
-    case 'Medium': return 'text-amber-400 bg-amber-500/10 border-amber-500/20';
-    case 'Hard': return 'text-red-400 bg-red-500/10 border-red-500/20';
-    case 'Advanced': return 'text-purple-400 bg-purple-500/10 border-purple-500/20';
-    default: return 'text-zinc-400 bg-zinc-500/10 border-zinc-500/20';
-  }
 }
 
 function getDateRange(daysBack: number): string[] {
@@ -202,11 +171,11 @@ export default function DailyPage() {
 
   const todaySlotsCompleted = React.useMemo(() => {
     return slotData[todayKey]?.completed ?? {};
-  }, [slotData, todayKey]);
+  }, [slotData]);
 
   const todaySlotNotes = React.useMemo(() => {
     return slotNotes[todayKey] ?? {};
-  }, [slotNotes, todayKey]);
+  }, [slotNotes]);
 
   const todaySlotsDone = React.useMemo(() => {
     if (!todaySchedule) return 0;
@@ -271,10 +240,10 @@ export default function DailyPage() {
     }
   }, [dailyDb]);
 
-  function syncDailyToServer(ids: Set<string>, noteText: string) {
+  const syncDailyToServer = React.useCallback((ids: Set<string>, noteText: string) => {
     if (!userEmail) return;
     syncDaily.mutate({ date: todayKey, completedTaskIds: Array.from(ids), note: noteText });
-  }
+  }, [userEmail, syncDaily]);
 
   React.useEffect(() => {
     if (!mounted) return;
@@ -283,7 +252,7 @@ export default function DailyPage() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
     if (syncRef.current) clearTimeout(syncRef.current);
     syncRef.current = setTimeout(() => syncDailyToServer(completed, note), 2000);
-  }, [completed, mounted]);
+  }, [completed, mounted, note, syncDailyToServer]);
 
   React.useEffect(() => {
     if (!mounted) return;
@@ -292,7 +261,7 @@ export default function DailyPage() {
     localStorage.setItem(NOTES_KEY, JSON.stringify(saved));
     if (syncRef.current) clearTimeout(syncRef.current);
     syncRef.current = setTimeout(() => syncDailyToServer(completed, note), 2000);
-  }, [note, mounted]);
+  }, [note, mounted, completed, syncDailyToServer]);
 
   React.useEffect(() => {
     if (!mounted) return;
@@ -437,7 +406,8 @@ export default function DailyPage() {
 
   function getAudioContext() {
     if (!audioCtxRef.current) {
-      audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const WebAudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      audioCtxRef.current = new WebAudioCtx();
     }
     return audioCtxRef.current;
   }
@@ -534,7 +504,7 @@ export default function DailyPage() {
   const allTasks = customTasks;
   const completedCount = completed.size;
   const totalTasks = allTasks.length;
-  const progressPct = totalTasks > 0 ? Math.round((completedCount / totalTasks) * 100) : 0;
+
 
   const slotProgressPct = Math.round((todaySlotsDone / totalSlotsToday) * 100);
 
@@ -763,7 +733,7 @@ export default function DailyPage() {
                   </CardHeader>
                   {showCatchUp && (
                     <CardContent className="p-4 pt-1 space-y-2">
-                      {catchUpMissed.map((missed, i) => {
+                      {catchUpMissed.map((missed) => {
                         const dateCompletions = slotData[missed.date]?.completed ?? {};
                         const isNowDone = dateCompletions[missed.slot.period];
                         return (

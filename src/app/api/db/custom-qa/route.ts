@@ -28,8 +28,8 @@ export async function GET(request: Request) {
     const progressDoc = await CustomQAProgress.findOne({ userEmail }).lean();
 
     // Auto-migration helper for legacy documents
-    if (qaDoc && !qaDoc.books && (qaDoc as any).sections) {
-      const legacyDoc = qaDoc as any;
+    if (qaDoc && !qaDoc.books && (qaDoc as unknown as Record<string, unknown>).sections) {
+      const legacyDoc = qaDoc as unknown as Record<string, unknown>;
       const migratedBook = {
         slug: 'imported-qa',
         title: legacyDoc.title || 'Imported Q&A',
@@ -57,9 +57,10 @@ export async function GET(request: Request) {
       data: qaDoc || null,
       progress: progressDoc?.progress || {}
     });
-  } catch (error: any) {
-    console.error('[API/custom-qa] Connection/Migration error:', error.message);
-    return NextResponse.json({ dbConnected: false, error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'An error occurred';
+    console.error('[API/custom-qa] Connection/Migration error:', message);
+    return NextResponse.json({ dbConnected: false, error: message }, { status: 500 });
   }
 }
 
@@ -108,13 +109,13 @@ export async function POST(request: Request) {
         });
       } else {
         // If legacy fields exist, clear them
-        if ((doc as any).sections) {
+        if ((doc as unknown as Record<string, unknown>).sections) {
           doc.set('sections', undefined);
           doc.set('title', undefined);
           doc.set('totalQuestions', undefined);
         }
 
-        const bookIdx = doc.books.findIndex((b: any) => b.slug === slug);
+        const bookIdx = doc.books.findIndex((b: { slug: string }) => b.slug === slug);
         if (bookIdx !== -1) {
           doc.books[bookIdx] = newBook;
         } else {
@@ -155,7 +156,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Data store not found' }, { status: 404 });
       }
 
-      doc.books = doc.books.filter((b: any) => b.slug !== slug);
+      doc.books = doc.books.filter((b: { slug: string }) => b.slug !== slug);
       if (doc.activeBookSlug === slug) {
         doc.activeBookSlug = doc.books.length > 0 ? doc.books[0].slug : '';
       }
@@ -190,8 +191,9 @@ export async function POST(request: Request) {
     } else {
       return NextResponse.json({ error: 'Invalid action parameter' }, { status: 400 });
     }
-  } catch (error: any) {
-    console.error('[API/custom-qa] Error:', error.message);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'An error occurred';
+    console.error('[API/custom-qa] Error:', message);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

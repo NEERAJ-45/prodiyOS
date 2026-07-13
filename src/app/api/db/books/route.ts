@@ -2,8 +2,6 @@ import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db';
 import Book from '@/lib/models/Book';
 import { logActivity } from '@/lib/activity-logger';
-import mongoose from 'mongoose';
-
 function getErrorResponse(error: unknown) {
   const message = error instanceof Error ? error.message : 'Internal server error';
   return NextResponse.json({ error: message }, { status: 500 });

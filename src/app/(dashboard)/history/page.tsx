@@ -16,7 +16,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -122,8 +122,8 @@ export default function HistoryPage() {
       if (!res.ok) throw new Error('Failed to clear activity history');
       setActivities([]);
       toast({ title: 'Success', description: 'Activity history cleared successfully.' });
-    } catch (err: any) {
-      toast({ variant: 'destructive', title: 'Error', description: err.message });
+    } catch (err: unknown) {
+      toast({ variant: 'destructive', title: 'Error', description: err instanceof Error ? err.message : 'An error occurred' });
     }
   };
 

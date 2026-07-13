@@ -18,15 +18,16 @@ export async function GET(request: Request) {
       onboarded: profile?.onboarded ?? false,
       onboardingData: profile?.onboardingData ?? null,
     });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'An error occurred';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, onboardingData, scheduleMode } = body;
+    const { email, onboardingData } = body;
 
     if (!email || !onboardingData) {
       return NextResponse.json({ error: 'email and onboardingData are required.' }, { status: 400 });
@@ -45,7 +46,8 @@ export async function POST(request: Request) {
     );
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'An error occurred';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

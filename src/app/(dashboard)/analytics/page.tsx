@@ -5,10 +5,10 @@ import { ChevronDown, ChevronRight } from 'lucide-react';
 import {
   Clock, Flame, BookOpen, Target, TrendingUp,
   AlertTriangle, CheckCircle, Brain, Activity,
-  Loader2, Database, Wifi, WifiOff, ShieldAlert,
+  Loader2, Database, ShieldAlert,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+
 import { cn } from '@/lib/utils';
 import { ROADMAPS } from '@/data/roadmaps';
 import { useMounted } from '@/hooks/useMounted';
@@ -111,7 +111,7 @@ function GroupedRoadmapTable({
   const toggle = useCallback((cat: string) => {
     setOpenCats((prev) => {
       const next = new Set(prev);
-      next.has(cat) ? next.delete(cat) : next.add(cat);
+      if (next.has(cat)) next.delete(cat); else next.add(cat);
       return next;
     });
   }, []);
@@ -238,6 +238,7 @@ export default function AnalyticsPage() {
   const [loginStreak, setLoginStreak] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [dbConnected, setDbConnected] = useState(false);
+
   const mounted = useMounted();
 
   useEffect(() => {

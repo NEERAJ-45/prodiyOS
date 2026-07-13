@@ -33,12 +33,13 @@ export async function GET() {
       timestamp: { $gte: ninetyDaysAgo },
     }).sort({ timestamp: 1 }).lean();
 
-    const dates = attempts.map((a: any) => new Date(a.timestamp).toISOString());
+    const dates = attempts.map((a: { timestamp: Date }) => new Date(a.timestamp).toISOString());
     const streak = computeStreak(dates);
     const totalLoginDays = new Set(dates.map((d) => d.split('T')[0])).size;
 
     return NextResponse.json({ streak, totalLoginDays });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'An error occurred';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

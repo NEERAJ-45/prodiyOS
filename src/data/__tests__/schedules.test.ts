@@ -2,10 +2,8 @@ import { describe, it, expect } from 'vitest';
 import {
   SCHEDULES,
   SCHEDULE_IDS,
-  getTodaySchedule,
   getDaySchedule,
   getScheduleDays,
-  type DaySchedule,
 } from '@/data/schedules';
 
 describe('schedules', () => {

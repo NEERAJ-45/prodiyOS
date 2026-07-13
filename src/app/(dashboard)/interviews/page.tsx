@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import {
   Briefcase, Phone, CheckCircle, XCircle, Calendar,
-  Building2, TrendingUp, Clock, Trash2, AlertTriangle,
+  Building2, Clock, Trash2, AlertTriangle,
 } from 'lucide-react';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,

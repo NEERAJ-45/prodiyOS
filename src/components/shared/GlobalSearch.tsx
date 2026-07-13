@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search } from "lucide-react";
 import { useKeyboardShortcut } from "@/hooks/useKeyboardShortcut";
@@ -43,14 +43,14 @@ export function GlobalSearch() {
     return () => clearTimeout(timeout);
   }, [query]);
 
-  const allItems = [
+  const allItems = useMemo(() => [
     ...results.patterns.map((p) => ({
       type: "pattern" as const,
       id: p.id,
       label: p.name,
       slug: p.id,
     })),
-  ];
+  ], [results]);
 
   const handleSelect = useCallback(
     (item: (typeof allItems)[0]) => {
