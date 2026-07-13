@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useMounted } from '@/hooks/useMounted';
 import {
   FolderOpen, CheckCircle2, Sparkles, Layers,
-  Plus, Pencil, Trash2, X, ExternalLink, Search,
+  Plus, Pencil, Trash2, X, ExternalLink, Search, FileText,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -34,6 +34,8 @@ interface Project {
   linkedConcepts: number;
   vision: string;
   architecture: string;
+  architectureImage?: string;
+  docs?: { name: string; url: string }[];
   lessons: string;
 }
 
@@ -65,6 +67,8 @@ const defaultProjects: Project[] = [
     linkedConcepts: 12,
     vision: 'Build a unified notification gateway that handles billions of events daily with sub-100ms latency.',
     architecture: 'Microservices with Go over gRPC. Kafka for ingestion, Redis for dedup, PostgreSQL for audit.',
+    architectureImage: '',
+    docs: [],
     lessons: 'Event-driven design requires careful idempotency handling.',
   },
   {
@@ -82,6 +86,8 @@ const defaultProjects: Project[] = [
     linkedConcepts: 8,
     vision: 'Modern e-commerce with seamless checkout and real-time inventory.',
     architecture: 'Next.js app router + tRPC + Prisma/PostgreSQL + Stripe.',
+    architectureImage: '',
+    docs: [],
     lessons: 'Server components reduce bundle size. Stripe webhook idempotency is critical.',
   },
   {
@@ -99,6 +105,8 @@ const defaultProjects: Project[] = [
     linkedConcepts: 15,
     vision: 'Drag-and-drop project management with real-time collaboration.',
     architecture: 'React + Node.js/Express + Socket.IO + MongoDB.',
+    architectureImage: '',
+    docs: [],
     lessons: 'Optimistic updates with WebSocket ack callbacks prevent state conflicts.',
   },
   {
@@ -116,6 +124,8 @@ const defaultProjects: Project[] = [
     linkedConcepts: 6,
     vision: 'High-performance Rust API gateway with sub-ms overhead.',
     architecture: 'Tokio + Hyper. JWT via jsonwebtoken. Sliding window rate limiting with Redis.',
+    architectureImage: '',
+    docs: [],
     lessons: 'Still in ideation. Researching zero-copy deserialization.',
   },
 ];
@@ -206,42 +216,83 @@ function ProjectCard({ project, onSelect, onEdit, onDelete }: {
 
 function ExpandedDialog({ project, open, onOpenChange }: { project: Project | null; open: boolean; onOpenChange: (v: boolean) => void }) {
   if (!project) return null;
+
+  const [viewingDoc, setViewingDoc] = React.useState<{ name: string; url: string } | null>(null);
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl bg-zinc-900 border-zinc-800">
-        <DialogHeader>
-          <div className="flex items-center gap-3 mb-1">
-            <DialogTitle className="text-lg text-zinc-100">{project.name}</DialogTitle>
-            <StatusBadge status={project.status} />
-          </div>
-          <DialogDescription className="text-sm text-zinc-500">{project.description}</DialogDescription>
-        </DialogHeader>
-        <ScrollArea className="max-h-[60vh] pr-4">
-          <div className="space-y-5">
-            <div>
-              <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Vision</h4>
-              <p className="text-sm text-zinc-300 leading-relaxed">{project.vision}</p>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-2xl bg-zinc-900 border-zinc-800">
+          <DialogHeader>
+            <div className="flex items-center gap-3 mb-1">
+              <DialogTitle className="text-lg text-zinc-100">{project.name}</DialogTitle>
+              <StatusBadge status={project.status} />
             </div>
-            <div>
-              <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Architecture</h4>
-              <p className="text-sm text-zinc-300 leading-relaxed">{project.architecture}</p>
-            </div>
-            <div>
-              <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Lessons Learned</h4>
-              <p className="text-sm text-zinc-300 leading-relaxed">{project.lessons}</p>
-            </div>
-            <div>
-              <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Technologies</h4>
-              <div className="flex flex-wrap gap-1.5 mt-2">
-                {project.technologies.map((tech) => (
-                  <Badge key={tech} variant="secondary" className="text-[11px] px-2 py-0.5 bg-zinc-800 text-zinc-400">{tech}</Badge>
-                ))}
+            <DialogDescription className="text-sm text-zinc-500">{project.description}</DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="max-h-[60vh] pr-4">
+            <div className="space-y-5">
+              <div>
+                <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Vision</h4>
+                <p className="text-sm text-zinc-300 leading-relaxed">{project.vision}</p>
+              </div>
+              <div>
+                <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Architecture</h4>
+                <p className="text-sm text-zinc-300 leading-relaxed">{project.architecture}</p>
+                {project.architectureImage && (
+                  <div className="mt-2 border border-zinc-700 rounded-lg overflow-hidden cursor-pointer"
+                    onClick={() => window.open(project.architectureImage, '_blank')}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={project.architectureImage} alt="Architecture diagram" className="w-full h-auto max-h-64 object-contain bg-zinc-950" />
+                  </div>
+                )}
+              </div>
+              {project.docs && project.docs.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Documents</h4>
+                  <div className="space-y-1.5">
+                    {project.docs.map((doc, i) => (
+                      <button key={i} onClick={() => setViewingDoc(doc)}
+                        className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded bg-zinc-800/50 border border-zinc-700/50 hover:bg-zinc-800 transition-colors text-left">
+                        <FileText className="h-4 w-4 text-zinc-500 shrink-0" />
+                        <span className="text-xs text-zinc-300 truncate flex-1">{doc.name}</span>
+                        <ExternalLink className="h-3 w-3 text-zinc-600 shrink-0" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div>
+                <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Lessons Learned</h4>
+                <p className="text-sm text-zinc-300 leading-relaxed">{project.lessons}</p>
+              </div>
+              <div>
+                <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Technologies</h4>
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {project.technologies.map((tech) => (
+                    <Badge key={tech} variant="secondary" className="text-[11px] px-2 py-0.5 bg-zinc-800 text-zinc-400">{tech}</Badge>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
-        </ScrollArea>
-      </DialogContent>
-    </Dialog>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={viewingDoc !== null} onOpenChange={(v) => { if (!v) setViewingDoc(null); }}>
+        <DialogContent className="max-w-4xl bg-zinc-900 border-zinc-800 h-[80vh]">
+          <DialogHeader>
+            <DialogTitle className="text-zinc-100 text-sm">{viewingDoc?.name}</DialogTitle>
+          </DialogHeader>
+          {viewingDoc?.url.startsWith('data:image/') ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img src={viewingDoc.url} alt={viewingDoc.name} className="w-full h-full object-contain" />
+          ) : (
+            <iframe src={viewingDoc?.url} className="w-full h-full rounded border border-zinc-700" title={viewingDoc?.name} />
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
@@ -264,6 +315,8 @@ export default function ProjectsPage() {
   const [formFeatures, setFormFeatures] = React.useState<ProjectFeature[]>([emptyFeature()]);
   const [formVision, setFormVision] = React.useState('');
   const [formArch, setFormArch] = React.useState('');
+  const [formArchImage, setFormArchImage] = React.useState('');
+  const [formDocs, setFormDocs] = React.useState<{ name: string; url: string }[]>([]);
   const [formLessons, setFormLessons] = React.useState('');
   const [formConcepts, setFormConcepts] = React.useState(0);
 
@@ -317,7 +370,7 @@ export default function ProjectsPage() {
     setEditingId(null);
     setFormName(''); setFormDesc(''); setFormStatus('IDEA');
     setFormTech(''); setFormTechs([]); setFormFeatures([emptyFeature()]);
-    setFormVision(''); setFormArch(''); setFormLessons(''); setFormConcepts(0);
+    setFormVision(''); setFormArch(''); setFormArchImage(''); setFormDocs([]); setFormLessons(''); setFormConcepts(0);
     setEditOpen(true);
   }
 
@@ -325,7 +378,8 @@ export default function ProjectsPage() {
     setEditingId(p.id);
     setFormName(p.name); setFormDesc(p.description); setFormStatus(p.status);
     setFormTechs(p.technologies); setFormFeatures(p.features.length ? p.features : [emptyFeature()]);
-    setFormVision(p.vision); setFormArch(p.architecture); setFormLessons(p.lessons); setFormConcepts(p.linkedConcepts);
+    setFormVision(p.vision); setFormArch(p.architecture); setFormArchImage(p.architectureImage || '');
+    setFormDocs(p.docs || []); setFormLessons(p.lessons); setFormConcepts(p.linkedConcepts);
     setFormTech('');
     setEditOpen(true);
   }
@@ -346,6 +400,8 @@ export default function ProjectsPage() {
       linkedConcepts: formConcepts,
       vision: formVision.trim(),
       architecture: formArch.trim(),
+      architectureImage: formArchImage,
+      docs: formDocs,
       lessons: formLessons.trim(),
       progress,
     };
@@ -594,6 +650,58 @@ export default function ProjectsPage() {
                 <label className="text-xs text-zinc-400">Architecture</label>
                 <textarea value={formArch} onChange={(e) => setFormArch(e.target.value)} rows={2}
                   className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2.5 text-sm text-zinc-200 outline-none resize-none placeholder:text-zinc-600" />
+                <div className="flex items-center gap-3 mt-2">
+                  <label className="cursor-pointer px-3 py-1.5 rounded text-[11px] font-medium border border-zinc-700 text-zinc-400 hover:text-zinc-200 hover:border-zinc-500 transition-colors">
+                    {formArchImage ? 'Change Image' : 'Upload Architecture Diagram (JPG)'}
+                    <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = (ev) => setFormArchImage(ev.target?.result as string || '');
+                        reader.readAsDataURL(file);
+                      }} />
+                  </label>
+                  {formArchImage && (
+                    <button onClick={() => setFormArchImage('')}
+                      className="text-[11px] text-red-400 hover:text-red-300 transition-colors">Remove</button>
+                  )}
+                </div>
+                {formArchImage && (
+                  <div className="mt-2 border border-zinc-700 rounded-lg overflow-hidden">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={formArchImage} alt="Architecture diagram" className="w-full h-auto max-h-48 object-contain bg-zinc-950" />
+                  </div>
+                )}
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs text-zinc-400">Documents (PDFs)</label>
+                <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-[11px] font-medium border border-zinc-700 text-zinc-400 hover:text-zinc-200 hover:border-zinc-500 transition-colors">
+                  <FileText className="h-3 w-3" /> Add Document
+                  <input type="file" accept="application/pdf,image/*" className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.onload = (ev) => {
+                        const url = ev.target?.result as string || '';
+                        setFormDocs((prev) => [...prev, { name: file.name, url }]);
+                      };
+                      reader.readAsDataURL(file);
+                    }} />
+                </label>
+                {formDocs.length > 0 && (
+                  <div className="space-y-1.5 mt-2">
+                    {formDocs.map((doc, i) => (
+                      <div key={i} className="flex items-center gap-2 px-2.5 py-1.5 rounded bg-zinc-800/50 border border-zinc-700/50">
+                        <FileText className="h-3.5 w-3.5 text-zinc-500 shrink-0" />
+                        <span className="text-xs text-zinc-300 truncate flex-1">{doc.name}</span>
+                        <button onClick={() => setFormDocs((prev) => prev.filter((_, j) => j !== i))}
+                          className="text-zinc-600 hover:text-red-400 shrink-0"><X className="h-3 w-3" /></button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="space-y-1.5">
                 <label className="text-xs text-zinc-400">Lessons Learned</label>
