@@ -67,6 +67,7 @@ const navGroups: NavGroup[] = [
       { label: "Weekly Overview", href: "/weekly", icon: Calendar },
       { label: "Activity Log", href: "/history", icon: CalendarDays },
       { label: "Task Manager", href: "/tasks", icon: ListChecks },
+      { label: "Resume", href: "/plan/resume", icon: FileText },
     ],
   },
   {
@@ -80,7 +81,6 @@ const navGroups: NavGroup[] = [
     label: "Career",
     items: [
       { label: "Career Hub", href: "/career", icon: Rocket },
-      { label: "Resume", href: "/latex", icon: FileText },
     ],
   },
 ];

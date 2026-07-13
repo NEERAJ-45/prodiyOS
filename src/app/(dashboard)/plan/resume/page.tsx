@@ -48,7 +48,7 @@ function formatDate(date: Date): string {
 
 const columnHelper = createColumnHelper<ResumeData>();
 
-export default function LatexDashboard() {
+export default function ResumeDashboard() {
   const router = useRouter();
   const [search, setSearch] = React.useState('');
   const { data: resumesData, isLoading, isFetching, error, refetch } = useResumesQuery();
@@ -68,11 +68,11 @@ export default function LatexDashboard() {
   }, [resumes, search]);
 
   function handleOpen(id: string) {
-    router.push(`/latex/${id}`);
+    router.push(`/plan/resume/${id}`);
   }
 
   function handleCreate() {
-    router.push('/latex/new');
+    router.push('/plan/resume/new');
   }
 
   function handleDelete(e: React.MouseEvent, id: string) {
