@@ -6,6 +6,7 @@ import { useMounted } from '@/hooks/useMounted';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useProfile } from '@/components/providers/ProfileProvider';
+import { useCompletionsQuery } from '@/hooks/use-completions';
 
 export default function MasteryPage() {
   const { userEmail, customDbUrl } = useProfile();

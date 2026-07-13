@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { useMounted } from '@/hooks/useMounted';
+import { useDailyHistoryQuery, useActivityLogQuery, useClearActivityLog } from '@/hooks/use-history';
 import {
   CalendarDays,
   CheckCircle2,
@@ -59,21 +60,23 @@ interface ActivityItem {
 }
 
 export default function HistoryPage() {
-  const { userEmail, customDbUrl } = useProfile();
-  const [records, setRecords] = React.useState<DailyRecord[]>([]);
-  const [activities, setActivities] = React.useState<ActivityItem[]>([]);
+  const { userEmail } = useProfile();
   const mounted = useMounted();
-  const [loading, setLoading] = React.useState(true);
+  const { data: historyData, isLoading: historyLoading } = useDailyHistoryQuery();
+  const { data: activityData, isLoading: activityLoading } = useActivityLogQuery();
+  const clearActivity = useClearActivityLog();
+
+  const records = React.useMemo(() => {
+    if (!historyData?.records) return [];
+    return [...historyData.records].sort((a: DailyRecord, b: DailyRecord) => b.date.localeCompare(a.date));
+  }, [historyData]);
+
+  const activities = activityData?.activities ?? [];
+
   const [page, setPage] = React.useState(0);
   const [expandedDate, setExpandedDate] = React.useState<string | null>(null);
   const [activeTab, setActiveTab] = React.useState('daily');
   const [activityPage, setActivityPage] = React.useState(0);
-
-  const getRequestHeaders = React.useCallback(() => {
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (customDbUrl) headers['x-mongodb-url'] = customDbUrl;
-    return headers;
-  }, [customDbUrl]);
 
   React.useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -85,42 +88,13 @@ export default function HistoryPage() {
     }
   }, []);
 
-  React.useEffect(() => {
-    if (!mounted) return;
-    if (!userEmail) {
-      setLoading(false);
-      return;
-    }
-    (async () => {
-      try {
-        const [histRes, actRes] = await Promise.all([
-          fetch('/api/db/daily/history'),
-          fetch(`/api/db/activity?limit=200`, { headers: getRequestHeaders() }),
-        ]);
-        const histJson = await histRes.json();
-        if (histJson.records) {
-          setRecords(histJson.records.sort((a: DailyRecord, b: DailyRecord) => b.date.localeCompare(a.date)));
-        }
-        const actJson = await actRes.json();
-        if (actJson.activities) {
-          setActivities(actJson.activities);
-        }
-      } catch {}
-      setLoading(false);
-    })();
-  }, [mounted, userEmail, getRequestHeaders]);
+  const loading = historyLoading || activityLoading;
 
   const handleClearHistory = async () => {
     if (!userEmail) return;
     if (!confirm('Are you sure you want to clear your entire activity history?')) return;
     try {
-      const headers: Record<string, string> = { 'Content-Type': 'application/json', 'x-user-email': userEmail };
-      const res = await fetch(`/api/db/activity?userEmail=${encodeURIComponent(userEmail)}`, {
-        method: 'DELETE',
-        headers,
-      });
-      if (!res.ok) throw new Error('Failed to clear activity history');
-      setActivities([]);
+      await clearActivity.mutateAsync();
       toast({ title: 'Success', description: 'Activity history cleared successfully.' });
     } catch (err: unknown) {
       toast({ variant: 'destructive', title: 'Error', description: err instanceof Error ? err.message : 'An error occurred' });

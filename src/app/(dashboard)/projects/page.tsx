@@ -21,6 +21,7 @@ import DocViewer from '@cyntler/react-doc-viewer';
 import '@cyntler/react-doc-viewer/dist/index.css';
 import { cn } from '@/lib/utils';
 import { useProfile } from '@/components/providers/ProfileProvider';
+import { useProjectsQuery, useCreateProject, useUpdateProject, useDeleteProject } from '@/hooks/use-projects';
 
 type ProjectStatus = 'IDEA' | 'IN_PROGRESS' | 'COMPLETED' | 'MAINTAINING' | 'ARCHIVED';
 
@@ -405,20 +406,18 @@ export default function ProjectsPage() {
   const [searchQuery, setSearchQuery] = React.useState('');
   const [statusFilter, setStatusFilter] = React.useState<ProjectStatus | 'ALL'>('ALL');
   const [deleteConfirm, setDeleteConfirm] = React.useState<string | null>(null);
+  const { data: projectsData } = useProjectsQuery();
+  const createProject = useCreateProject();
+  const updateProject = useUpdateProject();
+  const deleteProjectMutation = useDeleteProject();
 
-  async function initProjects() {
-    if (userEmail) {
-      try {
-        const res = await fetch(`/api/db/projects?userEmail=${encodeURIComponent(userEmail)}`);
-        if (res.ok) {
-          const json = await res.json();
-          if (json.projects?.length) {
-            setProjects(json.projects);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(json.projects));
-            return;
-          }
-        }
-      } catch {}
+  React.useEffect(() => {
+    if (!mounted) return;
+
+    if (projectsData?.projects?.length) {
+      setProjects(projectsData.projects as Project[]);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(projectsData.projects));
+      return;
     }
 
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -429,18 +428,11 @@ export default function ProjectsPage() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultProjects));
       if (userEmail) {
         for (const proj of defaultProjects) {
-          fetch('/api/db/projects', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ...proj, userEmail }),
-          }).catch(() => {});
+          createProject.mutate({ ...proj, userEmail });
         }
       }
     }
-  }
-
-  React.useEffect(() => {
-    initProjects();
-  }, [userEmail]);
+  }, [mounted, projectsData, userEmail]);
 
   React.useEffect(() => {
     if (!mounted) return;
@@ -490,18 +482,12 @@ export default function ProjectsPage() {
     if (editingId) {
       setProjects((prev) => prev.map((p) => p.id === editingId ? proj : p));
       if (userEmail) {
-        fetch(`/api/db/projects?id=${editingId}`, {
-          method: 'PUT', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(proj),
-        }).catch(() => {});
+        updateProject.mutate({ id: editingId, data: proj });
       }
     } else {
       setProjects((prev) => [...prev, proj]);
       if (userEmail) {
-        fetch('/api/db/projects', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...proj, userEmail }),
-        }).catch(() => {});
+        createProject.mutate({ ...proj, userEmail });
       }
     }
     setEditOpen(false);
@@ -515,7 +501,7 @@ export default function ProjectsPage() {
     if (!deleteConfirm) return;
     setProjects((prev) => prev.filter((p) => p.id !== deleteConfirm));
     if (userEmail) {
-      fetch(`/api/db/projects?id=${deleteConfirm}`, { method: 'DELETE' }).catch(() => {});
+      deleteProjectMutation.mutate(deleteConfirm);
     }
     setDeleteConfirm(null);
   }

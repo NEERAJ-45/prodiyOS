@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useProfile } from '@/components/providers/ProfileProvider';
 import { useCallback } from 'react';
+import { fetchCompletions, toggleCompletion } from '@/lib/services/completions';
+import type { FetchCompletionsResponse } from '@/lib/services/completions';
 
 function useRequestHeaders() {
   const { userEmail, customDbUrl } = useProfile();
@@ -14,22 +16,13 @@ function useRequestHeaders() {
   }, [userEmail, customDbUrl]);
 }
 
-interface CompletionsResponse {
-  dbConnected: boolean;
-  data: Array<{ storagePrefix: string; itemId: string; completedAt: string }>;
-}
-
 export function useCompletionsQuery(storagePrefix: string) {
   const { userEmail } = useProfile();
   const getHeaders = useRequestHeaders();
 
-  return useQuery<CompletionsResponse>({
+  return useQuery<FetchCompletionsResponse>({
     queryKey: ['completions', storagePrefix],
-    queryFn: async () => {
-      const res = await fetch(`/api/db/completions?userEmail=${encodeURIComponent(userEmail)}`, { headers: getHeaders() });
-      if (!res.ok) throw new Error('Failed to fetch completions');
-      return res.json();
-    },
+    queryFn: () => fetchCompletions(userEmail, getHeaders()),
     enabled: !!userEmail,
     staleTime: 2 * 60 * 1000,
   });
@@ -42,13 +35,7 @@ export function useToggleCompletion() {
 
   return useMutation({
     mutationFn: async ({ storagePrefix, itemId, completedAt, title }: { storagePrefix: string; itemId: string; completedAt?: string; title?: string }) => {
-      const res = await fetch('/api/db/completions', {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify({ storagePrefix, itemId, completedAt, userEmail, ...(title ? { title } : {}) }),
-      });
-      if (!res.ok) throw new Error('Failed to save completion');
-      return res.json();
+      return toggleCompletion({ storagePrefix, itemId, completedAt, title, userEmail }, getHeaders());
     },
     onSuccess: (_data, variables) => {
       const prefix = variables.storagePrefix.replace('-completed', '');

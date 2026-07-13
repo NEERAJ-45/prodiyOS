@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { useProfile } from '@/components/providers/ProfileProvider';
+import { useApplicationsQuery, useUpdateApplication } from '@/hooks/use-interviews';
 import { KanbanBoard } from '@/components/interviews/kanban-board';
 
 const statuses = [
@@ -11,37 +12,18 @@ const statuses = [
 
 export default function PipelinePage() {
   const { userEmail } = useProfile();
-  const [applications, setApplications] = React.useState<any[]>([]);
+  const { data: appsData } = useApplicationsQuery();
+  const updateApplication = useUpdateApplication();
   const [mounted, setMounted] = React.useState(false);
-
-  const fetchApps = React.useCallback(() => {
-    if (!userEmail) return;
-    fetch(`/api/interviews?userEmail=${encodeURIComponent(userEmail)}`)
-      .then((r) => r.json())
-      .then((data) => setApplications(data.applications || []))
-      .catch(() => {});
-  }, [userEmail]);
 
   React.useEffect(() => {
     setMounted(true);
-    fetchApps();
-  }, [fetchApps]);
+  }, []);
+
+  const applications = (appsData?.applications ?? []) as any[];
 
   async function handleStatusChange(id: string, newStatus: string) {
-    const prev = applications;
-    setApplications((apps) =>
-      apps.map((a) => (a.id === id ? { ...a, status: newStatus } : a))
-    );
-    try {
-      const res = await fetch(`/api/interviews/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userEmail, status: newStatus }),
-      });
-      if (!res.ok) throw new Error();
-    } catch {
-      setApplications(prev);
-    }
+    updateApplication.mutate({ id, userEmail, status: newStatus });
   }
 
   if (!mounted) {

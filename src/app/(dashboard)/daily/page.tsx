@@ -4,6 +4,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { useMounted } from '@/hooks/useMounted';
 import { useDailyQuery, useSyncDaily, useActivityLog } from '@/hooks/use-daily';
+import { useLoginStreakQuery } from '@/hooks/use-login-streak';
 import {
   CheckCircle2,
   Circle,
@@ -469,31 +470,19 @@ export default function DailyPage() {
     else if (e.key === 'Escape') { setEditingTimerPart(null); setEditTimerValue(''); }
   }
 
-  const [dailyStreak, setDailyStreak] = React.useState(0);
-
-  React.useEffect(() => {
-    if (!mounted) return;
-    (async () => {
-      try {
-        const res = await fetch('/api/auth/login-streak');
-        if (res.ok) {
-          const data = await res.json();
-          setDailyStreak(data.streak ?? 0);
-          return;
-        }
-      } catch {}
-      const saved: Record<string, string[]> = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-      let s = 0;
-      const d = new Date();
-      for (let i = 0; i < 365; i++) {
-        const key = d.toISOString().slice(0, 10);
-        if (saved[key]?.length) s++;
-        else if (i > 0) break;
-        d.setDate(d.getDate() - 1);
-      }
-      setDailyStreak(s);
-    })();
-  }, [mounted]);
+  const { data: streakData } = useLoginStreakQuery();
+  const dailyStreak = streakData?.streak ?? (() => {
+    const saved: Record<string, string[]> = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    let s = 0;
+    const d = new Date();
+    for (let i = 0; i < 365; i++) {
+      const key = d.toISOString().slice(0, 10);
+      if (saved[key]?.length) s++;
+      else if (i > 0) break;
+      d.setDate(d.getDate() - 1);
+    }
+    return s;
+  })();
 
   const timerMinutes = Math.floor(timerSeconds / 60);
   const timerSecs = timerSeconds % 60;
