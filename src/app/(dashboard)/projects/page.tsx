@@ -215,9 +215,9 @@ function ProjectCard({ project, onSelect, onEdit, onDelete }: {
 }
 
 function ExpandedDialog({ project, open, onOpenChange }: { project: Project | null; open: boolean; onOpenChange: (v: boolean) => void }) {
-  if (!project) return null;
-
   const [viewingDoc, setViewingDoc] = React.useState<{ name: string; url: string } | null>(null);
+
+  if (!project) return null;
 
   return (
     <>
