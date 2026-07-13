@@ -14,6 +14,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter,
+} from '@/components/ui/sheet';
+import DocViewer from '@cyntler/react-doc-viewer';
+import '@cyntler/react-doc-viewer/dist/index.css';
 import { cn } from '@/lib/utils';
 import { useProfile } from '@/components/providers/ProfileProvider';
 
@@ -214,33 +219,9 @@ function ProjectCard({ project, onSelect, onEdit, onDelete }: {
   );
 }
 
-function dataUrlToBlob(url: string): Blob {
-  const [header, base64] = url.split(',', 2);
-  const mime = header?.split(':')[1]?.split(';')[0] || 'application/octet-stream';
-  const raw = atob(base64 || '');
-  const len = raw.length;
-  const buf = new ArrayBuffer(len);
-  const bytes = new Uint8Array(buf);
-  for (let i = 0; i < len; i++) bytes[i] = raw.charCodeAt(i);
-  return new Blob([buf], { type: mime });
-}
-
 function ExpandedDialog({ project, open, onOpenChange }: { project: Project | null; open: boolean; onOpenChange: (v: boolean) => void }) {
   const [viewingDoc, setViewingDoc] = React.useState<{ name: string; url: string } | null>(null);
-  const [docBlobUrl, setDocBlobUrl] = React.useState<string | null>(null);
   const [imageLoadError, setImageLoadError] = React.useState(false);
-
-  React.useEffect(() => {
-    if (!viewingDoc || viewingDoc.url.startsWith('data:image/')) {
-      setDocBlobUrl(null);
-      setImageLoadError(false);
-      return;
-    }
-    const blob = dataUrlToBlob(viewingDoc.url);
-    const url = URL.createObjectURL(blob);
-    setDocBlobUrl(url);
-    return () => { URL.revokeObjectURL(url); setDocBlobUrl(null); };
-  }, [viewingDoc]);
 
   if (!project) return null;
 
@@ -310,7 +291,7 @@ function ExpandedDialog({ project, open, onOpenChange }: { project: Project | nu
             <DialogHeader>
               <DialogTitle className="text-zinc-100 text-sm truncate">{viewingDoc.name}</DialogTitle>
             </DialogHeader>
-            <div className="flex-1 min-h-0">
+            <div className="flex-1 min-h-0 overflow-hidden">
               {viewingDoc.url.startsWith('data:image/') ? (
                 imageLoadError ? (
                   <div className="flex items-center justify-center h-full">
@@ -322,30 +303,12 @@ function ExpandedDialog({ project, open, onOpenChange }: { project: Project | nu
                     onError={() => setImageLoadError(true)}
                     className="w-full h-full object-contain rounded-lg" />
                 )
-              ) : /\.docx?$/i.test(viewingDoc.name) ? (
-                <div className="flex items-center justify-center h-full">
-                  <div className="text-center space-y-3">
-                    <FileText className="h-12 w-12 text-zinc-600 mx-auto" />
-                    <p className="text-sm text-zinc-400">Word documents cannot be previewed inline.</p>
-                    <Button variant="outline" size="sm" className="gap-1.5" onClick={() => {
-                      const a = document.createElement('a');
-                      a.href = viewingDoc.url;
-                      a.download = viewingDoc.name;
-                      a.click();
-                    }}>
-                      <FileDown className="h-3.5 w-3.5" /> Download to View
-                    </Button>
-                  </div>
-                </div>
-              ) : docBlobUrl ? (
-                <iframe src={docBlobUrl} className="w-full h-full rounded border border-zinc-700" title={viewingDoc.name} />
               ) : (
-                <div className="flex items-center justify-center h-full">
-                  <div className="flex flex-col items-center gap-3 text-zinc-500">
-                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-700 border-t-zinc-400" />
-                    <p className="text-sm">Loading document...</p>
-                  </div>
-                </div>
+                <DocViewer
+                  documents={[{ uri: viewingDoc.url, fileName: viewingDoc.name }]}
+                  theme={{ primary: '#18181b', secondary: '#27272a', tertiary: '#3f3f46', textPrimary: '#e4e4e7', textSecondary: '#a1a1aa', textTertiary: '#71717a', disableThemeScrollbar: true }}
+                  config={{ header: { disableHeader: false, disableFileName: false }, pdfZoom: { defaultZoom: 1, zoomJump: 0.5 }, pdfVerticalScrollByDefault: true }}
+                />
               )}
             </div>
             <DialogFooter className="border-t border-zinc-800 pt-3 mt-2">
@@ -648,15 +611,15 @@ export default function ProjectsPage() {
 
       <ExpandedDialog project={dialogProject} open={dialogOpen} onOpenChange={setDialogOpen} />
 
-      <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="max-w-xl bg-zinc-900 border-zinc-800 max-h-[85vh]">
-          <DialogHeader>
-            <DialogTitle className="text-zinc-100">{editingId ? 'Edit Project' : 'New Project'}</DialogTitle>
-          </DialogHeader>
-          <ScrollArea className="max-h-[65vh] ml-5 pr-4">
-            <div className="space-y-4 py-2">
+      <Sheet open={editOpen} onOpenChange={setEditOpen}>
+        <SheetContent side="right" className="bg-zinc-900 border-zinc-800 flex flex-col p-0">
+          <SheetHeader className="p-6 pb-2">
+            <SheetTitle className="text-zinc-100">{editingId ? 'Edit Project' : 'New Project'}</SheetTitle>
+          </SheetHeader>
+          <ScrollArea className="flex-1 px-6 py-2">
+            <div className="space-y-4 pb-4">
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5 ml-2">
+                <div className="space-y-1.5">
                   <label className="text-xs text-zinc-400">Name</label>
                   <Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Project name" className="bg-zinc-800 border-zinc-700 text-zinc-200" />
                 </div>
@@ -679,7 +642,7 @@ export default function ProjectsPage() {
                   className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2.5 text-sm text-zinc-200 outline-none resize-none placeholder:text-zinc-600"
                   placeholder="Brief description" />
               </div>
-              <div className="space-y-1.5 ml-2">
+              <div className="space-y-1.5">
                 <label className="text-xs text-zinc-400">Technologies</label>
                 <div className="flex gap-2">
                   <Input value={formTech} onChange={(e) => setFormTech(e.target.value)}
@@ -747,7 +710,7 @@ export default function ProjectsPage() {
                 )}
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs text-zinc-400">Documents (PDFs)</label>
+                <label className="text-xs text-zinc-400">Documents</label>
                 <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-[11px] font-medium border border-zinc-700 text-zinc-400 hover:text-zinc-200 hover:border-zinc-500 transition-colors">
                   <FileText className="h-3 w-3" /> Add Document
                   <input type="file" accept=".pdf,.doc,.docx,image/*" className="hidden"
@@ -765,10 +728,11 @@ export default function ProjectsPage() {
                 {formDocs.length > 0 && (
                   <div className="space-y-1.5 mt-2">
                     {formDocs.map((doc, i) => (
-                      <div key={i} className="flex items-center gap-2 px-2.5 py-1.5 rounded bg-zinc-800/50 border border-zinc-700/50">
+                      <div key={i} className="flex items-center gap-2 px-2.5 py-1.5 rounded bg-zinc-800/50 border border-zinc-700/50 cursor-pointer"
+                        onClick={() => setFormDocs((prev) => prev.filter((_, j) => j !== i))}>
                         <FileText className="h-3.5 w-3.5 text-zinc-500 shrink-0" />
                         <span className="text-xs text-zinc-300 truncate flex-1">{doc.name}</span>
-                        <button onClick={() => setFormDocs((prev) => prev.filter((_, j) => j !== i))}
+                        <button onClick={(e) => { e.stopPropagation(); setFormDocs((prev) => prev.filter((_, j) => j !== i)); }}
                           className="text-zinc-600 hover:text-red-400 shrink-0"><X className="h-3 w-3" /></button>
                       </div>
                     ))}
@@ -780,7 +744,7 @@ export default function ProjectsPage() {
                 <textarea value={formLessons} onChange={(e) => setFormLessons(e.target.value)} rows={2}
                   className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2.5 text-sm text-zinc-200 outline-none resize-none placeholder:text-zinc-600" />
               </div>
-              <div className="space-y-1.5 ml-2">
+              <div className="space-y-1.5">
                 <label className="text-xs text-zinc-400">Linked Concepts</label>
                 <Input type="number" min={0} value={formConcepts}
                   onChange={(e) => setFormConcepts(Math.max(0, parseInt(e.target.value) || 0))}
@@ -788,14 +752,14 @@ export default function ProjectsPage() {
               </div>
             </div>
           </ScrollArea>
-          <DialogFooter>
+          <SheetFooter className="p-6 pt-2 border-t border-zinc-800">
             <Button variant="outline" size="sm" onClick={() => setEditOpen(false)}>Cancel</Button>
             <Button size="sm" onClick={saveProject} disabled={!formName.trim()}>
               {editingId ? 'Save' : 'Create'}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
 
       <Dialog open={deleteConfirm !== null} onOpenChange={(v) => { if (!v) setDeleteConfirm(null); }}>
         <DialogContent className="max-w-sm bg-zinc-900 border-zinc-800">
