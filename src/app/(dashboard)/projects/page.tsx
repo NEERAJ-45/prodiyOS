@@ -219,9 +219,55 @@ function ProjectCard({ project, onSelect, onEdit, onDelete }: {
   );
 }
 
+function ArchImage({ url }: { url: string }) {
+  const [blobUrl, setBlobUrl] = React.useState<string | null>(null);
+  React.useEffect(() => {
+    if (url.startsWith('data:')) {
+      const b = dataUrlToBlob(url);
+      setBlobUrl(b);
+      return () => URL.revokeObjectURL(b);
+    }
+    setBlobUrl(url);
+  }, [url]);
+  if (!blobUrl) return null;
+  return (
+    <div className="mt-2 border border-zinc-700 rounded-lg overflow-hidden cursor-pointer"
+      onClick={() => window.open(blobUrl, '_blank')}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={blobUrl} alt="Architecture diagram" className="w-full h-auto max-h-64 object-contain bg-zinc-950" />
+    </div>
+  );
+}
+
+function dataUrlToBlob(url: string): string {
+  const [header, base64] = url.split(',', 2);
+  const mime = header?.split(':')[1]?.split(';')[0] || 'application/octet-stream';
+  const raw = atob(base64 || '');
+  const len = raw.length;
+  const buf = new ArrayBuffer(len);
+  const bytes = new Uint8Array(buf);
+  for (let i = 0; i < len; i++) bytes[i] = raw.charCodeAt(i);
+  const blob = new Blob([buf], { type: mime });
+  return URL.createObjectURL(blob);
+}
+
 function ExpandedDialog({ project, open, onOpenChange }: { project: Project | null; open: boolean; onOpenChange: (v: boolean) => void }) {
   const [viewingDoc, setViewingDoc] = React.useState<{ name: string; url: string } | null>(null);
+  const [docBlobUrl, setDocBlobUrl] = React.useState<string | null>(null);
   const [imageLoadError, setImageLoadError] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!viewingDoc) {
+      if (docBlobUrl) { URL.revokeObjectURL(docBlobUrl); setDocBlobUrl(null); }
+      return;
+    }
+    if (viewingDoc.url.startsWith('data:')) {
+      const url = dataUrlToBlob(viewingDoc.url);
+      setDocBlobUrl(url);
+      return () => URL.revokeObjectURL(url);
+    }
+    setDocBlobUrl(viewingDoc.url);
+  }, [viewingDoc]);
 
   if (!project) return null;
 
@@ -246,11 +292,7 @@ function ExpandedDialog({ project, open, onOpenChange }: { project: Project | nu
                 <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Architecture</h4>
                 <p className="text-sm text-zinc-300 leading-relaxed">{project.architecture}</p>
                 {project.architectureImage && (
-                  <div className="mt-2 border border-zinc-700 rounded-lg overflow-hidden cursor-pointer"
-                    onClick={() => window.open(project.architectureImage, '_blank')}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={project.architectureImage} alt="Architecture diagram" className="w-full h-auto max-h-64 object-contain bg-zinc-950" />
-                  </div>
+                  <ArchImage url={project.architectureImage} />
                 )}
               </div>
               {project.docs && project.docs.length > 0 && (
@@ -299,16 +341,20 @@ function ExpandedDialog({ project, open, onOpenChange }: { project: Project | nu
                   </div>
                 ) : (
                   /* eslint-disable-next-line @next/next/no-img-element */
-                  <img src={viewingDoc.url} alt={viewingDoc.name}
+                  <img src={docBlobUrl || viewingDoc.url} alt={viewingDoc.name}
                     onError={() => setImageLoadError(true)}
                     className="w-full h-full object-contain rounded-lg" />
                 )
-              ) : (
+              ) : docBlobUrl ? (
                 <DocViewer
-                  documents={[{ uri: viewingDoc.url, fileName: viewingDoc.name }]}
+                  documents={[{ uri: docBlobUrl, fileName: viewingDoc.name }]}
                   theme={{ primary: '#18181b', secondary: '#27272a', tertiary: '#3f3f46', textPrimary: '#e4e4e7', textSecondary: '#a1a1aa', textTertiary: '#71717a', disableThemeScrollbar: true }}
                   config={{ header: { disableHeader: false, disableFileName: false }, pdfZoom: { defaultZoom: 1, zoomJump: 0.5 }, pdfVerticalScrollByDefault: true }}
                 />
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-700 border-t-zinc-400" />
+                </div>
               )}
             </div>
             <DialogFooter className="border-t border-zinc-800 pt-3 mt-2">
