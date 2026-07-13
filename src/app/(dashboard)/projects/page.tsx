@@ -14,16 +14,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
-import { Document, Page, pdfjs } from 'react-pdf';
-import 'react-pdf/dist/Page/AnnotationLayer.css';
-import 'react-pdf/dist/Page/TextLayer.css';
 import { cn } from '@/lib/utils';
 import { useProfile } from '@/components/providers/ProfileProvider';
-
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.mjs',
-  import.meta.url
-).toString();
 
 type ProjectStatus = 'IDEA' | 'IN_PROGRESS' | 'COMPLETED' | 'MAINTAINING' | 'ARCHIVED';
 
@@ -235,11 +227,19 @@ function dataUrlToBlob(url: string): Blob {
 
 function ExpandedDialog({ project, open, onOpenChange }: { project: Project | null; open: boolean; onOpenChange: (v: boolean) => void }) {
   const [viewingDoc, setViewingDoc] = React.useState<{ name: string; url: string } | null>(null);
-  const [numPages, setNumPages] = React.useState(0);
+  const [docBlobUrl, setDocBlobUrl] = React.useState<string | null>(null);
+  const [imageLoadError, setImageLoadError] = React.useState(false);
 
-  const docSource = React.useMemo(() => {
-    if (!viewingDoc || viewingDoc.url.startsWith('data:image/')) return null;
-    return new File([dataUrlToBlob(viewingDoc.url)], viewingDoc.name, { type: 'application/pdf' });
+  React.useEffect(() => {
+    if (!viewingDoc || viewingDoc.url.startsWith('data:image/')) {
+      setDocBlobUrl(null);
+      setImageLoadError(false);
+      return;
+    }
+    const blob = dataUrlToBlob(viewingDoc.url);
+    const url = URL.createObjectURL(blob);
+    setDocBlobUrl(url);
+    return () => { URL.revokeObjectURL(url); setDocBlobUrl(null); };
   }, [viewingDoc]);
 
   if (!project) return null;
@@ -304,69 +304,61 @@ function ExpandedDialog({ project, open, onOpenChange }: { project: Project | nu
         </DialogContent>
       </Dialog>
 
-      <Dialog open={viewingDoc !== null} onOpenChange={(v) => { if (!v) setViewingDoc(null); }}>
+      <Dialog open={viewingDoc !== null} onOpenChange={(v) => { if (!v) { setViewingDoc(null); setImageLoadError(false); } }}>
         {viewingDoc && (
           <DialogContent className="max-w-4xl bg-zinc-900 border-zinc-800 h-[80vh] flex flex-col">
             <DialogHeader>
               <DialogTitle className="text-zinc-100 text-sm truncate">{viewingDoc.name}</DialogTitle>
             </DialogHeader>
-            <ScrollArea className="flex-1 pr-4">
+            <div className="flex-1 min-h-0">
               {viewingDoc.url.startsWith('data:image/') ? (
-                <div className="flex items-center justify-center min-h-[50vh]">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={viewingDoc.url} alt={viewingDoc.name} className="max-w-full max-h-[70vh] object-contain rounded-lg" />
+                imageLoadError ? (
+                  <div className="flex items-center justify-center h-full">
+                    <p className="text-sm text-red-400">Failed to load image.</p>
+                  </div>
+                ) : (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img src={viewingDoc.url} alt={viewingDoc.name}
+                    onError={() => setImageLoadError(true)}
+                    className="w-full h-full object-contain rounded-lg" />
+                )
+              ) : /\.docx?$/i.test(viewingDoc.name) ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center space-y-3">
+                    <FileText className="h-12 w-12 text-zinc-600 mx-auto" />
+                    <p className="text-sm text-zinc-400">Word documents cannot be previewed inline.</p>
+                    <Button variant="outline" size="sm" className="gap-1.5" onClick={() => {
+                      const a = document.createElement('a');
+                      a.href = viewingDoc.url;
+                      a.download = viewingDoc.name;
+                      a.click();
+                    }}>
+                      <FileDown className="h-3.5 w-3.5" /> Download to View
+                    </Button>
+                  </div>
                 </div>
-              ) : docSource ? (
-                <Document
-                  file={docSource}
-                  onLoadSuccess={({ numPages: n }) => setNumPages(n)}
-                  loading={
-                    <div className="flex items-center justify-center py-20">
-                      <div className="flex flex-col items-center gap-3 text-zinc-500">
-                        <div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-700 border-t-zinc-400" />
-                        <p className="text-sm">Loading document...</p>
-                      </div>
-                    </div>
-                  }
-                  error={
-                    <div className="flex items-center justify-center py-20">
-                      <p className="text-sm text-red-400">Failed to load document.</p>
-                    </div>
-                  }
-                >
-                  {Array.from({ length: numPages }, (_, i) => (
-                    <Page key={i} pageNumber={i + 1}
-                      renderTextLayer={false}
-                      renderAnnotationLayer={false}
-                      className="mb-4 shadow-lg rounded-lg overflow-hidden"
-                      loading={
-                        <div className="flex items-center justify-center py-10">
-                          <div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-700 border-t-zinc-400" />
-                        </div>
-                      }
-                    />
-                  ))}
-                </Document>
-              ) : viewingDoc && !viewingDoc.url.startsWith('data:image/') ? (
-                <div className="flex items-center justify-center py-20">
-                  <p className="text-sm text-red-400">Failed to load document.</p>
+              ) : docBlobUrl ? (
+                <iframe src={docBlobUrl} className="w-full h-full rounded border border-zinc-700" title={viewingDoc.name} />
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <div className="flex flex-col items-center gap-3 text-zinc-500">
+                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-700 border-t-zinc-400" />
+                    <p className="text-sm">Loading document...</p>
+                  </div>
                 </div>
-              ) : null}
-            </ScrollArea>
+              )}
+            </div>
             <DialogFooter className="border-t border-zinc-800 pt-3 mt-2">
-              <div className="flex gap-2 w-full justify-between items-center">
-                <span className="text-xs text-zinc-500">{numPages > 0 ? `${numPages} page${numPages > 1 ? 's' : ''}` : ''}</span>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={() => { setViewingDoc(null); setNumPages(0); }}>Close</Button>
-                  <Button variant="outline" size="sm" className="gap-1.5" onClick={() => {
-                    const a = document.createElement('a');
-                    a.href = viewingDoc.url;
-                    a.download = viewingDoc.name;
-                    a.click();
-                  }}>
-                    <FileDown className="h-3.5 w-3.5" /> Download
-                  </Button>
-                </div>
+              <div className="flex gap-2 w-full justify-end">
+                <Button variant="outline" size="sm" onClick={() => { setViewingDoc(null); setImageLoadError(false); }}>Close</Button>
+                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => {
+                  const a = document.createElement('a');
+                  a.href = viewingDoc.url;
+                  a.download = viewingDoc.name;
+                  a.click();
+                }}>
+                  <FileDown className="h-3.5 w-3.5" /> Download
+                </Button>
               </div>
             </DialogFooter>
           </DialogContent>
@@ -758,7 +750,7 @@ export default function ProjectsPage() {
                 <label className="text-xs text-zinc-400">Documents (PDFs)</label>
                 <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-[11px] font-medium border border-zinc-700 text-zinc-400 hover:text-zinc-200 hover:border-zinc-500 transition-colors">
                   <FileText className="h-3 w-3" /> Add Document
-                  <input type="file" accept="application/pdf,image/*" className="hidden"
+                  <input type="file" accept=".pdf,.doc,.docx,image/*" className="hidden"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
                       if (!file) return;
