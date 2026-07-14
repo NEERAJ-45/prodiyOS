@@ -218,7 +218,7 @@ export default function InterviewPage() {
             }`}
           >
             <Sparkles className="h-4 w-4" />
-            Custom Q&A Viewer
+            Interview Questions
           </button>
         </div>
 

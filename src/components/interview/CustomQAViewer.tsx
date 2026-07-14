@@ -544,9 +544,9 @@ export default function CustomQAViewer() {
             <div>
               <h2 className="text-xl font-bold tracking-tight text-zinc-100 flex items-center gap-2">
                 <Brain className="h-5 w-5 text-indigo-400" />
-                Study Subjects
+                Interview Questions
               </h2>
-              <p className="text-xs text-zinc-500 mt-1">Select an interview question bank to begin studying.</p>
+              <p className="text-xs text-zinc-500 mt-1">Select a question bank to begin practicing.</p>
             </div>
             
             {/* Sync Badge */}
@@ -948,18 +948,36 @@ export default function CustomQAViewer() {
                                       <div className="pt-3 border-t border-zinc-800/80 space-y-2">
                                         <div className="flex items-center justify-between text-[9px] text-zinc-500 font-semibold select-none">
                                           <span className="flex items-center gap-1 text-indigo-400"><Info className="h-3 w-3" /> Answer Key</span>
-                                          <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => copyAnswer(q.id, q.answer)}
-                                            className="h-6 gap-1 text-zinc-550 hover:text-zinc-300 hover:bg-zinc-800 px-1.5"
-                                          >
-                                            {copiedId === q.id ? (
-                                              <><Check className="h-3 w-3 text-emerald-400" /><span>Copied</span></>
-                                            ) : (
-                                              <><Copy className="h-3 w-3" /><span>Copy Answer</span></>
-                                            )}
-                                          </Button>
+                                          <div className="flex items-center gap-1">
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              onClick={() => {
+                                                navigator.clipboard.writeText(q.question);
+                                                setCopiedQId(q.id);
+                                                setTimeout(() => setCopiedQId(null), 2000);
+                                              }}
+                                              className="h-6 gap-1 text-zinc-550 hover:text-zinc-300 hover:bg-zinc-800 px-1.5"
+                                            >
+                                              {copiedQId === q.id ? (
+                                                <><Check className="h-3 w-3 text-emerald-400" /><span>Copied</span></>
+                                              ) : (
+                                                <><Copy className="h-3 w-3" /><span>Copy Question</span></>
+                                              )}
+                                            </Button>
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              onClick={() => copyAnswer(q.id, q.answer)}
+                                              className="h-6 gap-1 text-zinc-550 hover:text-zinc-300 hover:bg-zinc-800 px-1.5"
+                                            >
+                                              {copiedId === q.id ? (
+                                                <><Check className="h-3 w-3 text-emerald-400" /><span>Copied</span></>
+                                              ) : (
+                                                <><Copy className="h-3 w-3" /><span>Copy Answer</span></>
+                                              )}
+                                            </Button>
+                                          </div>
                                         </div>
                                         <div className="bg-zinc-950/40 p-3 rounded-lg border border-zinc-850/60">
                                           <AnswerFormatter text={q.answer} search={search} />
