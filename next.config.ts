@@ -5,8 +5,10 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     '/api/books/**': ['./src/assets/Being-Backend-Prodigy/**/*'],
   },
-  serverActions: {
-    bodySizeLimit: '50mb',
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '50mb',
+    },
   },
   turbopack: {
     root: process.cwd(),
