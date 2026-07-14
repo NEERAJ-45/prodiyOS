@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, LayoutDashboard, GitBranch, Map, Target, RefreshCw, FolderKanban, Briefcase, BookOpen, CalendarCheck, BarChart3, StickyNote, Rocket, CalendarDays, History, ListChecks, FileText, FileCode } from 'lucide-react';
+import { Menu, X, LayoutDashboard, GitBranch, Map, Target, Timer, RefreshCw, FolderKanban, Briefcase, BookOpen, CalendarCheck, BarChart3, StickyNote, Rocket, CalendarDays, History, ListChecks, FileText, FileCode } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -11,6 +11,7 @@ const navItems = [
   { label: 'Patterns Library', href: '/patterns', icon: GitBranch },
   { label: 'Roadmaps', href: '/roadmaps', icon: Map },
   { label: 'Mastery Tracker', href: '/mastery', icon: Target },
+  { label: 'Focus Mode', href: '/focus', icon: Timer },
   { label: 'Revision System', href: '/revision', icon: RefreshCw },
   { label: 'Projects', href: '/projects', icon: FolderKanban },
   { label: 'Interview Prep', href: '/interview', icon: Briefcase },

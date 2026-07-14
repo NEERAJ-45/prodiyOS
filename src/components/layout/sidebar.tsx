@@ -27,6 +27,7 @@ import {
   ListChecks,
   Calendar,
   FileText,
+  Timer,
 } from "lucide-react";
 
 interface NavItem {
@@ -41,6 +42,7 @@ const navItems: NavItem[] = [
   { label: "Patterns Library", href: "/patterns", icon: GitBranch },
   { label: "Roadmaps", href: "/roadmaps", icon: Map },
   { label: "Mastery Tracker", href: "/mastery", icon: Target },
+  { label: "Focus Mode", href: "/focus", icon: Timer },
   { label: "Revision System", href: "/revision", icon: RefreshCw },
   { label: "Projects", href: "/projects", icon: FolderKanban },
   { label: "Interview Prep", href: "/interview", icon: Briefcase },

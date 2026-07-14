@@ -11,6 +11,7 @@ export async function POST(request: Request) {
     if (!userEmail || !text) {
       return NextResponse.json({ error: 'userEmail and text required' }, { status: 400 });
     }
+    await connectToDatabase();
     await logActivity(userEmail, text);
     return NextResponse.json({ success: true });
   } catch (error: any) {
@@ -21,7 +22,7 @@ export async function POST(request: Request) {
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const userEmail = searchParams.get('userEmail');
+    const userEmail = searchParams.get('userEmail') || request.headers.get('x-user-email');
     if (!userEmail) {
       return NextResponse.json({ error: 'userEmail required' }, { status: 400 });
     }

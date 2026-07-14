@@ -95,7 +95,7 @@ export default function HistoryPage() {
       try {
         const [histRes, actRes] = await Promise.all([
           fetch('/api/db/daily/history'),
-          fetch(`/api/db/activity?limit=200`, { headers: getRequestHeaders() }),
+          fetch(`/api/db/activity?userEmail=${encodeURIComponent(userEmail)}&limit=200`, { headers: getRequestHeaders() }),
         ]);
         const histJson = await histRes.json();
         if (histJson.records) {
