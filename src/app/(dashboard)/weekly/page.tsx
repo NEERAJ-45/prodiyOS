@@ -29,20 +29,19 @@ const SLOT_COLORS: Record<string, string> = {
 
 export default function WeeklyPage() {
   const [scheduleId, setScheduleId] = React.useState<ScheduleId>('steady');
-  const [customSchedule, setCustomSchedule] = React.useState<typeof SCHEDULES.custom | null>(null);
+  const [customSchedule] = React.useState<typeof SCHEDULES.custom | null>(() => {
+    try {
+      const saved = localStorage.getItem('weekly-custom-schedule');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return null;
+  });
   const today = new Date();
   const dateStr = today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
   const dayIndex = today.getDay();
   const todayLabel = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][dayIndex];
   const schedule = scheduleId === 'custom' && customSchedule ? customSchedule : SCHEDULES[scheduleId];
   const days = schedule?.days ?? [];
-
-  React.useEffect(() => {
-    const saved = localStorage.getItem('weekly-custom-schedule');
-    if (saved) {
-      try { setCustomSchedule(JSON.parse(saved)); } catch {}
-    }
-  }, []);
 
   React.useEffect(() => {
     if (scheduleId === 'custom' && customSchedule) {

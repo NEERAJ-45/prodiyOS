@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useMounted } from '@/hooks/useMounted';
 import { useProfile } from '@/components/providers/ProfileProvider';
 
 import { Badge } from '@/components/ui/badge';
@@ -61,7 +62,7 @@ export default function ApplicationsPage() {
   const [statusFilter, setStatusFilter] = React.useState<string>('ALL');
   const [sortField, setSortField] = React.useState<SortField>('appliedDate');
   const [sortDir, setSortDir] = React.useState<SortDir>('desc');
-  const [mounted, setMounted] = React.useState(false);
+  const mounted = useMounted();
   const [formOpen, setFormOpen] = React.useState(false);
   const [editingApp, setEditingApp] = React.useState<Application | null>(null);
 
@@ -74,7 +75,6 @@ export default function ApplicationsPage() {
   }, [userEmail]);
 
   React.useEffect(() => {
-    setMounted(true);
     fetchApps();
   }, [fetchApps]);
 

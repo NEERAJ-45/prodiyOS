@@ -64,7 +64,15 @@ const DEFAULT_SUBJECTS: CustomQABook[] = [
     slug: 'java-prep',
     title: 'Java Interview Prep',
     totalQuestions: javaSampleQuestions.total_questions,
-    sections: javaSampleQuestions.sections as any
+    sections: javaSampleQuestions.sections.map((s) => ({
+      id: String(s.section ?? '0'),
+      title: s.title,
+      questions: s.questions.map((q) => ({
+        id: String(q.id),
+        question: q.question,
+        answer: q.answer,
+      })),
+    }))
   },
   {
     slug: 'python-core',
@@ -266,8 +274,8 @@ export default function CustomQAViewer() {
       handleSelectSubject(customSlug);
       setImportOpen(false);
       setInputText('');
-    } catch (e: any) {
-      setParseError(e.message || 'Formatting failed.');
+    } catch (e) {
+      setParseError(e instanceof Error ? e.message : 'Formatting failed.');
     }
   };
 
@@ -320,7 +328,7 @@ export default function CustomQAViewer() {
       reader.onload = (event) => {
         const text = event.target?.result as string;
         setInputText(text);
-        handleParse(text, ext as any || 'auto');
+        handleParse(text, (ext as 'json' | 'csv' | 'txt') ?? 'auto');
       };
       reader.readAsText(file);
     }
@@ -338,7 +346,7 @@ export default function CustomQAViewer() {
       reader.onload = (event) => {
         const text = event.target?.result as string;
         setInputText(text);
-        handleParse(text, ext as any || 'auto');
+        handleParse(text, (ext as 'json' | 'csv' | 'txt') ?? 'auto');
       };
       reader.readAsText(file);
     }

@@ -28,7 +28,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const { id } = await params;
   try {
     const body = await request.json();
-    const { userEmail, ...updates } = body;
+    const { ...updates } = body;
 
     const customUri = request.headers.get('x-mongodb-url') || undefined;
     const conn = await connectToDatabase(customUri);

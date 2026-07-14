@@ -118,83 +118,83 @@ function RoadmapCard({
   );
 }
 
-export default function FoundationRoadmapPage() {
-  const [progressData, setProgressData] = React.useState({
-    os: { overall: 0, process: 0, memory: 0 },
-    cn: { overall: 0, tcp: 0, protocols: 0 },
-    dbms: { overall: 0, sql: 0, nosql: 0 }
-  });
-
-  const calculateProgress = React.useCallback(() => {
-    const getCompletedCount = (prefix: string, rangeStart: number, rangeEnd: number, exactIds?: number[]) => {
-      try {
-        const raw = localStorage.getItem(`${prefix}-completed`);
-        if (!raw) return 0;
-        const data = JSON.parse(raw);
-        const keys = Object.keys(data).map(Number);
-        if (exactIds) {
-          return keys.filter(k => exactIds.includes(k)).length;
-        }
-        return keys.filter(k => k >= rangeStart && k <= rangeEnd).length;
-      } catch {
-        return 0;
-      }
-    };
-
-    const getOverallCount = (prefix: string) => {
-      try {
-        const raw = localStorage.getItem(`${prefix}-completed`);
-        if (!raw) return 0;
-        const data = JSON.parse(raw);
-        return Object.keys(data).length;
-      } catch {
-        return 0;
-      }
-    };
-
-    const osOverall = getOverallCount('foundation-os');
-    const osProcess = getCompletedCount('foundation-os', 101, 122);
-    const osMemory = getCompletedCount('foundation-os', 123, 134);
-
-    const cnOverall = getOverallCount('foundation-cn');
-    const cnTcp = getCompletedCount('foundation-cn', 201, 218);
-    const cnProtocols = getCompletedCount('foundation-cn', 219, 250);
-
-    const sqlIds = [301, 302, 303, 304, 305, 306, 307, 308, 309, 310, 311, 312, 336, 337, 338, 339, 340, 345, 350];
-    const dbmsOverall = getOverallCount('foundation-dbms');
-    const dbmsSql = getCompletedCount('foundation-dbms', 0, 0, sqlIds);
-    const dbmsNosql = Math.max(0, dbmsOverall - dbmsSql);
-
-    setProgressData({
-      os: {
-        overall: Math.round((osOverall / 50) * 100),
-        process: Math.round((osProcess / 22) * 100),
-        memory: Math.round((osMemory / 12) * 100),
-      },
-      cn: {
-        overall: Math.round((cnOverall / 50) * 100),
-        tcp: Math.round((cnTcp / 18) * 100),
-        protocols: Math.round((cnProtocols / 32) * 100),
-      },
-      dbms: {
-        overall: Math.round((dbmsOverall / 50) * 100),
-        sql: Math.round((dbmsSql / 19) * 100),
-        nosql: Math.round((dbmsNosql / 31) * 100),
-      }
-    });
-  }, []);
-
-  React.useEffect(() => {
-    calculateProgress();
-
+function computeFoundationProgress() {
+  const getCompletedCount = (prefix: string, rangeStart: number, rangeEnd: number, exactIds?: number[]) => {
     try {
-      const bc = new BroadcastChannel('roadmap-progress');
-      bc.onmessage = calculateProgress;
-      return () => bc.close();
+      const raw = localStorage.getItem(`${prefix}-completed`);
+      if (!raw) return 0;
+      const data = JSON.parse(raw);
+      const keys = Object.keys(data).map(Number);
+      if (exactIds) {
+        return keys.filter(k => exactIds.includes(k)).length;
+      }
+      return keys.filter(k => k >= rangeStart && k <= rangeEnd).length;
     } catch {
-      return;
+      return 0;
     }
-  }, [calculateProgress]);
+  };
+
+  const getOverallCount = (prefix: string) => {
+    try {
+      const raw = localStorage.getItem(`${prefix}-completed`);
+      if (!raw) return 0;
+      const data = JSON.parse(raw);
+      return Object.keys(data).length;
+    } catch {
+      return 0;
+    }
+  };
+
+  const osOverall = getOverallCount('foundation-os');
+  const osProcess = getCompletedCount('foundation-os', 101, 122);
+  const osMemory = getCompletedCount('foundation-os', 123, 134);
+
+  const cnOverall = getOverallCount('foundation-cn');
+  const cnTcp = getCompletedCount('foundation-cn', 201, 218);
+  const cnProtocols = getCompletedCount('foundation-cn', 219, 250);
+
+  const sqlIds = [301, 302, 303, 304, 305, 306, 307, 308, 309, 310, 311, 312, 336, 337, 338, 339, 340, 345, 350];
+  const dbmsOverall = getOverallCount('foundation-dbms');
+  const dbmsSql = getCompletedCount('foundation-dbms', 0, 0, sqlIds);
+  const dbmsNosql = Math.max(0, dbmsOverall - dbmsSql);
+
+  return {
+    os: {
+      overall: Math.round((osOverall / 50) * 100),
+      process: Math.round((osProcess / 22) * 100),
+      memory: Math.round((osMemory / 12) * 100),
+    },
+    cn: {
+      overall: Math.round((cnOverall / 50) * 100),
+      tcp: Math.round((cnTcp / 18) * 100),
+      protocols: Math.round((cnProtocols / 32) * 100),
+    },
+    dbms: {
+      overall: Math.round((dbmsOverall / 50) * 100),
+      sql: Math.round((dbmsSql / 19) * 100),
+      nosql: Math.round((dbmsNosql / 31) * 100),
+    }
+  };
+}
+
+export default function FoundationRoadmapPage() {
+  const progressData = React.useSyncExternalStore(
+    (callback) => {
+      const bc = new BroadcastChannel('roadmap-progress');
+      bc.onmessage = callback;
+      window.addEventListener('storage', callback);
+      return () => {
+        bc.close();
+        window.removeEventListener('storage', callback);
+      };
+    },
+    computeFoundationProgress,
+    () => ({
+      os: { overall: 0, process: 0, memory: 0 },
+      cn: { overall: 0, tcp: 0, protocols: 0 },
+      dbms: { overall: 0, sql: 0, nosql: 0 }
+    })
+  );
 
   const dynamicPillars = React.useMemo(() => {
     return [

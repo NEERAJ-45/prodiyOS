@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { useMounted } from '@/hooks/useMounted';
 import { useProfile } from '@/components/providers/ProfileProvider';
 import { useApplicationsQuery, useUpdateApplication, useRoundsQuery, useCreateRound, useDeleteRound } from '@/hooks/use-interviews';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -56,7 +57,7 @@ export default function CompanyNotesPage() {
   const deleteRound = useDeleteRound();
 
   const [prepNotes, setPrepNotes] = React.useState('');
-  const [mounted, setMounted] = React.useState(false);
+  const mounted = useMounted();
 
   const [newRound, setNewRound] = React.useState({
     roundType: 'PHONE_SCREEN',
@@ -72,10 +73,6 @@ export default function CompanyNotesPage() {
   }, [appsData, companyId]);
 
   const rounds = (roundsData?.rounds ?? []) as Round[];
-
-  React.useEffect(() => {
-    setMounted(true);
-  }, []);
 
   React.useEffect(() => {
     if (application) {

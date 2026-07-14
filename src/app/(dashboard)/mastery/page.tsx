@@ -6,8 +6,6 @@ import { useMounted } from '@/hooks/useMounted';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useProfile } from '@/components/providers/ProfileProvider';
-import { useCompletionsQuery } from '@/hooks/use-completions';
-
 export default function MasteryPage() {
   const { userEmail, customDbUrl } = useProfile();
   const [completions, setCompletions] = useState<Record<string, { date: string; key: string }>>({});
@@ -56,7 +54,7 @@ export default function MasteryPage() {
         if (resData.dbConnected && resData.data) {
           const dbData = resData.data; // array of { storagePrefix, itemId, completedAt }
           
-          dbData.forEach((item: any) => {
+          dbData.forEach((item: { storagePrefix: string; itemId: string; completedAt: string }) => {
             const { storagePrefix, itemId, completedAt } = item;
             
             if (storagePrefix && (storagePrefix.endsWith('-completed') || storagePrefix.startsWith('completed-'))) {

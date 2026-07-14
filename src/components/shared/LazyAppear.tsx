@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useRef } from 'react';
 import { motion, useInView } from 'framer-motion';
 
 interface LazyAppearProps {
@@ -23,17 +23,10 @@ export function LazyAppear({
   const ref = useRef<HTMLDivElement>(null);
   // useInView from framer-motion is highly optimized for checking viewport visibility
   const isInView = useInView(ref, { once: true, margin: '-20px' });
-  const [hasRendered, setHasRendered] = useState(false);
-
-  useEffect(() => {
-    if (isInView && !hasRendered) {
-      setHasRendered(true);
-    }
-  }, [isInView, hasRendered]);
 
   return (
     <div ref={ref} className={className}>
-      {hasRendered ? (
+      {isInView ? (
         <motion.div
           initial={{ opacity: 0, y: yOffset }}
           animate={{ opacity: 1, y: 0 }}

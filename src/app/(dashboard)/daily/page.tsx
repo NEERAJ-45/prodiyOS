@@ -7,7 +7,6 @@ import { useLoginStreakQuery } from '@/hooks/use-login-streak';
 import { Target } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
 import { useProfile } from '@/components/providers/ProfileProvider';
 import { SCHEDULES, SCHEDULE_IDS, getTodaySchedule, getDaySchedule, type ScheduleId, type Slot } from '@/data/schedules';
 import { STORAGE_KEYS } from '@/lib/storage-keys';
@@ -78,12 +77,44 @@ function loadSlotNotes(): Record<string, Record<string, string>> {
 export default function DailyPage() {
   const { userEmail } = useProfile();
   const mounted = useMounted();
-  const [completed, setCompleted] = React.useState<Set<string>>(new Set());
-  const [note, setNote] = React.useState('');
-  const [customTasks, setCustomTasks] = React.useState<Task[]>([]);
-  const [scheduleId, setScheduleId] = React.useState<ScheduleId>('steady');
-  const [slotData, setSlotData] = React.useState<Record<string, SlotCompletion>>({});
-  const [slotNotes, setSlotNotes] = React.useState<Record<string, Record<string, string>>>({});
+  const [completed, setCompleted] = React.useState<Set<string>>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed: Record<string, string[]> = JSON.parse(saved);
+        return new Set(parsed[todayKey] || []);
+      }
+    } catch {}
+    return new Set();
+  });
+  const [note, setNote] = React.useState(() => {
+    try {
+      const savedNote = localStorage.getItem(NOTES_KEY);
+      if (savedNote) {
+        const notes: Record<string, string> = JSON.parse(savedNote);
+        return notes[todayKey] || '';
+      }
+    } catch {}
+    return '';
+  });
+  const [customTasks, setCustomTasks] = React.useState<Task[]>(() => {
+    try {
+      const savedTasks = localStorage.getItem('daily-custom-tasks');
+      if (savedTasks) return JSON.parse(savedTasks);
+    } catch {}
+    return [];
+  });
+  const [scheduleId, setScheduleId] = React.useState<ScheduleId>(() => {
+    try {
+      const savedMode = localStorage.getItem(SCHEDULE_MODE_KEY);
+      if (savedMode && SCHEDULE_IDS.includes(savedMode as ScheduleId)) {
+        return savedMode as ScheduleId;
+      }
+    } catch {}
+    return 'steady';
+  });
+  const [slotData, setSlotData] = React.useState<Record<string, SlotCompletion>>(() => loadSlotData());
+  const [slotNotes, setSlotNotes] = React.useState<Record<string, Record<string, string>>>(() => loadSlotNotes());
   const [showCatchUp, setShowCatchUp] = React.useState(true);
 
   const { data: dailyDb } = useDailyQuery(todayKey);
@@ -120,33 +151,6 @@ export default function DailyPage() {
     if (!userEmail) return;
     syncDaily.mutate({ date: todayKey, completedTaskIds: Array.from(ids), note: noteText });
   }, [userEmail, syncDaily]);
-
-  React.useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        const parsed: Record<string, string[]> = JSON.parse(saved);
-        setCompleted(new Set(parsed[todayKey] || []));
-      } catch {}
-    }
-    const savedNote = localStorage.getItem(NOTES_KEY);
-    if (savedNote) {
-      try {
-        const notes: Record<string, string> = JSON.parse(savedNote);
-        setNote(notes[todayKey] || '');
-      } catch {}
-    }
-    const savedMode = localStorage.getItem(SCHEDULE_MODE_KEY);
-    if (savedMode && SCHEDULE_IDS.includes(savedMode as ScheduleId)) {
-      setScheduleId(savedMode as ScheduleId);
-    }
-    setSlotData(loadSlotData());
-    setSlotNotes(loadSlotNotes());
-    const savedTasks = localStorage.getItem('daily-custom-tasks');
-    if (savedTasks) {
-      try { setCustomTasks(JSON.parse(savedTasks)); } catch {}
-    }
-  }, []);
 
   React.useEffect(() => {
     if (!dailyDb?.record) return;

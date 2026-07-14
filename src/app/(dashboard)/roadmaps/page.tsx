@@ -129,9 +129,7 @@ const difficultyColors: Record<string, string> = {
 };
 
 export default function RoadmapsPage() {
-  const [progressMap, setProgressMap] = React.useState<Record<string, number>>({});
-
-  React.useEffect(() => {
+  const progressMap = React.useMemo(() => {
     const getCompletedCount = (storageKey: string, defaultVal: number = 0) => {
       try {
         const raw = localStorage.getItem(storageKey);
@@ -148,7 +146,7 @@ export default function RoadmapsPage() {
       const totalCompleted = cat.storageKeys.reduce((sum, key) => sum + getCompletedCount(key), 0);
       newProgress[cat.slug] = Math.round((totalCompleted / cat.total) * 100);
     });
-    setProgressMap(newProgress);
+    return newProgress;
   }, []);
 
   const dynamicCategories: CategoryDisplay[] = React.useMemo(() => {

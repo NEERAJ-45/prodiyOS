@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useProfile } from '@/components/providers/ProfileProvider';
+import { useMounted } from '@/hooks/useMounted';
 import { useCompanyQuery, useUpdateCompany } from '@/hooks/use-interviews';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -33,14 +33,13 @@ interface Company {
 export default function CompanyDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { userEmail } = useProfile();
   const companyId = params.companyId as string;
 
-  const { data: companyData, isLoading } = useCompanyQuery(companyId);
+  const { data: companyData } = useCompanyQuery(companyId);
   const updateCompanyMutation = useUpdateCompany();
 
   const [company, setCompany] = React.useState<Company | null>(null);
-  const [mounted, setMounted] = React.useState(false);
+  const mounted = useMounted();
 
   const [editCompRange, setEditCompRange] = React.useState('');
   const [editTechStack, setEditTechStack] = React.useState<string[]>([]);
@@ -48,10 +47,6 @@ export default function CompanyDetailPage() {
   const [editNotes, setEditNotes] = React.useState('');
   const [editContacts, setEditContacts] = React.useState<Contact[]>([]);
   const [newTech, setNewTech] = React.useState('');
-
-  React.useEffect(() => {
-    setMounted(true);
-  }, []);
 
   React.useEffect(() => {
     const c = companyData?.company;

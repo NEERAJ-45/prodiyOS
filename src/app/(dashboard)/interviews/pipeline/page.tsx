@@ -1,9 +1,18 @@
 'use client';
 
 import * as React from 'react';
+import { useMounted } from '@/hooks/useMounted';
 import { useProfile } from '@/components/providers/ProfileProvider';
 import { useApplicationsQuery, useUpdateApplication } from '@/hooks/use-interviews';
 import { KanbanBoard } from '@/components/interviews/kanban-board';
+
+interface Application {
+  id: string;
+  company: string;
+  role: string;
+  status: string;
+  priority: string;
+}
 
 const statuses = [
   'APPLIED', 'PHONE_SCREEN', 'TECH_ROUND_1', 'TECH_ROUND_2',
@@ -14,13 +23,9 @@ export default function PipelinePage() {
   const { userEmail } = useProfile();
   const { data: appsData } = useApplicationsQuery();
   const updateApplication = useUpdateApplication();
-  const [mounted, setMounted] = React.useState(false);
+  const mounted = useMounted();
 
-  React.useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const applications = (appsData?.applications ?? []) as any[];
+  const applications = (appsData?.applications ?? []) as Application[];
 
   async function handleStatusChange(id: string, newStatus: string) {
     updateApplication.mutate({ id, userEmail, status: newStatus });

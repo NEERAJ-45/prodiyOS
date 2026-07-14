@@ -75,18 +75,17 @@ export default function HistoryPage() {
 
   const [page, setPage] = React.useState(0);
   const [expandedDate, setExpandedDate] = React.useState<string | null>(null);
-  const [activeTab, setActiveTab] = React.useState('daily');
-  const [activityPage, setActivityPage] = React.useState(0);
 
-  React.useEffect(() => {
+  const getInitialTab = () => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
-      const tab = params.get('tab');
-      if (tab === 'activity') {
-        setActiveTab('activity');
-      }
+      return params.get('tab') === 'activity' ? 'activity' : 'daily';
     }
-  }, []);
+    return 'daily';
+  };
+
+  const [activeTab, setActiveTab] = React.useState(getInitialTab);
+  const [activityPage, setActivityPage] = React.useState(0);
 
   const loading = historyLoading || activityLoading;
 

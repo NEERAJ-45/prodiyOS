@@ -106,69 +106,69 @@ function RoadmapCard({
   );
 }
 
-export default function BackendRoadmapPage() {
-  const [progressData, setProgressData] = React.useState({
-    java: { overall: 0, core: 0, advanced: 0 },
-    springboot: { overall: 0, core: 0, micro: 0 }
-  });
-
-  const calculateProgress = React.useCallback(() => {
-    const getCompletedCountInRange = (prefix: string, rangeStart: number, rangeEnd: number) => {
-      try {
-        const raw = localStorage.getItem(`${prefix}-completed`);
-        if (!raw) return 0;
-        const data = JSON.parse(raw);
-        const keys = Object.keys(data).map(Number);
-        return keys.filter(k => k >= rangeStart && k <= rangeEnd).length;
-      } catch {
-        return 0;
-      }
-    };
-
-    const getOverallCount = (prefix: string) => {
-      try {
-        const raw = localStorage.getItem(`${prefix}-completed`);
-        if (!raw) return 0;
-        const data = JSON.parse(raw);
-        return Object.keys(data).length;
-      } catch {
-        return 0;
-      }
-    };
-
-    const javaOverall = getOverallCount('backend-java');
-    const javaCore = getCompletedCountInRange('backend-java', 601, 635);
-    const javaAdvanced = getCompletedCountInRange('backend-java', 636, 650);
-
-    const springOverall = getOverallCount('backend-springboot');
-    const springCore = getCompletedCountInRange('backend-springboot', 701, 735);
-    const springMicro = getCompletedCountInRange('backend-springboot', 736, 750);
-
-    setProgressData({
-      java: {
-        overall: Math.round((javaOverall / 50) * 100),
-        core: Math.round((javaCore / 35) * 100),
-        advanced: Math.round((javaAdvanced / 15) * 100),
-      },
-      springboot: {
-        overall: Math.round((springOverall / 50) * 100),
-        core: Math.round((springCore / 35) * 100),
-        micro: Math.round((springMicro / 15) * 100),
-      }
-    });
-  }, []);
-
-  React.useEffect(() => {
-    calculateProgress();
-
+function computeBackendProgress() {
+  const getCompletedCountInRange = (prefix: string, rangeStart: number, rangeEnd: number) => {
     try {
-      const bc = new BroadcastChannel('roadmap-progress');
-      bc.onmessage = calculateProgress;
-      return () => bc.close();
+      const raw = localStorage.getItem(`${prefix}-completed`);
+      if (!raw) return 0;
+      const data = JSON.parse(raw);
+      const keys = Object.keys(data).map(Number);
+      return keys.filter(k => k >= rangeStart && k <= rangeEnd).length;
     } catch {
-      return;
+      return 0;
     }
-  }, [calculateProgress]);
+  };
+
+  const getOverallCount = (prefix: string) => {
+    try {
+      const raw = localStorage.getItem(`${prefix}-completed`);
+      if (!raw) return 0;
+      const data = JSON.parse(raw);
+      return Object.keys(data).length;
+    } catch {
+      return 0;
+    }
+  };
+
+  const javaOverall = getOverallCount('backend-java');
+  const javaCore = getCompletedCountInRange('backend-java', 601, 635);
+  const javaAdvanced = getCompletedCountInRange('backend-java', 636, 650);
+
+  const springOverall = getOverallCount('backend-springboot');
+  const springCore = getCompletedCountInRange('backend-springboot', 701, 735);
+  const springMicro = getCompletedCountInRange('backend-springboot', 736, 750);
+
+  return {
+    java: {
+      overall: Math.round((javaOverall / 50) * 100),
+      core: Math.round((javaCore / 35) * 100),
+      advanced: Math.round((javaAdvanced / 15) * 100),
+    },
+    springboot: {
+      overall: Math.round((springOverall / 50) * 100),
+      core: Math.round((springCore / 35) * 100),
+      micro: Math.round((springMicro / 15) * 100),
+    }
+  };
+}
+
+export default function BackendRoadmapPage() {
+  const progressData = React.useSyncExternalStore(
+    (callback) => {
+      const bc = new BroadcastChannel('roadmap-progress');
+      bc.onmessage = callback;
+      window.addEventListener('storage', callback);
+      return () => {
+        bc.close();
+        window.removeEventListener('storage', callback);
+      };
+    },
+    computeBackendProgress,
+    () => ({
+      java: { overall: 0, core: 0, advanced: 0 },
+      springboot: { overall: 0, core: 0, micro: 0 }
+    })
+  );
 
   const dynamicPillars = React.useMemo(() => {
     return [

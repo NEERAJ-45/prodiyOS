@@ -107,77 +107,77 @@ function RoadmapCard({
   );
 }
 
-export default function SystemDesignRoadmapPage() {
-  const [progressData, setProgressData] = React.useState({
-    concepts: { overall: 36, databases: 78, infra: 0 },
-    problems: { overall: 0, core: 0, advanced: 0 }
-  });
-
-  const calculateProgress = React.useCallback(() => {
-    const getCompletedCountInRange = (prefix: string, rangeStart: number, rangeEnd: number) => {
-      try {
-        const raw = localStorage.getItem(`${prefix}-completed`);
-        if (!raw) return null;
-        const data = JSON.parse(raw);
-        const keys = Object.keys(data).map(Number);
-        return keys.filter(k => k >= rangeStart && k <= rangeEnd).length;
-      } catch {
-        return null;
-      }
-    };
-
-    const getOverallCount = (prefix: string) => {
-      try {
-        const raw = localStorage.getItem(`${prefix}-completed`);
-        if (!raw) return null;
-        const data = JSON.parse(raw);
-        return Object.keys(data).length;
-      } catch {
-        return null;
-      }
-    };
-
-    const conceptsOverallCount = getOverallCount('system-design-concepts');
-    const conceptsDatabasesCount = getCompletedCountInRange('system-design-concepts', 401, 447);
-    const conceptsInfraCount = getCompletedCountInRange('system-design-concepts', 448, 477);
-
-    const sdConceptsOverall = conceptsOverallCount !== null ? conceptsOverallCount : 37;
-    const sdConceptsDatabases = conceptsDatabasesCount !== null ? conceptsDatabasesCount : 37;
-    const sdConceptsInfra = conceptsInfraCount !== null ? conceptsInfraCount : 0;
-
-    const problemsOverallCount = getOverallCount('system-design-problems');
-    const problemsCoreCount = getCompletedCountInRange('system-design-problems', 501, 515);
-    const problemsAdvancedCount = getCompletedCountInRange('system-design-problems', 516, 527);
-
-    const sdProblemsOverall = problemsOverallCount !== null ? problemsOverallCount : 0;
-    const sdProblemsCore = problemsCoreCount !== null ? problemsCoreCount : 0;
-    const sdProblemsAdvanced = problemsAdvancedCount !== null ? problemsAdvancedCount : 0;
-
-    setProgressData({
-      concepts: {
-        overall: Math.round((sdConceptsOverall / 77) * 100),
-        databases: Math.round((sdConceptsDatabases / 47) * 100),
-        infra: Math.round((sdConceptsInfra / 30) * 100),
-      },
-      problems: {
-        overall: Math.round((sdProblemsOverall / 27) * 100),
-        core: Math.round((sdProblemsCore / 15) * 100),
-        advanced: Math.round((sdProblemsAdvanced / 12) * 100),
-      }
-    });
-  }, []);
-
-  React.useEffect(() => {
-    calculateProgress();
-
+function computeSystemDesignProgress() {
+  const getCompletedCountInRange = (prefix: string, rangeStart: number, rangeEnd: number) => {
     try {
-      const bc = new BroadcastChannel('roadmap-progress');
-      bc.onmessage = calculateProgress;
-      return () => bc.close();
+      const raw = localStorage.getItem(`${prefix}-completed`);
+      if (!raw) return null;
+      const data = JSON.parse(raw);
+      const keys = Object.keys(data).map(Number);
+      return keys.filter(k => k >= rangeStart && k <= rangeEnd).length;
     } catch {
-      return;
+      return null;
     }
-  }, [calculateProgress]);
+  };
+
+  const getOverallCount = (prefix: string) => {
+    try {
+      const raw = localStorage.getItem(`${prefix}-completed`);
+      if (!raw) return null;
+      const data = JSON.parse(raw);
+      return Object.keys(data).length;
+    } catch {
+      return null;
+    }
+  };
+
+  const conceptsOverallCount = getOverallCount('system-design-concepts');
+  const conceptsDatabasesCount = getCompletedCountInRange('system-design-concepts', 401, 447);
+  const conceptsInfraCount = getCompletedCountInRange('system-design-concepts', 448, 477);
+
+  const sdConceptsOverall = conceptsOverallCount !== null ? conceptsOverallCount : 37;
+  const sdConceptsDatabases = conceptsDatabasesCount !== null ? conceptsDatabasesCount : 37;
+  const sdConceptsInfra = conceptsInfraCount !== null ? conceptsInfraCount : 0;
+
+  const problemsOverallCount = getOverallCount('system-design-problems');
+  const problemsCoreCount = getCompletedCountInRange('system-design-problems', 501, 515);
+  const problemsAdvancedCount = getCompletedCountInRange('system-design-problems', 516, 527);
+
+  const sdProblemsOverall = problemsOverallCount !== null ? problemsOverallCount : 0;
+  const sdProblemsCore = problemsCoreCount !== null ? problemsCoreCount : 0;
+  const sdProblemsAdvanced = problemsAdvancedCount !== null ? problemsAdvancedCount : 0;
+
+  return {
+    concepts: {
+      overall: Math.round((sdConceptsOverall / 77) * 100),
+      databases: Math.round((sdConceptsDatabases / 47) * 100),
+      infra: Math.round((sdConceptsInfra / 30) * 100),
+    },
+    problems: {
+      overall: Math.round((sdProblemsOverall / 27) * 100),
+      core: Math.round((sdProblemsCore / 15) * 100),
+      advanced: Math.round((sdProblemsAdvanced / 12) * 100),
+    }
+  };
+}
+
+export default function SystemDesignRoadmapPage() {
+  const progressData = React.useSyncExternalStore(
+    (callback) => {
+      const bc = new BroadcastChannel('roadmap-progress');
+      bc.onmessage = callback;
+      window.addEventListener('storage', callback);
+      return () => {
+        bc.close();
+        window.removeEventListener('storage', callback);
+      };
+    },
+    computeSystemDesignProgress,
+    () => ({
+      concepts: { overall: 0, databases: 0, infra: 0 },
+      problems: { overall: 0, core: 0, advanced: 0 }
+    })
+  );
 
   const dynamicPillars = React.useMemo(() => {
     return [

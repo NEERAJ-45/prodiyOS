@@ -11,29 +11,21 @@ interface ProblemDescProps {
 export function ProblemDesc({ slug }: ProblemDescProps) {
   const [open, setOpen] = useState(false);
   const [content, setContent] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!open || content || loading) return;
+    if (!open || content) return;
     let cancelled = false;
-    setLoading(true);
     fetch(`/api/leetcode?slug=${encodeURIComponent(slug)}`)
       .then((r) => r.json())
       .then((data) => {
-        if (!cancelled) {
-          setContent(data.content ?? "No description available");
-          setLoading(false);
-        }
+        if (!cancelled) setContent(data.content ?? "No description available");
       })
       .catch(() => {
-        if (!cancelled) {
-          setContent("Failed to load description");
-          setLoading(false);
-        }
+        if (!cancelled) setContent("Failed to load description");
       });
     return () => { cancelled = true; };
-  }, [open, slug]);
+  }, [open, slug, content]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -78,7 +70,7 @@ export function ProblemDesc({ slug }: ProblemDescProps) {
             </button>
           </div>
           <div className="max-h-[60vh] overflow-y-auto p-4">
-            {loading ? (
+            {content === null ? (
               <div className="flex items-center justify-center py-8">
                 <div className="h-5 w-5 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" />
               </div>

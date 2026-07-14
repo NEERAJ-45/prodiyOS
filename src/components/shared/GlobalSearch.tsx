@@ -18,21 +18,18 @@ export function GlobalSearch() {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const router = useRouter();
 
-  useKeyboardShortcut("k", () => setOpen(true), { metaKey: true });
+  const handleOpen = useCallback(() => setOpen(true), []);
+  const handleClose = useCallback(() => {
+    setOpen(false);
+    setQuery("");
+    setResults({ patterns: [], problems: [] });
+    setSelectedIndex(0);
+  }, []);
+
+  useKeyboardShortcut("k", handleOpen, { metaKey: true });
 
   useEffect(() => {
-    if (!open) {
-      setQuery("");
-      setResults({ patterns: [], problems: [] });
-      setSelectedIndex(0);
-    }
-  }, [open]);
-
-  useEffect(() => {
-    if (query.length < 2) {
-      setResults({ patterns: [], problems: [] });
-      return;
-    }
+    if (query.length < 2) return;
 
     const timeout = setTimeout(async () => {
       const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
@@ -54,10 +51,10 @@ export function GlobalSearch() {
 
   const handleSelect = useCallback(
     (item: (typeof allItems)[0]) => {
-      setOpen(false);
+      handleClose();
       router.push(`/patterns?pattern=${item.slug}`);
     },
-    [router]
+    [router, handleClose]
   );
 
   useEffect(() => {
@@ -73,12 +70,12 @@ export function GlobalSearch() {
         e.preventDefault();
         handleSelect(allItems[selectedIndex]);
       } else if (e.key === "Escape") {
-        setOpen(false);
+        handleClose();
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [open, allItems, selectedIndex, handleSelect]);
+  }, [open, allItems, selectedIndex, handleSelect, handleClose]);
 
   return (
     <>
@@ -101,7 +98,7 @@ export function GlobalSearch() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
-              onClick={() => setOpen(false)}
+              onClick={handleClose}
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}

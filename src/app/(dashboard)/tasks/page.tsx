@@ -68,7 +68,7 @@ function saveTasks(tasks: Task[]) {
 
 export default function TasksPage() {
   const { userEmail } = useProfile();
-  const [tasks, setTasks] = React.useState<Task[]>([]);
+  const [tasks, setTasks] = React.useState<Task[]>(() => loadTasks());
   const mounted = useMounted();
   const [search, setSearch] = React.useState('');
   const [filterStatus, setFilterStatus] = React.useState<Status | 'all'>('all');
@@ -82,10 +82,6 @@ export default function TasksPage() {
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [editTitle, setEditTitle] = React.useState('');
   const [editDescription, setEditDescription] = React.useState('');
-
-  React.useEffect(() => {
-    setTasks(loadTasks());
-  }, []);
 
   React.useEffect(() => {
     if (mounted) saveTasks(tasks);

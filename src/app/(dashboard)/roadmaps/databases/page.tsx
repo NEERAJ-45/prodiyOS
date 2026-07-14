@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useState, useEffect, useCallback } from 'react';
+import { useSyncExternalStore } from 'react';
 import { useMounted } from '@/hooks/useMounted';
 import { ArrowLeft, Database, Layers, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
@@ -10,44 +10,46 @@ import { SpotlightCard } from '@/components/ui/SpotlightCard';
 import { Badge } from '@/components/ui/badge';
 
 
+function computeDatabaseProgress() {
+  const getCompletedCount = (prefix: string) => {
+    try {
+      const raw = localStorage.getItem(`${prefix}-completed`);
+      if (!raw) return 0;
+      const data = JSON.parse(raw);
+      return Object.keys(data).length;
+    } catch {
+      return 0;
+    }
+  };
+
+  const sqlTheory = getCompletedCount('databases-sql');
+  const sqlLeetcode = getCompletedCount('databases-leetcode');
+  const nosqlTheory = getCompletedCount('databases-nosql');
+
+  return {
+    sqlTheoryPct: Math.round((sqlTheory / 50) * 100),
+    sqlLeetcodePct: Math.round((sqlLeetcode / 50) * 100),
+    sqlProgress: Math.round(((sqlTheory + sqlLeetcode) / 100) * 100),
+    nosqlProgress: Math.round((nosqlTheory / 50) * 100),
+  };
+}
+
 export default function DatabasesHubPage() {
   const mounted = useMounted();
-  const [sqlProgress, setSqlProgress] = useState(0);
-  const [sqlTheoryPct, setSqlTheoryPct] = useState(0);
-  const [sqlLeetcodePct, setSqlLeetcodePct] = useState(0);
-  const [nosqlProgress, setNosqlProgress] = useState(0);
-
-  const calculateProgress = useCallback(() => {
-    const getCompletedCount = (prefix: string) => {
-      try {
-        const raw = localStorage.getItem(`${prefix}-completed`);
-        if (!raw) return 0;
-        const data = JSON.parse(raw);
-        return Object.keys(data).length;
-      } catch {
-        return 0;
-      }
-    };
-
-    const sqlTheory = getCompletedCount('databases-sql');
-    const sqlLeetcode = getCompletedCount('databases-leetcode');
-    const nosqlTheory = getCompletedCount('databases-nosql');
-
-    setSqlTheoryPct(Math.round((sqlTheory / 50) * 100));
-    setSqlLeetcodePct(Math.round((sqlLeetcode / 50) * 100));
-    setSqlProgress(Math.round(((sqlTheory + sqlLeetcode) / 100) * 100));
-    setNosqlProgress(Math.round((nosqlTheory / 50) * 100));
-  }, []);
-
-  useEffect(() => {
-    calculateProgress();
-
-    try {
+  const progress = useSyncExternalStore(
+    (callback) => {
       const bc = new BroadcastChannel('roadmap-progress');
-      bc.onmessage = calculateProgress;
-      return () => bc.close();
-    } catch {}
-  }, [calculateProgress]);
+      bc.onmessage = callback;
+      window.addEventListener('storage', callback);
+      return () => {
+        bc.close();
+        window.removeEventListener('storage', callback);
+      };
+    },
+    computeDatabaseProgress,
+    () => ({ sqlTheoryPct: 0, sqlLeetcodePct: 0, sqlProgress: 0, nosqlProgress: 0 })
+  );
+  const { sqlTheoryPct, sqlLeetcodePct, sqlProgress, nosqlProgress } = progress;
 
   return (
     <div className="flex flex-col h-full ">

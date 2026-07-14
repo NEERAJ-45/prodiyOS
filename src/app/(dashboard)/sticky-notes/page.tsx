@@ -5,10 +5,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { useMounted } from '@/hooks/useMounted';
 import { cn } from "@/lib/utils";
 import { LazyAppear } from "@/components/shared/LazyAppear";
-import { useProfile } from "@/components/providers/ProfileProvider";
 import { useNotesQuery, useSaveNote } from '@/hooks/use-notes';
 import { motion, AnimatePresence } from 'framer-motion';
-import { toast } from "@/components/ui/toast";
 import {
   StickyNote,
   Plus,
@@ -53,10 +51,8 @@ const colorStyles = {
 };
 
 export default function StickyNotesPage() {
-  const { userEmail } = useProfile();
   const mounted = useMounted();
   const [stickyNotes, setStickyNotes] = useState<StickyNoteItem[]>([]);
-  const [dbConnected, setDbConnected] = useState(false);
 
   const { data: notesData } = useNotesQuery('command-center-sticky');
   const saveNote = useSaveNote();
@@ -64,7 +60,6 @@ export default function StickyNotesPage() {
   useEffect(() => {
     if (!mounted || !notesData) return;
     if (notesData.dbConnected && notesData.data) {
-      setDbConnected(true);
       const list = notesData.data.filter((item) => item.storagePrefix === 'command-center-sticky');
       const parsed = list.map((item) => {
         let text = item.note;

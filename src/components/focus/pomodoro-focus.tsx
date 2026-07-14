@@ -40,7 +40,6 @@ export default function PomodoroFocus() {
   const [autoStart, setAutoStart] = useState(true);
   const [tasksOpen, setTasksOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [mixerOpen, setMixerOpen] = useState(false);
   const [tasks, setTasks] = useState([
     { id: idCounter++, text: 'Plan the week', done: false, pomodoros: 0, estimate: 2 },
     { id: idCounter++, text: 'Deep work block', done: false, pomodoros: 0, estimate: 4 },
@@ -55,15 +54,25 @@ export default function PomodoroFocus() {
   });
 
   // ---- refs to dodge stale closures inside the interval / audio callbacks
-  const modeRef = useRef(mode); modeRef.current = mode;
-  const roundRef = useRef(round); roundRef.current = round;
-  const durationsRef = useRef(durations); durationsRef.current = durations;
-  const autoStartRef = useRef(autoStart); autoStartRef.current = autoStart;
-  const activeTaskIdRef = useRef(activeTaskId); activeTaskIdRef.current = activeTaskId;
-  const soundsRef = useRef(sounds); soundsRef.current = sounds;
-  const sceneColorRef = useRef(SCENES[scene].soft); sceneColorRef.current = SCENES[scene].soft;
+  const modeRef = useRef(mode);
+  const roundRef = useRef(round);
+  const durationsRef = useRef(durations);
+  const autoStartRef = useRef(autoStart);
+  const activeTaskIdRef = useRef(activeTaskId);
+  const soundsRef = useRef(sounds);
+  const sceneColorRef = useRef(SCENES[scene].soft);
 
-  const soundNodesRef = useRef<Record<string, any>>({});
+  useEffect(() => {
+    modeRef.current = mode;
+    roundRef.current = round;
+    durationsRef.current = durations;
+    autoStartRef.current = autoStart;
+    activeTaskIdRef.current = activeTaskId;
+    soundsRef.current = sounds;
+    sceneColorRef.current = SCENES[scene].soft;
+  });
+
+  const soundNodesRef = useRef<Record<string, { audio: HTMLAudioElement; key: string }>>({});
   const audioCtxRef = useRef<AudioContext | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const emberRef = useRef<HTMLDivElement>(null);
@@ -90,7 +99,7 @@ export default function PomodoroFocus() {
         osc.start(now + i * 0.15);
         osc.stop(now + i * 0.15 + 0.8);
       });
-    } catch (e) {}
+    } catch {}
   }
 
   function createAmbientNode(key: string) {
@@ -106,7 +115,7 @@ export default function PomodoroFocus() {
     const node = createAmbientNode(key);
     const willBeOn = !soundsRef.current[key].on;
     if (willBeOn) {
-      try { await node.audio.play(); } catch (e) {}
+      try { await node.audio.play(); } catch {}
       node.audio.volume = soundsRef.current[key].vol;
     } else {
       node.audio.volume = 0;
@@ -125,8 +134,8 @@ export default function PomodoroFocus() {
 
   useEffect(() => {
     return () => {
-      Object.values(soundNodesRef.current).forEach((n: any) => {
-        try { n.audio.pause(); n.audio.src = ''; } catch (e) {}
+      Object.values(soundNodesRef.current).forEach((n) => {
+        try { n.audio.pause(); n.audio.src = ''; } catch {}
       });
       if (audioCtxRef.current) audioCtxRef.current.close();
     };
@@ -177,7 +186,7 @@ export default function PomodoroFocus() {
   }
 
   async function handleStartPause() {
-    try { getAudioCtx().resume(); } catch (e) {}
+    try { getAudioCtx().resume(); } catch {}
     setIsRunning(r => !r);
   }
 
@@ -208,11 +217,11 @@ export default function PomodoroFocus() {
 
   // ---- fullscreen ----
   function enterFullscreen() {
-    try { emberRef.current?.requestFullscreen(); } catch (e) {}
+    try { emberRef.current?.requestFullscreen(); } catch {}
   }
 
   function exitFullscreen() {
-    try { if (document.fullscreenElement) document.exitFullscreen(); } catch (e) {}
+    try { if (document.fullscreenElement) document.exitFullscreen(); } catch {}
   }
 
   useEffect(() => {

@@ -69,7 +69,7 @@ export async function PATCH(request: Request) {
 
     const updated = await Profile.findOne({ email }).lean();
     if (updated) {
-      const { password, ...rest } = updated as Record<string, unknown>;
+      const rest = updated as Record<string, unknown>;
       return NextResponse.json({ success: true, dbConnected: true, data: rest });
     }
 

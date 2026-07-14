@@ -80,7 +80,13 @@ const allTypes: QuestionType[] = ['DSA', 'SYSTEM_DESIGN', 'BEHAVIORAL', 'CORE_CS
 export default function InterviewPage() {
   const { userEmail } = useProfile();
   const [activeTab, setActiveTab] = React.useState<'questions' | 'theory' | 'custom'>('questions');
-  const [questions, setQuestions] = React.useState<InterviewQuestion[]>([]);
+  const [questions, setQuestions] = React.useState<InterviewQuestion[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return defaultQuestions;
+  });
   const [search, setSearch] = React.useState('');
   const mounted = useMounted();
 
@@ -91,16 +97,6 @@ export default function InterviewPage() {
   const [formType, setFormType] = React.useState<QuestionType>('DSA');
   const [formConfidence, setFormConfidence] = React.useState(3);
   const [formAttempts, setFormAttempts] = React.useState(1);
-
-  React.useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try { setQuestions(JSON.parse(saved)); } catch {}
-    } else {
-      setQuestions(defaultQuestions);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultQuestions));
-    }
-  }, []);
 
   React.useEffect(() => {
     if (!mounted) return;

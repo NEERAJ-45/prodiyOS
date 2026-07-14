@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useMounted } from '@/hooks/useMounted';
 import { useProfile } from '@/components/providers/ProfileProvider';
 import { useApplicationsQuery, useResetApplications } from '@/hooks/use-interviews';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -34,29 +35,12 @@ function isInProgress(status: string): boolean {
   return statusFlow.includes(status);
 }
 
-interface Application {
-  _id: string;
-  id: string;
-  company: string;
-  role: string;
-  appliedDate: string;
-  status: string;
-  source: string;
-  priority: string;
-  notes?: string;
-  nextRoundDate?: string | null;
-}
-
 export default function InterviewsOverviewPage() {
   const { userEmail } = useProfile();
   const { data: appsData } = useApplicationsQuery();
   const resetMutation = useResetApplications();
-  const [mounted, setMounted] = React.useState(false);
+  const mounted = useMounted();
   const [resetOpen, setResetOpen] = React.useState(false);
-
-  React.useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const applications = appsData?.applications ?? [];
 

@@ -130,89 +130,89 @@ function RoadmapCard({
   );
 }
 
-export default function DevOpsCloudRoadmapPage() {
-  const [progressData, setProgressData] = React.useState({
-    docker: { overall: 0, basic: 0, compose: 0 },
-    kubernetes: { overall: 0, pods: 0, net: 0 },
-    aws: { overall: 0, compute: 0, net: 0 },
-    devops: { overall: 0, cicd: 0, mon: 0 }
-  });
-
-  const calculateProgress = React.useCallback(() => {
-    const getCompletedCountInRange = (prefix: string, rangeStart: number, rangeEnd: number) => {
-      try {
-        const raw = localStorage.getItem(`${prefix}-completed`);
-        if (!raw) return 0;
-        const data = JSON.parse(raw);
-        const keys = Object.keys(data).map(Number);
-        return keys.filter(k => k >= rangeStart && k <= rangeEnd).length;
-      } catch {
-        return 0;
-      }
-    };
-
-    const getOverallCount = (prefix: string) => {
-      try {
-        const raw = localStorage.getItem(`${prefix}-completed`);
-        if (!raw) return 0;
-        const data = JSON.parse(raw);
-        return Object.keys(data).length;
-      } catch {
-        return 0;
-      }
-    };
-
-    const dockerOverall = getOverallCount('devops-cloud-docker');
-    const dockerBasic = getCompletedCountInRange('devops-cloud-docker', 901, 930);
-    const dockerCompose = getCompletedCountInRange('devops-cloud-docker', 931, 950);
-
-    const k8sOverall = getOverallCount('devops-cloud-kubernetes');
-    const k8sPods = getCompletedCountInRange('devops-cloud-kubernetes', 1001, 1030);
-    const k8sNet = getCompletedCountInRange('devops-cloud-kubernetes', 1031, 1050);
-
-    const awsOverall = getOverallCount('devops-cloud-aws');
-    const awsCompute = getCompletedCountInRange('devops-cloud-aws', 1101, 1135);
-    const awsNet = getCompletedCountInRange('devops-cloud-aws', 1136, 1150);
-
-    const devopsOverall = getOverallCount('devops-cloud-devops');
-    const devopsCicd = getCompletedCountInRange('devops-cloud-devops', 1201, 1230);
-    const devopsMon = getCompletedCountInRange('devops-cloud-devops', 1231, 1250);
-
-    setProgressData({
-      docker: {
-        overall: Math.round((dockerOverall / 50) * 100),
-        basic: Math.round((dockerBasic / 30) * 100),
-        compose: Math.round((dockerCompose / 20) * 100),
-      },
-      kubernetes: {
-        overall: Math.round((k8sOverall / 50) * 100),
-        pods: Math.round((k8sPods / 30) * 100),
-        net: Math.round((k8sNet / 20) * 100),
-      },
-      aws: {
-        overall: Math.round((awsOverall / 50) * 100),
-        compute: Math.round((awsCompute / 35) * 100),
-        net: Math.round((awsNet / 15) * 100),
-      },
-      devops: {
-        overall: Math.round((devopsOverall / 50) * 100),
-        cicd: Math.round((devopsCicd / 30) * 100),
-        mon: Math.round((devopsMon / 20) * 100),
-      }
-    });
-  }, []);
-
-  React.useEffect(() => {
-    calculateProgress();
-
+function computeDevOpsCloudProgress() {
+  const getCompletedCountInRange = (prefix: string, rangeStart: number, rangeEnd: number) => {
     try {
-      const bc = new BroadcastChannel('roadmap-progress');
-      bc.onmessage = calculateProgress;
-      return () => bc.close();
+      const raw = localStorage.getItem(`${prefix}-completed`);
+      if (!raw) return 0;
+      const data = JSON.parse(raw);
+      const keys = Object.keys(data).map(Number);
+      return keys.filter(k => k >= rangeStart && k <= rangeEnd).length;
     } catch {
-      return;
+      return 0;
     }
-  }, [calculateProgress]);
+  };
+
+  const getOverallCount = (prefix: string) => {
+    try {
+      const raw = localStorage.getItem(`${prefix}-completed`);
+      if (!raw) return 0;
+      const data = JSON.parse(raw);
+      return Object.keys(data).length;
+    } catch {
+      return 0;
+    }
+  };
+
+  const dockerOverall = getOverallCount('devops-cloud-docker');
+  const dockerBasic = getCompletedCountInRange('devops-cloud-docker', 901, 930);
+  const dockerCompose = getCompletedCountInRange('devops-cloud-docker', 931, 950);
+
+  const k8sOverall = getOverallCount('devops-cloud-kubernetes');
+  const k8sPods = getCompletedCountInRange('devops-cloud-kubernetes', 1001, 1030);
+  const k8sNet = getCompletedCountInRange('devops-cloud-kubernetes', 1031, 1050);
+
+  const awsOverall = getOverallCount('devops-cloud-aws');
+  const awsCompute = getCompletedCountInRange('devops-cloud-aws', 1101, 1135);
+  const awsNet = getCompletedCountInRange('devops-cloud-aws', 1136, 1150);
+
+  const devopsOverall = getOverallCount('devops-cloud-devops');
+  const devopsCicd = getCompletedCountInRange('devops-cloud-devops', 1201, 1230);
+  const devopsMon = getCompletedCountInRange('devops-cloud-devops', 1231, 1250);
+
+  return {
+    docker: {
+      overall: Math.round((dockerOverall / 50) * 100),
+      basic: Math.round((dockerBasic / 30) * 100),
+      compose: Math.round((dockerCompose / 20) * 100),
+    },
+    kubernetes: {
+      overall: Math.round((k8sOverall / 50) * 100),
+      pods: Math.round((k8sPods / 30) * 100),
+      net: Math.round((k8sNet / 20) * 100),
+    },
+    aws: {
+      overall: Math.round((awsOverall / 50) * 100),
+      compute: Math.round((awsCompute / 35) * 100),
+      net: Math.round((awsNet / 15) * 100),
+    },
+    devops: {
+      overall: Math.round((devopsOverall / 50) * 100),
+      cicd: Math.round((devopsCicd / 30) * 100),
+      mon: Math.round((devopsMon / 20) * 100),
+    }
+  };
+}
+
+export default function DevOpsCloudRoadmapPage() {
+  const progressData = React.useSyncExternalStore(
+    (callback) => {
+      const bc = new BroadcastChannel('roadmap-progress');
+      bc.onmessage = callback;
+      window.addEventListener('storage', callback);
+      return () => {
+        bc.close();
+        window.removeEventListener('storage', callback);
+      };
+    },
+    computeDevOpsCloudProgress,
+    () => ({
+      docker: { overall: 0, basic: 0, compose: 0 },
+      kubernetes: { overall: 0, pods: 0, net: 0 },
+      aws: { overall: 0, compute: 0, net: 0 },
+      devops: { overall: 0, cicd: 0, mon: 0 }
+    })
+  );
 
   const dynamicPillars = React.useMemo(() => {
     return [

@@ -237,8 +237,6 @@ export default function AnalyticsPage() {
   const [completionMap, setCompletionMap] = useState<Record<string, Set<string>>>({});
   const [completionDates, setCompletionDates] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [dbConnected, setDbConnected] = useState(false);
-
   const mounted = useMounted();
   const { data: streakData } = useLoginStreakQuery();
   const loginStreak = streakData?.streak ?? 0;
@@ -281,7 +279,6 @@ export default function AnalyticsPage() {
         });
 
         if (json.dbConnected && Array.isArray(json.data)) {
-          setDbConnected(true);
           console.log('[Analytics] ✅ Connected to MongoDB. Loaded', json.data.length, 'completion records.');
           const merged: Record<string, Set<string>> = {};
           ROADMAPS.forEach((rm) => { merged[rm.storageKey] = new Set(localMap[rm.storageKey] || []); });

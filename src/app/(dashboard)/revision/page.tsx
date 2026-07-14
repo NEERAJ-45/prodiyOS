@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Plus, Pencil, Trash2, CheckCircle, Circle, Calendar, BookOpen, RotateCcw } from 'lucide-react';
-import { useRevisionsQuery, useSaveRevision, useDeleteRevision } from '@/hooks/use-revision';
+import { useSaveRevision, useDeleteRevision, useRevisionsQuery } from '@/hooks/use-revision';
 import {
   Dialog,
   DialogTrigger,
@@ -47,7 +47,6 @@ function getDaysDiff(dateStr: string): number {
 
 export default function RevisionPage() {
   const [items, setItems] = useState<RevisionItem[]>([]);
-  const [dbConnected, setDbConnected] = useState(false);
   const mounted = useMounted();
   const [selectedTab, setSelectedTab] = React.useState('due');
   const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
@@ -67,7 +66,6 @@ export default function RevisionPage() {
 
   useEffect(() => {
     if (revisionsData?.dbConnected) {
-      setDbConnected(true);
       if (revisionsData.data?.length) {
         setItems(revisionsData.data);
         return;
@@ -96,10 +94,10 @@ export default function RevisionPage() {
       return next;
     });
 
-    if (dbConnected) {
+    if (revisionsData?.dbConnected) {
       saveRevisionMutation.mutate({ ...item, userEmail: '' });
     }
-  }, [dbConnected, saveRevisionMutation]);
+  }, [revisionsData?.dbConnected, saveRevisionMutation]);
 
   const deleteItem = useCallback(async (id: string) => {
     setItems((prev) => {
@@ -108,10 +106,10 @@ export default function RevisionPage() {
       return next;
     });
 
-    if (dbConnected) {
+    if (revisionsData?.dbConnected) {
       deleteRevisionMutation.mutate(id);
     }
-  }, [dbConnected, deleteRevisionMutation]);
+  }, [revisionsData?.dbConnected, deleteRevisionMutation]);
 
   // Form Handlers
   const handleAddSubmit = (e: React.FormEvent) => {

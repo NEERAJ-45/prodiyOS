@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { StickyNote, NotebookPen } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -22,10 +22,6 @@ interface NotesDialogProps {
 export function NotesDialog({ id, initialValue, onSave }: NotesDialogProps) {
   const [val, setVal] = useState(initialValue);
   const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    setVal(initialValue);
-  }, [initialValue]);
 
   const handleSave = () => {
     onSave(id, val);

@@ -45,14 +45,14 @@ function parseJSON(text: string): CustomQAParsedData {
   const parsedJson = JSON.parse(text);
 
   if (parsedJson && typeof parsedJson === 'object' && Array.isArray(parsedJson.sections)) {
-    const sections: CustomSection[] = parsedJson.sections.map((sec: any, idx: number) => ({
-      id: sec.section || sec.id || `sec-${idx}`,
-      title: sec.title || `Section ${idx + 1}`,
-      questions: (sec.questions || []).map((q: any, qIdx: number) => ({
-        id: String(q.id || `q-${idx}-${qIdx}`),
-        question: String(q.question || q.q || ''),
-        answer: String(q.answer || q.a || ''),
-      })).filter((q: any) => q.question),
+    const sections: CustomSection[] = parsedJson.sections.map((sec: Record<string, unknown>, idx: number) => ({
+      id: String(sec.section ?? sec.id ?? `sec-${idx}`),
+      title: String(sec.title ?? `Section ${idx + 1}`),
+      questions: ((sec.questions ?? []) as Record<string, unknown>[]).map((q: Record<string, unknown>, qIdx: number) => ({
+        id: String(q.id ?? `q-${idx}-${qIdx}`),
+        question: String(q.question ?? q.q ?? ''),
+        answer: String(q.answer ?? q.a ?? ''),
+      })).filter((q) => Boolean(q.question)),
     }));
 
     return {
@@ -63,11 +63,11 @@ function parseJSON(text: string): CustomQAParsedData {
   }
 
   if (Array.isArray(parsedJson)) {
-    const questions: CustomQuestion[] = parsedJson.map((q: any, idx: number) => ({
-      id: String(q.id || `q-${idx}`),
-      question: String(q.question || q.q || ''),
-      answer: String(q.answer || q.a || ''),
-    })).filter(q => q.question);
+    const questions: CustomQuestion[] = parsedJson.map((q: Record<string, unknown>, idx: number) => ({
+      id: String(q.id ?? `q-${idx}`),
+      question: String(q.question ?? q.q ?? ''),
+      answer: String(q.answer ?? q.a ?? ''),
+    })).filter((q) => Boolean(q.question));
 
     return {
       title: 'Custom Imported Q&A',
