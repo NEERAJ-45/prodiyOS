@@ -23,9 +23,10 @@ interface BookReaderClientProps {
   book?: BookEntry;
   title?: string;
   pdfUrl?: string;
+  bookId?: string;
 }
 
-export function BookReaderClient({ book, title: propTitle, pdfUrl: propPdfUrl }: BookReaderClientProps) {
+export function BookReaderClient({ book, title: propTitle, pdfUrl: propPdfUrl, bookId: propBookId }: BookReaderClientProps) {
   const { userEmail } = useProfile();
   const [numPages, setNumPages] = React.useState(0);
   const [pageNumber, setPageNumber] = React.useState(1);
@@ -37,6 +38,7 @@ export function BookReaderClient({ book, title: propTitle, pdfUrl: propPdfUrl }:
 
   const displayTitle = book?.title || propTitle || 'Reader';
   const pdfUrl = propPdfUrl || (book ? `/api/books/${book.slug}` : '');
+  const bookId = propBookId || book?.slug || '';
 
   React.useEffect(() => {
     function onFullscreenChange() {
@@ -177,6 +179,7 @@ export function BookReaderClient({ book, title: propTitle, pdfUrl: propPdfUrl }:
             scale={scale}
             rotation={rotation}
             onLoadSuccess={onLoadSuccess}
+            bookId={bookId}
           />
         </div>
       </div>

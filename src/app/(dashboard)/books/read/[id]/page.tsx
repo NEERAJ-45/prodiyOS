@@ -42,6 +42,7 @@ export default function UploadedBookReaderPage() {
     <BookReaderClient
       title={book.title}
       pdfUrl={pdfUrl}
+      bookId={book.id}
     />
   );
 }
