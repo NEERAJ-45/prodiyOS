@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { writeFile, mkdir } from 'fs/promises';
+import path from 'path';
 import { connectToDatabase } from '@/lib/db';
 import Book from '@/lib/models/Book';
 import { logActivity } from '@/lib/activity-logger';
@@ -14,6 +16,17 @@ function getEmail(request: Request): string {
 
 function getDbUri(request: Request): string | undefined {
   return request.headers.get('x-mongodb-url') || undefined;
+}
+
+async function savePdf(file: File, bookId: string): Promise<string> {
+  const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'books');
+  await mkdir(uploadDir, { recursive: true });
+  const ext = file.name.endsWith('.pdf') ? '.pdf' : '.pdf';
+  const filename = `${bookId}${ext}`;
+  const filePath = path.join(uploadDir, filename);
+  const bytes = await file.arrayBuffer();
+  await writeFile(filePath, Buffer.from(bytes));
+  return `uploads/books/${filename}`;
 }
 
 export async function GET(request: Request) {
@@ -37,8 +50,28 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const { userEmail, ...bookData } = body;
+    const contentType = request.headers.get('content-type') || '';
+    let userEmail: string;
+    let bookData: Record<string, any>;
+    let pdfFile: File | null = null;
+
+    if (contentType.includes('multipart/form-data')) {
+      const formData = await request.formData();
+      userEmail = formData.get('userEmail') as string || '';
+      pdfFile = formData.get('pdf') as File | null;
+      bookData = {
+        title: formData.get('title') as string || '',
+        author: formData.get('author') as string || '',
+        status: formData.get('status') as string || 'TO_READ',
+        progress: parseInt(formData.get('progress') as string || '0', 10),
+        rating: parseInt(formData.get('rating') as string || '0', 10),
+      };
+    } else {
+      const body = await request.json();
+      userEmail = body.userEmail || '';
+      bookData = body;
+      delete bookData.userEmail;
+    }
 
     if (!userEmail) {
       return NextResponse.json({ error: 'userEmail required' }, { status: 400 });
@@ -49,9 +82,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Database unavailable' }, { status: 503 });
     }
 
+    const bookId = bookData.id || `b-${Date.now()}`;
+    let pdfPath: string | undefined;
+
+    if (pdfFile) {
+      pdfPath = await savePdf(pdfFile, bookId);
+    }
+
     const book = await Book.create({
       ...bookData,
-      id: bookData.id || `b-${Date.now()}`,
+      id: bookId,
+      pdfPath,
       userEmail,
     });
 

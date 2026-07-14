@@ -8,6 +8,7 @@ export interface IBook {
   progress: number;
   rating: number;
   userEmail: string;
+  pdfPath?: string;
 }
 
 const BookSchema = new Schema<IBook>(

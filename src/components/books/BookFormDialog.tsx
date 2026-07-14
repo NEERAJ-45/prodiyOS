@@ -33,6 +33,7 @@ interface BookFormState {
   status: BookStatus;
   progress: number;
   rating: number;
+  pdfFile?: File | null;
 }
 
 interface BookFormDialogProps {
@@ -60,9 +61,18 @@ export function BookFormDialog({
   onSave,
   isPending,
 }: BookFormDialogProps) {
-  const set = (field: keyof BookFormState, value: string | number) => {
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [fileName, setFileName] = React.useState<string | null>(null);
+
+  const set = (field: keyof BookFormState, value: string | number | File | null) => {
     onFormChange({ ...form, [field]: value });
   };
+
+  React.useEffect(() => {
+    if (!open) {
+      setFileName(null);
+    }
+  }, [open]);
 
   const isValid = form.title.trim().length > 0;
 
@@ -90,6 +100,35 @@ export function BookFormDialog({
               placeholder="Author name"
               className="bg-zinc-900 border-zinc-700 text-zinc-100"
             />
+          </Field>
+          <Field label="PDF File">
+            <div className="flex items-center gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,application/pdf"
+                onChange={(e) => {
+                  const file = e.target.files?.[0] || null;
+                  set('pdfFile', file);
+                  setFileName(file?.name || null);
+                }}
+                className="hidden"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                className="bg-zinc-900 border-zinc-700 text-zinc-300 hover:text-zinc-100"
+              >
+                {fileName ? 'Change PDF' : 'Choose PDF'}
+              </Button>
+              {fileName && (
+                <span className="text-xs text-zinc-400 truncate max-w-[200px]">
+                  {fileName}
+                </span>
+              )}
+            </div>
           </Field>
           <Field label="Status">
             <Select value={form.status} onValueChange={(v) => set('status', v as BookStatus)}>

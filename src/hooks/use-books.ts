@@ -12,6 +12,7 @@ export interface BookData {
   progress: number;
   rating: number;
   userEmail?: string;
+  pdfPath?: string;
 }
 
 export type BookStatus = BookData['status'];
@@ -45,7 +46,18 @@ export function useAddBook() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (bookData: Omit<BookData, 'id' | 'userEmail'>) => {
+    mutationFn: async (bookData: Omit<BookData, 'id' | 'userEmail'> | FormData) => {
+      if (bookData instanceof FormData) {
+        bookData.append('userEmail', userEmail!);
+        const res = await fetch('/api/db/books', {
+          method: 'POST',
+          headers: customDbUrl ? { 'x-mongodb-url': customDbUrl } : {},
+          body: bookData,
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || 'Failed to add book');
+        return json;
+      }
       const res = await fetch('/api/db/books', {
         method: 'POST',
         headers: getHeaders(customDbUrl),

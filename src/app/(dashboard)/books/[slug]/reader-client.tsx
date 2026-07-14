@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import dynamic from 'next/dynamic';
-import { ChevronLeft, ChevronRight, Loader2, ZoomIn, ZoomOut, RotateCw, BookOpen } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2, ZoomIn, ZoomOut, RotateCw, Maximize2, Minimize2, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useProfile } from '@/components/providers/ProfileProvider';
 import type { BookEntry } from '@/data/books';
@@ -19,13 +19,32 @@ const PdfViewer = dynamic(() => import('./pdf-viewer'), {
   ),
 });
 
-export function BookReaderClient({ book }: { book: BookEntry }) {
+interface BookReaderClientProps {
+  book?: BookEntry;
+  title?: string;
+  pdfUrl?: string;
+}
+
+export function BookReaderClient({ book, title: propTitle, pdfUrl: propPdfUrl }: BookReaderClientProps) {
   const { userEmail } = useProfile();
   const [numPages, setNumPages] = React.useState(0);
   const [pageNumber, setPageNumber] = React.useState(1);
   const [scale, setScale] = React.useState(1);
   const [rotation, setRotation] = React.useState(0);
+  const [isFullscreen, setIsFullscreen] = React.useState(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
+  const viewerRef = React.useRef<HTMLDivElement>(null);
+
+  const displayTitle = book?.title || propTitle || 'Reader';
+  const pdfUrl = propPdfUrl || (book ? `/api/books/${book.slug}` : '');
+
+  React.useEffect(() => {
+    function onFullscreenChange() {
+      setIsFullscreen(!!document.fullscreenElement);
+    }
+    document.addEventListener('fullscreenchange', onFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
+  }, []);
 
   React.useEffect(() => {
     const container = containerRef.current;
@@ -51,14 +70,20 @@ export function BookReaderClient({ book }: { book: BookEntry }) {
   }, [numPages]);
 
   React.useEffect(() => {
-    if (!userEmail) return;
+    if (!userEmail || !book) return;
     fetch('/api/db/activity', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userEmail, text: `Opened book "${book.title}"` }),
+      body: JSON.stringify({ userEmail, text: `Opened book "${displayTitle}"` }),
     }).catch(() => {});
-  }, [userEmail, book.title]);
+  }, [userEmail, book, displayTitle]);
 
-  const pdfUrl = `/api/books/${book.slug}`;
+  function toggleFullscreen() {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+    } else {
+      document.exitFullscreen();
+    }
+  }
 
   function onLoadSuccess({ numPages: pages }: { numPages: number }) {
     setNumPages(pages);
@@ -90,11 +115,11 @@ export function BookReaderClient({ book }: { book: BookEntry }) {
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div ref={viewerRef} className="flex flex-col h-full">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-4 py-2 border-b border-zinc-800 bg-zinc-900/50">
         <div className="flex items-center gap-3 min-w-0">
           <BookOpen className="h-4 w-4 text-zinc-500 shrink-0" />
-          <h1 className="text-sm font-medium text-zinc-200 truncate">{book.title}</h1>
+          <h1 className="text-sm font-medium text-zinc-200 truncate">{displayTitle}</h1>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <Button variant="outline" size="icon" onClick={zoomOut} disabled={scale <= 0.5}>
@@ -107,6 +132,10 @@ export function BookReaderClient({ book }: { book: BookEntry }) {
           <div className="w-px h-5 bg-zinc-800 shrink-0" />
           <Button variant="outline" size="icon" onClick={rotate}>
             <RotateCw className="h-4 w-4" />
+          </Button>
+          <div className="w-px h-5 bg-zinc-800 shrink-0" />
+          <Button variant="outline" size="icon" onClick={toggleFullscreen}>
+            {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
           </Button>
           <div className="w-px h-5 bg-zinc-800 shrink-0" />
           <Button variant="outline" size="icon" onClick={goToPrevPage} disabled={pageNumber <= 1}>

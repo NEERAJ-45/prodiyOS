@@ -15,6 +15,8 @@ import {
   Pencil,
   Trash2,
   Loader2,
+  ArrowLeft,
+  FileType,
 } from 'lucide-react';
 import {
   Card,
@@ -38,7 +40,7 @@ import {
 import { BookFormDialog, type BookFormState } from '@/components/books/BookFormDialog';
 import { toast } from '@/components/ui/toast';
 import books, { type BookEntry, categoryLabels } from '@/data/books';
-import BookSlider from '@/components/books/BookSlider';
+import QuestionsTable, { type QuestionItem } from '@/components/roadmaps/QuestionsTable';
 
 type PaperStatus = 'TO_READ' | 'READING' | 'COMPLETED';
 
@@ -88,6 +90,7 @@ const emptyFormState: BookFormState = {
   status: 'TO_READ',
   progress: 0,
   rating: 0,
+  pdfFile: null,
 };
 
 function groupBooksByCategory(): Record<string, BookEntry[]> {
@@ -124,34 +127,6 @@ const RatingStars = React.memo(function RatingStars({
   );
 });
 
-const LibraryBookCard = React.memo(function LibraryBookCard({
-  book,
-}: {
-  book: BookEntry;
-}) {
-  return (
-    <Link href={`/books/${book.slug}`}>
-      <Card className="border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900 hover:border-zinc-700 transition-all cursor-pointer group">
-        <CardHeader className="p-4 pb-2">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex-1 min-w-0">
-              <CardTitle className="text-sm font-medium text-zinc-100 group-hover:text-white transition-colors truncate">
-                {book.title}
-              </CardTitle>
-            </div>
-            <BookOpen className="h-4 w-4 text-zinc-600 group-hover:text-zinc-400 transition-colors shrink-0" />
-          </div>
-        </CardHeader>
-        <CardContent className="p-4 pt-0">
-          <p className="text-[11px] text-zinc-600">
-            {categoryLabels[book.category] || book.category}
-          </p>
-        </CardContent>
-      </Card>
-    </Link>
-  );
-});
-
 const TrackedBookCard = React.memo(function TrackedBookCard({
   book,
   onEdit,
@@ -162,8 +137,13 @@ const TrackedBookCard = React.memo(function TrackedBookCard({
   onDelete: (id: string) => void;
 }) {
   const config = bookStatusConfig[book.status];
-  return (
-    <Card className="border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900 transition-colors group">
+  const hasPdf = !!book.pdfPath;
+
+  const card = (
+    <Card className={cn(
+      'border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900 transition-colors group',
+      hasPdf && 'cursor-pointer'
+    )}>
       <CardHeader className="p-5 pb-3">
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
@@ -194,7 +174,17 @@ const TrackedBookCard = React.memo(function TrackedBookCard({
         )}
         <div className="flex items-center justify-between">
           <RatingStars rating={book.rating} />
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="flex items-center gap-1">
+            {hasPdf && (
+              <Link
+                href={`/books/read/${book.id}`}
+                className="p-1.5 rounded hover:bg-zinc-800 text-zinc-500 hover:text-blue-400 transition-colors"
+                title="Read PDF"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <FileType className="h-3.5 w-3.5" />
+              </Link>
+            )}
             <button
               onClick={() => onEdit(book)}
               className="p-1.5 rounded hover:bg-zinc-800 text-zinc-600 hover:text-zinc-300 transition-colors cursor-pointer"
@@ -216,6 +206,11 @@ const TrackedBookCard = React.memo(function TrackedBookCard({
       </CardContent>
     </Card>
   );
+
+  if (hasPdf) {
+    return <Link href={`/books/read/${book.id}`}>{card}</Link>;
+  }
+  return card;
 });
 
 const PaperCard = React.memo(function PaperCard({
@@ -256,6 +251,85 @@ const PaperCard = React.memo(function PaperCard({
   );
 });
 
+// ─── Category helpers ─────────────────────────────────────────────────────────
+
+const categoryColors: Record<string, { bg: string; border: string; text: string; icon: string }> = {
+  '01-Foundations': { bg: 'bg-blue-950/40', border: 'border-blue-800/40', text: 'text-blue-300', icon: '#3b82f6' },
+  '02-Distributed-Systems': { bg: 'bg-violet-950/40', border: 'border-violet-800/40', text: 'text-violet-300', icon: '#8b5cf6' },
+  '03-Architecture': { bg: 'bg-emerald-950/40', border: 'border-emerald-800/40', text: 'text-emerald-300', icon: '#10b981' },
+  '04-Performance': { bg: 'bg-amber-950/40', border: 'border-amber-800/40', text: 'text-amber-300', icon: '#f59e0b' },
+  '05-Deep-Mastery': { bg: 'bg-rose-950/40', border: 'border-rose-800/40', text: 'text-rose-300', icon: '#f43f5e' },
+  '06-Meta-Learning': { bg: 'bg-cyan-950/40', border: 'border-cyan-800/40', text: 'text-cyan-300', icon: '#06b6d4' },
+  '07-Others': { bg: 'bg-zinc-800/40', border: 'border-zinc-700/40', text: 'text-zinc-300', icon: '#71717a' },
+};
+
+const categoryToDifficulty: Record<string, string> = {
+  '01-Foundations': 'EASY',
+  '02-Distributed-Systems': 'MEDIUM',
+  '03-Architecture': 'MEDIUM',
+  '04-Performance': 'HARD',
+  '05-Deep-Mastery': 'HARD',
+  '06-Meta-Learning': 'MEDIUM',
+  '07-Others': 'EASY',
+};
+
+function slugToNumber(slug: string): number {
+  let hash = 0;
+  for (let i = 0; i < slug.length; i++) {
+    hash = ((hash << 5) - hash) + slug.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+}
+
+function bookToQuestionItem(book: BookEntry): QuestionItem {
+  return {
+    id: slugToNumber(book.slug),
+    title: book.title,
+    description: categoryLabels[book.category] || book.category,
+    difficulty: categoryToDifficulty[book.category] || 'EASY',
+    link: `/books/${book.slug}`,
+  };
+}
+
+const CategoryCard = React.memo(function CategoryCard({
+  catKey,
+  label,
+  count,
+  onClick,
+}: {
+  catKey: string;
+  label: string;
+  count: number;
+  onClick: () => void;
+}) {
+  const colors = categoryColors[catKey] || categoryColors['07-Others'];
+  return (
+    <button
+      onClick={onClick}
+      className="w-full text-left"
+    >
+      <Card className={cn(
+        'border transition-all cursor-pointer group h-full',
+        colors.border, colors.bg,
+        'hover:scale-[1.02] hover:shadow-lg hover:shadow-black/20'
+      )}>
+        <CardContent className="p-6 flex flex-col items-center justify-center text-center gap-3">
+          <div className={cn('w-12 h-12 rounded-xl flex items-center justify-center', colors.bg, 'ring-1', colors.border)}>
+            <Library className={cn('h-6 w-6', colors.text)} />
+          </div>
+          <div>
+            <CardTitle className={cn('text-base font-semibold', colors.text)}>{label}</CardTitle>
+            <CardDescription className="text-xs text-zinc-500 mt-1">
+              {count} {count === 1 ? 'book' : 'books'}
+            </CardDescription>
+          </div>
+        </CardContent>
+      </Card>
+    </button>
+  );
+});
+
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function BooksPage() {
@@ -271,6 +345,7 @@ export default function BooksPage() {
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [editingBook, setEditingBook] = React.useState<BookData | null>(null);
   const [form, setForm] = React.useState<BookFormState>(emptyFormState);
+  const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null);
 
   const trackedBooks: BookData[] = booksData?.books ?? [];
 
@@ -309,14 +384,18 @@ export default function BooksPage() {
     if (!form.title.trim()) return;
 
     if (dialogMode === 'add') {
+      const formData = new FormData();
+      formData.append('title', form.title.trim());
+      formData.append('author', form.author.trim());
+      formData.append('status', form.status);
+      formData.append('progress', String(form.progress));
+      formData.append('rating', String(form.rating));
+      if (form.pdfFile) {
+        formData.append('pdf', form.pdfFile);
+      }
+
       addBook.mutate(
-        {
-          title: form.title.trim(),
-          author: form.author.trim(),
-          status: form.status,
-          progress: form.progress,
-          rating: form.rating,
-        },
+        formData as any,
         {
           onSuccess: () => {
             toast({ title: 'Book added' });
@@ -416,25 +495,47 @@ export default function BooksPage() {
             </Button>
           </div>
 
-          <TabsContent value="library" className="mt-0 space-y-8">
-            {categoryOrder.map((cat) => {
-              const catBooks = filteredGrouped[cat];
-              if (!catBooks) return null;
-              return (
-                <div key={cat} className="space-y-3">
-                  <h2 className="text-sm font-semibold text-zinc-300 tracking-wide uppercase">
-                    {categoryLabels[cat] || cat}
+          <TabsContent value="library" className="mt-0 space-y-6">
+            {selectedCategory ? (
+              <div className="space-y-4">
+                <button
+                  onClick={() => setSelectedCategory(null)}
+                  className="flex items-center gap-2 text-sm text-zinc-400 hover:text-zinc-200 transition-colors"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Back to categories
+                </button>
+                <div>
+                  <h2 className="text-lg font-semibold text-zinc-200">
+                    {categoryLabels[selectedCategory] || selectedCategory}
                   </h2>
-                  <BookSlider>
-                    {catBooks.map((book) => (
-                      <div key={book.slug} className="min-w-[240px] max-w-[240px] shrink-0">
-                        <LibraryBookCard book={book} />
-                      </div>
-                    ))}
-                  </BookSlider>
+                  <p className="text-sm text-zinc-500 mt-1">
+                    {(grouped[selectedCategory] || []).length} books
+                  </p>
                 </div>
-              );
-            })}
+                <QuestionsTable
+                  questions={(grouped[selectedCategory] || []).map(bookToQuestionItem)}
+                  storagePrefix={`books-cat-${selectedCategory}`}
+                  searchPlaceholder={`Search books in ${categoryLabels[selectedCategory] || selectedCategory}...`}
+                />
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                {categoryOrder.map((cat) => {
+                  const catBooks = filteredGrouped[cat];
+                  if (!catBooks) return null;
+                  return (
+                    <CategoryCard
+                      key={cat}
+                      catKey={cat}
+                      label={categoryLabels[cat] || cat}
+                      count={catBooks.length}
+                      onClick={() => setSelectedCategory(cat)}
+                    />
+                  );
+                })}
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="books" className="mt-0 space-y-4">
