@@ -21,13 +21,13 @@ export async function GET(request: Request) {
       }
 
       const allProblems = [
-        ...pattern.easy.map((p: any) => ({ ...p, difficulty: "EASY" })),
-        ...pattern.medium.map((p: any) => ({ ...p, difficulty: "MEDIUM" })),
-        ...pattern.hard.map((p: any) => ({ ...p, difficulty: "HARD" })),
+        ...pattern.easy.map((p: { id: number; title: string; link: string }) => ({ ...p, difficulty: "EASY" })),
+        ...pattern.medium.map((p: { id: number; title: string; link: string }) => ({ ...p, difficulty: "MEDIUM" })),
+        ...pattern.hard.map((p: { id: number; title: string; link: string }) => ({ ...p, difficulty: "HARD" })),
       ];
 
       if (search) {
-        allProblems.filter((p: any) =>
+        allProblems.filter((p: { id: number; title: string; link: string; difficulty: string }) =>
           p.title.toLowerCase().includes(search)
         );
       }
@@ -49,7 +49,7 @@ export async function GET(request: Request) {
       });
     }
 
-    let patternEntries = Object.entries(data.patterns).map(([key, p]: [string, any]) => ({
+    let patternEntries = Object.entries(data.patterns as Record<string, { name: string; description?: string; easy: { id: number; title: string; link: string }[]; medium: { id: number; title: string; link: string }[]; hard: { id: number; title: string; link: string }[] }>).map(([key, p]) => ({
       key,
       name: p.name,
       description: p.description ?? null,

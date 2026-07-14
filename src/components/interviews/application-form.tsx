@@ -9,7 +9,6 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
 const formSchema = z.object({
@@ -106,11 +105,11 @@ export function ApplicationFormDialog({ open, onClose, userEmail, application }:
     if (open) {
       reset(defaultValues);
     }
-  }, [open, application]);
+  }, [open, application, defaultValues, reset]);
 
   async function onSubmit(data: FormData) {
     try {
-      const body: any = {
+      const body: Record<string, unknown> = {
         ...data,
         userEmail,
       };

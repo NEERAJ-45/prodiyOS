@@ -44,7 +44,7 @@ export default function PdfViewer({
     function handleClick(e: MouseEvent) {
       const span = (e.target as HTMLElement)?.closest('.react-pdf__Page__textContent span');
       if (span?.textContent) {
-        onTextClick(span.textContent.trim());
+        onTextClick?.(span.textContent.trim());
       }
     }
 

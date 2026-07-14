@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  FileText, Plus, Trash2, Clock,
+  FileText, Plus, Trash2,
   Loader2, Search, AlertCircle, FileDown, Inbox,
 } from 'lucide-react';
 import {
@@ -48,7 +48,7 @@ function formatDate(date: Date): string {
 
 const columnHelper = createColumnHelper<ResumeData>();
 
-export default function LatexDashboard() {
+export default function ResumeDashboard() {
   const router = useRouter();
   const [search, setSearch] = React.useState('');
   const { data: resumesData, isLoading, isFetching, error, refetch } = useResumesQuery();
@@ -68,18 +68,18 @@ export default function LatexDashboard() {
   }, [resumes, search]);
 
   function handleOpen(id: string) {
-    router.push(`/latex/${id}`);
+    router.push(`/plan/resume/${id}`);
   }
 
   function handleCreate() {
-    router.push('/latex/new');
+    router.push('/plan/resume/new');
   }
 
   function handleDelete(e: React.MouseEvent, id: string) {
     e.stopPropagation();
     deleteResume.mutate(id, {
       onSuccess: () => toast({ title: 'Resume deleted' }),
-      onError: (err: any) => toast({ variant: 'destructive', title: 'Failed to delete', description: err?.message }),
+      onError: (err: Error) => toast({ variant: 'destructive', title: 'Failed to delete', description: err?.message }),
     });
   }
 

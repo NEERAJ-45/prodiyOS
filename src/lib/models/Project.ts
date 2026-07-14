@@ -15,6 +15,8 @@ export interface IProject extends Document {
   linkedConcepts: number;
   vision: string;
   architecture: string;
+  architectureImage?: string;
+  docs?: { name: string; url: string }[];
   lessons: string;
   progress: number;
   userEmail: string;
@@ -35,6 +37,8 @@ const ProjectSchema: Schema = new Schema({
   linkedConcepts: { type: Number, default: 0 },
   vision:       { type: String, default: '' },
   architecture: { type: String, default: '' },
+  architectureImage: { type: String, default: '' },
+  docs: [{ name: { type: String, default: '' }, url: { type: String, default: '' } }],
   lessons:      { type: String, default: '' },
   progress:     { type: Number, default: 0, min: 0, max: 100 },
   userEmail:    { type: String, required: true, index: true },

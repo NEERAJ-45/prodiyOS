@@ -5,14 +5,15 @@ import { ChevronDown, ChevronRight } from 'lucide-react';
 import {
   Clock, Flame, BookOpen, Target, TrendingUp,
   AlertTriangle, CheckCircle, Brain, Activity,
-  Loader2, Database, Wifi, WifiOff, ShieldAlert,
+  Loader2, Database, ShieldAlert,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+
 import { cn } from '@/lib/utils';
 import { ROADMAPS } from '@/data/roadmaps';
 import { useMounted } from '@/hooks/useMounted';
 import { useProfile } from '@/components/providers/ProfileProvider';
+import { useLoginStreakQuery } from '@/hooks/use-login-streak';
 
 const TOTAL_TOPICS = ROADMAPS.reduce((s, r) => s + r.total, 0);
 
@@ -111,7 +112,7 @@ function GroupedRoadmapTable({
   const toggle = useCallback((cat: string) => {
     setOpenCats((prev) => {
       const next = new Set(prev);
-      next.has(cat) ? next.delete(cat) : next.add(cat);
+      if (next.has(cat)) next.delete(cat); else next.add(cat);
       return next;
     });
   }, []);
@@ -235,26 +236,15 @@ export default function AnalyticsPage() {
   const { userEmail, customDbUrl } = useProfile();
   const [completionMap, setCompletionMap] = useState<Record<string, Set<string>>>({});
   const [completionDates, setCompletionDates] = useState<string[]>([]);
-  const [loginStreak, setLoginStreak] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [dbConnected, setDbConnected] = useState(false);
+
   const mounted = useMounted();
+  const { data: streakData } = useLoginStreakQuery();
+  const loginStreak = streakData?.streak ?? 0;
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-
-    async function fetchLoginStreak() {
-      try {
-        const res = await fetch('/api/auth/login-streak');
-        if (res.ok) {
-          const data = await res.json();
-          setLoginStreak(data.streak || 0);
-        }
-      } catch (e) {
-        console.error('Failed to fetch login streak:', e);
-      }
-    }
-    fetchLoginStreak();
 
     const localMap: Record<string, Set<string>> = {};
     const localDates: string[] = [];

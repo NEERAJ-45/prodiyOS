@@ -2,13 +2,14 @@
 
 import * as React from 'react';
 import { useProfile } from '@/components/providers/ProfileProvider';
+import { useApplicationsQuery, useResetApplications } from '@/hooks/use-interviews';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import {
   Briefcase, Phone, CheckCircle, XCircle, Calendar,
-  Building2, TrendingUp, Clock, Trash2, AlertTriangle,
+  Building2, Clock, Trash2, AlertTriangle,
 } from 'lucide-react';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
@@ -48,19 +49,16 @@ interface Application {
 
 export default function InterviewsOverviewPage() {
   const { userEmail } = useProfile();
-  const [applications, setApplications] = React.useState<Application[]>([]);
+  const { data: appsData } = useApplicationsQuery();
+  const resetMutation = useResetApplications();
   const [mounted, setMounted] = React.useState(false);
   const [resetOpen, setResetOpen] = React.useState(false);
-  const [resetting, setResetting] = React.useState(false);
 
   React.useEffect(() => {
     setMounted(true);
-    if (!userEmail) return;
-    fetch(`/api/interviews?userEmail=${encodeURIComponent(userEmail)}`)
-      .then((r) => r.json())
-      .then((data) => setApplications(data.applications || []))
-      .catch(() => {});
-  }, [userEmail]);
+  }, []);
+
+  const applications = appsData?.applications ?? [];
 
   if (!mounted) {
     return (
@@ -96,18 +94,14 @@ export default function InterviewsOverviewPage() {
 
   async function handleReset() {
     if (!userEmail) return;
-    setResetting(true);
     try {
-      const res = await fetch(`/api/interviews/reset?userEmail=${encodeURIComponent(userEmail)}`, { method: 'DELETE' });
-      const data = await res.json();
+      const data = await resetMutation.mutateAsync();
       if (data.success) {
-        setApplications([]);
         toast.success(`Cleared ${data.deleted.applications} applications, ${data.deleted.rounds} rounds`);
       }
     } catch {
       toast.error('Reset failed');
     }
-    setResetting(false);
     setResetOpen(false);
   }
 
@@ -216,9 +210,9 @@ export default function InterviewsOverviewPage() {
             This will permanently delete all your applications, interview rounds, and company data. This action cannot be undone.
           </p>
           <DialogFooter>
-            <Button variant="outline" size="sm" onClick={() => setResetOpen(false)} disabled={resetting}>Cancel</Button>
-            <Button size="sm" onClick={handleReset} disabled={resetting} className="bg-red-600 hover:bg-red-700 text-white gap-1.5">
-              {resetting ? 'Resetting...' : 'Delete Everything'}
+            <Button variant="outline" size="sm" onClick={() => setResetOpen(false)} disabled={resetMutation.isPending}>Cancel</Button>
+            <Button size="sm" onClick={handleReset} disabled={resetMutation.isPending} className="bg-red-600 hover:bg-red-700 text-white gap-1.5">
+              {resetMutation.isPending ? 'Resetting...' : 'Delete Everything'}
             </Button>
           </DialogFooter>
         </DialogContent>

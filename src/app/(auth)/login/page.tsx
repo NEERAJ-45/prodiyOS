@@ -5,7 +5,7 @@ import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Monitor, Cpu, ShieldAlert, Lock, ArrowLeft, Eye, EyeOff, Mail, Loader2,
+  Monitor, ShieldAlert, Lock, ArrowLeft, Eye, EyeOff, Mail, Loader2,
 } from 'lucide-react';
 import { toast } from '@/components/ui/toast';
 

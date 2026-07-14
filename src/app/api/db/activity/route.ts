@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db';
-import type { IActivity } from '@/lib/models/Activity';
 import '@/lib/models/Activity';
 import { logActivity } from '@/lib/activity-logger';
 import Activity from '@/lib/models/Activity';
@@ -14,8 +13,9 @@ export async function POST(request: Request) {
     await connectToDatabase();
     await logActivity(userEmail, text);
     return NextResponse.json({ success: true });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'An error occurred';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -34,10 +34,11 @@ export async function GET(request: Request) {
       .lean();
 
     return NextResponse.json({
-      activities: activities.map((a: any) => ({ text: a.text, createdAt: a.createdAt })),
+      activities: activities.map((a: { text: string; createdAt: Date }) => ({ text: a.text, createdAt: a.createdAt })),
     });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'An error occurred';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -53,8 +54,9 @@ export async function DELETE(request: Request) {
     const result = await Activity.deleteMany({ userEmail });
 
     return NextResponse.json({ success: true, deletedCount: result.deletedCount });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'An error occurred';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 

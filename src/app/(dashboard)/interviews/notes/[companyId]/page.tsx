@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useProfile } from '@/components/providers/ProfileProvider';
+import { useApplicationsQuery, useUpdateApplication, useRoundsQuery, useCreateRound, useDeleteRound } from '@/hooks/use-interviews';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -48,10 +49,13 @@ export default function CompanyNotesPage() {
   const { userEmail } = useProfile();
   const companyId = params.companyId as string;
 
-  const [application, setApplication] = React.useState<Application | null>(null);
-  const [rounds, setRounds] = React.useState<Round[]>([]);
+  const { data: appsData } = useApplicationsQuery();
+  const { data: roundsData } = useRoundsQuery(companyId);
+  const updateApplication = useUpdateApplication();
+  const createRound = useCreateRound();
+  const deleteRound = useDeleteRound();
+
   const [prepNotes, setPrepNotes] = React.useState('');
-  const [saving, setSaving] = React.useState(false);
   const [mounted, setMounted] = React.useState(false);
 
   const [newRound, setNewRound] = React.useState({
@@ -61,63 +65,43 @@ export default function CompanyNotesPage() {
     selfRating: 3,
   });
 
+  const application = React.useMemo(() => {
+    if (!appsData?.applications) return null;
+    const apps: Application[] = appsData.applications as Application[];
+    return apps.find((a) => a.id === companyId) || null;
+  }, [appsData, companyId]);
+
+  const rounds = (roundsData?.rounds ?? []) as Round[];
+
   React.useEffect(() => {
     setMounted(true);
-    if (!userEmail || !companyId) return;
+  }, []);
 
-    fetch(`/api/interviews?userEmail=${encodeURIComponent(userEmail)}`)
-      .then((r) => r.json())
-      .then((data) => {
-        const apps: Application[] = data.applications || [];
-        const app = apps.find((a: any) => a.id === companyId);
-        if (app) {
-          setApplication(app);
-          setPrepNotes(app.notes || '');
-        }
-        return app;
-      })
-      .then((app) => {
-        if (app) {
-          fetch(`/api/rounds?userEmail=${encodeURIComponent(userEmail)}&applicationId=${app.id}`)
-            .then((r) => r.json())
-            .then((d) => setRounds(d.rounds || []))
-            .catch(() => {});
-        }
-      })
-      .catch(() => {});
-  }, [userEmail, companyId]);
+  React.useEffect(() => {
+    if (application) {
+      setPrepNotes(application.notes || '');
+    }
+  }, [application]);
 
   async function savePrepNotes() {
     if (!application) return;
-    setSaving(true);
     try {
-      await fetch(`/api/interviews/${application.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userEmail, notes: prepNotes }),
-      });
+      await updateApplication.mutateAsync({ id: application.id, userEmail, notes: prepNotes });
       toast.success('Notes saved');
     } catch {
       toast.error('Failed to save');
     }
-    setSaving(false);
   }
 
   async function addRound() {
     if (!application) return;
     try {
-      const res = await fetch('/api/rounds', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userEmail,
-          applicationId: application.id,
-          ...newRound,
-        }),
+      const data = await createRound.mutateAsync({
+        userEmail,
+        applicationId: application.id,
+        ...newRound,
       });
-      const data = await res.json();
       if (data.round) {
-        setRounds((prev) => [data.round, ...prev]);
         setNewRound({ roundType: 'PHONE_SCREEN', date: new Date().toISOString().slice(0, 16), notes: '', selfRating: 3 });
         toast.success('Round recorded');
       }
@@ -126,10 +110,9 @@ export default function CompanyNotesPage() {
     }
   }
 
-  async function deleteRound(id: string) {
+  async function handleDeleteRound(id: string) {
     try {
-      await fetch(`/api/rounds/${id}`, { method: 'DELETE' });
-      setRounds((prev) => prev.filter((r) => r.id !== id));
+      await deleteRound.mutateAsync(id);
       toast.success('Round deleted');
     } catch {
       toast.error('Failed to delete');
@@ -167,9 +150,9 @@ export default function CompanyNotesPage() {
       <Card className="border-zinc-800 bg-zinc-900/50">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-sm font-medium text-zinc-100">Prep Notes</CardTitle>
-          <Button variant="ghost" size="sm" onClick={savePrepNotes} disabled={saving} className="text-zinc-500 hover:text-zinc-300 gap-1.5">
+          <Button variant="ghost" size="sm" onClick={savePrepNotes} disabled={updateApplication.isPending} className="text-zinc-500 hover:text-zinc-300 gap-1.5">
             <Save className="h-3.5 w-3.5" />
-            {saving ? 'Saving...' : 'Save'}
+            {updateApplication.isPending ? 'Saving...' : 'Save'}
           </Button>
         </CardHeader>
         <CardContent>
@@ -272,7 +255,7 @@ export default function CompanyNotesPage() {
                         <p className="text-sm text-zinc-400 mt-1.5 whitespace-pre-wrap">{round.notes}</p>
                       )}
                     </div>
-                    <button onClick={() => deleteRound(round.id)} className="p-1 rounded hover:bg-zinc-800 text-zinc-600 hover:text-red-400 transition-colors">
+                    <button onClick={() => handleDeleteRound(round.id)} className="p-1 rounded hover:bg-zinc-800 text-zinc-600 hover:text-red-400 transition-colors">
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   </div>

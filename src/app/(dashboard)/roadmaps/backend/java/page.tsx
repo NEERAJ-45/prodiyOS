@@ -21,9 +21,6 @@ interface QuestionItem {
   link: string;
 }
 
-const USER_NAME = 'NEERAJ';
-const STORAGE_PREFIX = 'backend-java';
-
 const javaQuestions: QuestionItem[] = Array.from({ length: 50 }, (_, index) => {
   const id = 601 + index;
   let title = '';

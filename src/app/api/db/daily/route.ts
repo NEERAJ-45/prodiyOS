@@ -24,8 +24,9 @@ export async function GET(request: Request) {
     const DailyRecord = conn.model<IDailyRecord>('DailyRecord');
     const record = await DailyRecord.findOne({ date, userEmail }).lean();
     return NextResponse.json({ dbConnected: true, record: record || null });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'An error occurred';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -47,7 +48,7 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'date is required' }, { status: 400 });
     }
     const DailyRecord = conn.model<IDailyRecord>('DailyRecord');
-    const updateData: Record<string, any> = { updatedAt: new Date() };
+    const updateData: Record<string, unknown> = { updatedAt: new Date() };
     if (completedTaskIds !== undefined) updateData.completedTaskIds = completedTaskIds;
     if (note !== undefined) updateData.note = note;
     const record = await DailyRecord.findOneAndUpdate(
@@ -56,7 +57,8 @@ export async function PUT(request: Request) {
       { upsert: true, new: true },
     );
     return NextResponse.json({ success: true, record });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'An error occurred';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

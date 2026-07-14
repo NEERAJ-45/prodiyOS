@@ -4,44 +4,29 @@ import * as React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, Brain, CheckCircle, X, ChevronDown, ChevronUp,
-  Upload, FileText, Sparkles, Trash2, Copy, Check,
-  FileDown, Info, Bookmark, AlertCircle, RefreshCw, ArrowLeft, Plus, Clock
+  FileText, Trash2, Copy, Check,
+  FileDown, Info, Bookmark, AlertCircle, ArrowLeft, Plus
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
+} from '@/components/ui/dialog';
 import { SpotlightCard } from '@/components/ui/SpotlightCard';
 import { javaSampleQuestions } from '@/data/java-sample-questions';
+import { parseQAText, type CustomQuestion } from '@/lib/parsers';
 import {
   useCustomQAQuery,
   useSaveCustomQA,
   useSaveCustomQAProgress,
-  useClearCustomQA,
   useDeleteCustomQABook,
   useSelectCustomQABook,
   type CustomQABook
 } from '@/hooks/use-custom-qa';
 
 // --- Interfaces ---
-export interface CustomQuestion {
-  id: string;
-  question: string;
-  answer: string;
-}
-
-export interface CustomSection {
-  id: string;
-  title: string;
-  questions: CustomQuestion[];
-}
-
-export interface CustomQAParsedData {
-  title: string;
-  totalQuestions: number;
-  sections: CustomSection[];
-}
-
 interface QuestionProgress {
   mastered: boolean;
   flagged: boolean;
@@ -143,8 +128,6 @@ export default function CustomQAViewer() {
   const selectBookDb = useSelectCustomQABook();
   const deleteBookDb = useDeleteCustomQABook();
   const saveProgressDb = useSaveCustomQAProgress();
-  const clearCustomQADb = useClearCustomQA();
-
   const [inputText, setInputText] = React.useState('');
   const [format, setFormat] = React.useState<'auto' | 'json' | 'csv' | 'txt'>('auto');
   const [search, setSearch] = React.useState('');
@@ -153,6 +136,7 @@ export default function CustomQAViewer() {
   const [expandedQuestions, setExpandedQuestions] = React.useState<Record<string, boolean>>({});
   const [expandedSections, setExpandedSections] = React.useState<Record<string, boolean>>({});
   const [copiedId, setCopiedId] = React.useState<string | null>(null);
+  const [copiedQId, setCopiedQId] = React.useState<string | null>(null);
   const [importOpen, setImportOpen] = React.useState(false);
 
   // Custom uploaded subjects state
@@ -250,32 +234,6 @@ export default function CustomQAViewer() {
     }
   };
 
-  // Split CSV line helper
-  function splitCSVLine(line: string, delimiter: string = ','): string[] {
-    const result: string[] = [];
-    let current = '';
-    let inQuotes = false;
-    for (let i = 0; i < line.length; i++) {
-      const char = line[i];
-      const nextChar = line[i + 1];
-      if (char === '"') {
-        if (inQuotes && nextChar === '"') {
-          current += '"';
-          i++;
-        } else {
-          inQuotes = !inQuotes;
-        }
-      } else if (char === delimiter && !inQuotes) {
-        result.push(current.trim());
-        current = '';
-      } else {
-        current += char;
-      }
-    }
-    result.push(current.trim());
-    return result;
-  }
-
   // Parsers Engine
   const handleParse = (textToParse: string = inputText, selectedFormat: typeof format = format) => {
     if (!textToParse.trim()) {
@@ -284,154 +242,8 @@ export default function CustomQAViewer() {
     }
     setParseError(null);
 
-    let detectedFormat: 'json' | 'csv' | 'txt' = 'json';
-
-    if (selectedFormat === 'auto') {
-      const trimmed = textToParse.trim();
-      if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
-        detectedFormat = 'json';
-      } else {
-        const hasQnA = /^(?:q(?:uestion)?\s*\d*[:.-])/im.test(trimmed);
-        const commaCount = (trimmed.match(/,/g) || []).length;
-        const lineCount = trimmed.split('\n').length;
-        if (commaCount > lineCount && !hasQnA) {
-          detectedFormat = 'csv';
-        } else {
-          detectedFormat = 'txt';
-        }
-      }
-    } else {
-      detectedFormat = selectedFormat;
-    }
-
     try {
-      let result: CustomQAParsedData;
-
-      if (detectedFormat === 'json') {
-        const parsedJson = JSON.parse(textToParse);
-        
-        if (parsedJson && typeof parsedJson === 'object' && Array.isArray(parsedJson.sections)) {
-          const sections: CustomSection[] = parsedJson.sections.map((sec: any, idx: number) => ({
-            id: sec.section || sec.id || `sec-${idx}`,
-            title: sec.title || `Section ${idx + 1}`,
-            questions: (sec.questions || []).map((q: any, qIdx: number) => ({
-              id: String(q.id || `q-${idx}-${qIdx}`),
-              question: String(q.question || q.q || ''),
-              answer: String(q.answer || q.a || '')
-            })).filter((q: any) => q.question)
-          }));
-          
-          result = {
-            title: parsedJson.title || 'Custom Imported Q&A',
-            totalQuestions: sections.reduce((acc, s) => acc + s.questions.length, 0),
-            sections
-          };
-        } else if (Array.isArray(parsedJson)) {
-          const questions: CustomQuestion[] = parsedJson.map((q: any, idx: number) => ({
-            id: String(q.id || `q-${idx}`),
-            question: String(q.question || q.q || ''),
-            answer: String(q.answer || q.a || '')
-          })).filter(q => q.question);
-
-          result = {
-            title: 'Custom Imported Q&A',
-            totalQuestions: questions.length,
-            sections: [{ id: 'general', title: 'General Questions', questions }]
-          };
-        } else {
-          throw new Error('Unsupported JSON format.');
-        }
-      } else if (detectedFormat === 'csv') {
-        const lines = textToParse.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-        if (lines.length < 1) throw new Error('CSV text is empty.');
-
-        const firstLine = lines[0];
-        let delimiter = ',';
-        if (firstLine.includes('\t')) delimiter = '\t';
-        else if (firstLine.includes(';')) delimiter = ';';
-
-        const headers = splitCSVLine(firstLine, delimiter).map(h => h.toLowerCase());
-        let questionColIndex = 0;
-        let answerColIndex = 1;
-
-        const qIndex = headers.findIndex(h => h.includes('question') || h === 'q' || h.includes('desc'));
-        const aIndex = headers.findIndex(h => h.includes('answer') || h === 'a' || h.includes('resp'));
-
-        const dataLines = [...lines];
-        if (qIndex !== -1 && aIndex !== -1) {
-          questionColIndex = qIndex;
-          answerColIndex = aIndex;
-          dataLines.shift();
-        }
-
-        const questions: CustomQuestion[] = dataLines.map((line, idx) => {
-          const columns = splitCSVLine(line, delimiter);
-          return {
-            id: `q-${idx}`,
-            question: columns[questionColIndex] || '',
-            answer: columns[answerColIndex] || ''
-          };
-        }).filter(q => q.question);
-
-        result = {
-          title: 'Custom CSV Questions',
-          totalQuestions: questions.length,
-          sections: [{ id: 'general', title: 'General Questions', questions }]
-        };
-      } else {
-        const lines = textToParse.split(/\r?\n/);
-        const questions: CustomQuestion[] = [];
-        let currentQuestion = '';
-        let currentAnswer = '';
-        let mode: 'q' | 'a' | 'none' = 'none';
-
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed) continue;
-
-          const qMatch = trimmed.match(/^(?:q(?:uestion)?\s*\d*\s*[:.-]\s*)(.*)/i);
-          const aMatch = trimmed.match(/^(?:a(?:nswer)?\s*[:.-]\s*)(.*)/i);
-
-          if (qMatch) {
-            if (currentQuestion && currentAnswer) {
-              questions.push({ id: `q-${questions.length}`, question: currentQuestion.trim(), answer: currentAnswer.trim() });
-              currentQuestion = '';
-              currentAnswer = '';
-            }
-            currentQuestion = qMatch[1];
-            mode = 'q';
-          } else if (aMatch) {
-            currentAnswer = aMatch[1];
-            mode = 'a';
-          } else {
-            const numberMatch = trimmed.match(/^\d+[\s.-]+(.*)/);
-            if (numberMatch && mode !== 'q') {
-              if (currentQuestion && currentAnswer) {
-                questions.push({ id: `q-${questions.length}`, question: currentQuestion.trim(), answer: currentAnswer.trim() });
-                currentQuestion = '';
-                currentAnswer = '';
-              }
-              currentQuestion = numberMatch[1];
-              mode = 'q';
-            } else {
-              if (mode === 'q') currentQuestion += '\n' + trimmed;
-              else if (mode === 'a') currentAnswer += '\n' + trimmed;
-              else { currentQuestion = trimmed; mode = 'q'; }
-            }
-          }
-        }
-
-        if (currentQuestion && currentAnswer) {
-          questions.push({ id: `q-${questions.length}`, question: currentQuestion.trim(), answer: currentAnswer.trim() });
-        }
-
-        result = {
-          title: 'Custom TXT Questions',
-          totalQuestions: questions.length,
-          sections: [{ id: 'general', title: 'General Questions', questions }]
-        };
-      }
-
+      const result = parseQAText(textToParse, selectedFormat);
       if (result.totalQuestions === 0) throw new Error('No valid questions parsed.');
 
       const customSlug = 'custom-' + result.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
@@ -459,24 +271,30 @@ export default function CustomQAViewer() {
     }
   };
 
-  // Subject deletion
+  // Subject deletion dialog state
+  const [deleteConfirmSlug, setDeleteConfirmSlug] = React.useState<string | null>(null);
+
   const handleDeleteSubject = (e: React.MouseEvent, slug: string) => {
     e.preventDefault();
     e.stopPropagation();
+    setDeleteConfirmSlug(slug);
+  };
 
-    if (confirm('Are you sure you want to delete this custom subject? This action will permanently remove it from database.')) {
-      const updatedBooks = customBooks.filter(b => b.slug !== slug);
-      setCustomBooks(updatedBooks);
-      localStorage.setItem(DATA_STORAGE_KEY, JSON.stringify(updatedBooks));
+  const confirmDeleteSubject = () => {
+    const slug = deleteConfirmSlug;
+    if (!slug) return;
+    const updatedBooks = customBooks.filter(b => b.slug !== slug);
+    setCustomBooks(updatedBooks);
+    localStorage.setItem(DATA_STORAGE_KEY, JSON.stringify(updatedBooks));
 
-      if (dbData?.dbConnected) {
-        deleteBookDb.mutate(slug);
-      }
-
-      if (activeSubjectSlug === slug) {
-        handleSelectSubject(null);
-      }
+    if (dbData?.dbConnected) {
+      deleteBookDb.mutate(slug);
     }
+
+    if (activeSubjectSlug === slug) {
+      handleSelectSubject(null);
+    }
+    setDeleteConfirmSlug(null);
   };
 
   // Drag handlers
@@ -1070,6 +888,17 @@ export default function CustomQAViewer() {
                                   {/* Buttons status indicators */}
                                   <div className="flex items-center gap-1 shrink-0">
                                     <button
+                                      onClick={() => {
+                                        navigator.clipboard.writeText(q.question);
+                                        setCopiedQId(q.id);
+                                        setTimeout(() => setCopiedQId(null), 2000);
+                                      }}
+                                      className="p-1.5 rounded-lg border border-zinc-800 hover:border-zinc-700 text-zinc-500 hover:text-zinc-200 transition-all"
+                                      title="Copy Question"
+                                    >
+                                      {copiedQId === q.id ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+                                    </button>
+                                    <button
                                       onClick={() => toggleMastery(q.question)}
                                       className={`p-1.5 rounded-lg border transition-all ${
                                         prog.mastered ? 'bg-emerald-950/40 border-emerald-800 text-emerald-400' : 'border-zinc-800 hover:border-zinc-700 text-zinc-500 hover:text-zinc-400'
@@ -1153,6 +982,34 @@ export default function CustomQAViewer() {
           </div>
         )
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!deleteConfirmSlug} onOpenChange={() => setDeleteConfirmSlug(null)}>
+        <DialogContent className="border-zinc-800 bg-zinc-950 text-zinc-100 sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle className="text-zinc-100 flex items-center gap-2">
+              <Trash2 size={18} className="text-red-400" />
+              Delete Subject
+            </DialogTitle>
+            <DialogDescription className="text-zinc-500 text-sm pt-2">
+              This will permanently remove this subject and all its progress from the database. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <DialogClose asChild>
+              <button className="px-3.5 py-2 rounded-lg text-xs font-semibold bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition-colors cursor-pointer">
+                Cancel
+              </button>
+            </DialogClose>
+            <button
+              onClick={confirmDeleteSubject}
+              className="px-3.5 py-2 rounded-lg text-xs font-semibold bg-red-600 text-white hover:bg-red-500 transition-colors cursor-pointer"
+            >
+              Delete
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

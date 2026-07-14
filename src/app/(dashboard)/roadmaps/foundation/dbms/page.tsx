@@ -21,9 +21,6 @@ interface QuestionItem {
   link: string;
 }
 
-const USER_NAME = 'NEERAJ';
-const STORAGE_PREFIX = 'foundation-dbms';
-
 const dbmsQuestions: QuestionItem[] = [
   { id: 301, title: 'What is a Database Management System (DBMS) and what are its advantages over File Systems?', difficulty: 'EASY', link: 'https://www.geeksforgeeks.org/dbms/dbms-introduction/' },
   { id: 302, title: 'Explain the 3-schema Architecture (Internal, Conceptual, External) and Data Independence.', difficulty: 'EASY', link: 'https://www.geeksforgeeks.org/dbms/three-schema-architecture/' },

@@ -30,8 +30,9 @@ export async function POST(request: Request) {
     await user.save();
 
     return NextResponse.json({ success: true, message: 'Password updated successfully.' });
-  } catch (error: any) {
-    console.error('[API/auth/reset]', error.message);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'An error occurred';
+    console.error('[API/auth/reset]', message);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

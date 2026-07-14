@@ -126,7 +126,7 @@ export default function ResumeEditor() {
         const json = await res.json();
         const found = (json.data || []).find((r: ResumeData) => r._id === params.id);
         if (!found) {
-          router.replace('/latex');
+          router.replace('/plan/resume');
           return;
         }
         setTitle(found.title);
@@ -145,7 +145,7 @@ export default function ResumeEditor() {
           }
         }
       } catch {
-        router.replace('/latex');
+        router.replace('/plan/resume');
       } finally {
         setLoaded(true);
       }
@@ -211,7 +211,7 @@ export default function ResumeEditor() {
       setNumPages(0);
       pendingPdfBase64.current = await blobToBase64(blob);
       setHasPersistedPdf(false);
-    } catch (err: any) {
+    } catch (err: unknown) {
       const msg = extractApiError(err);
       setError(msg);
       toast({ variant: 'destructive', title: 'Compilation failed', description: msg });
@@ -245,10 +245,10 @@ export default function ResumeEditor() {
         setHasPersistedPdf(true);
         pendingPdfBase64.current = null;
       }
-      if (isNew) router.replace(`/latex/${json.data._id}`);
+      if (isNew) router.replace(`/plan/resume/${json.data._id}`);
       queryClient.invalidateQueries({ queryKey: ['resumes'] });
       toast({ title: 'Resume saved' });
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast({ variant: 'destructive', title: 'Save failed', description: extractApiError(err) });
     } finally {
       setSaving(false);
@@ -264,7 +264,7 @@ export default function ResumeEditor() {
       const res = await fetch(`/api/db/resumes?id=${resumeId}`, { method: 'DELETE', headers });
       if (!res.ok) throw new Error('Delete failed');
       toast({ title: 'Resume deleted' });
-      router.replace('/latex');
+      router.replace('/plan/resume');
     } catch {
       toast({ variant: 'destructive', title: 'Delete failed' });
     } finally {
@@ -314,7 +314,7 @@ export default function ResumeEditor() {
     >
       <header className="shrink-0 flex items-center gap-1.5 sm:gap-3 px-2 sm:px-4 h-11 bg-zinc-900/80 border-b border-zinc-800/50">
         <button
-          onClick={() => router.push('/latex')}
+          onClick={() => router.push('/plan/resume')}
           className="p-1 rounded text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />

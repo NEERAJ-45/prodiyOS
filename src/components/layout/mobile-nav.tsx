@@ -24,7 +24,7 @@ const navItems = [
   { label: 'Analytics', href: '/analytics', icon: BarChart3 },
   { label: 'Quick Notes', href: '/sticky-notes', icon: StickyNote },
   { label: 'Career Hub', href: '/career', icon: Rocket },
-  { label: 'Resume ', href: '/latex', icon: FileCode },
+  { label: 'Resume ', href: '/plan/resume', icon: FileCode },
 ];
 
 export function MobileNav() {

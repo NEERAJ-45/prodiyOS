@@ -3,7 +3,6 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { Clock, ArrowRight } from 'lucide-react';
-import { CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ROADMAPS } from '@/data/roadmaps';
 import { cn } from '@/lib/utils';

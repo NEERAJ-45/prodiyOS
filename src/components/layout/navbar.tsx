@@ -1,20 +1,17 @@
 "use client";
 
 import React, { useState } from 'react';
-import { usePathname } from 'next/navigation';
 import { useProfile } from '@/components/providers/ProfileProvider';
 import { signOut } from 'next-auth/react';
 import { LogOut, User, X, CalendarDays, Flame, Wifi, WifiOff } from 'lucide-react';
 import { toast } from '@/components/ui/toast';
 import { quotes } from '../../../quotes';
-import { cn } from '@/lib/utils';
 import { SpotlightCard } from '@/components/ui/SpotlightCard';
 import { GlobalSearch } from '@/components/shared/GlobalSearch';
 import { ModeToggle } from '@/components/layout/mode-toggle';
 import { useModeStore } from '@/lib/stores/mode-store';
 
 export function Navbar({ global = false }: { global?: boolean }) {
-  const pathname = usePathname();
   const { userEmail, userName, userRole, logout, updateEmail } = useProfile();
   const [profileOpen, setProfileOpen] = useState(false);
   const [editingEmail, setEditingEmail] = useState(false);
@@ -32,14 +29,6 @@ export function Navbar({ global = false }: { global?: boolean }) {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
-  });
-
-  // Format breadcrumbs from pathname
-  const segments = pathname.split('/').filter(Boolean);
-  const breadcrumbs = segments.map((seg) => {
-    return seg
-      .replace(/-/g, ' ')
-      .replace(/\b\w/g, (char) => char.toUpperCase());
   });
 
   return (

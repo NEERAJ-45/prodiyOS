@@ -21,9 +21,6 @@ interface QuestionItem {
   link: string;
 }
 
-const USER_NAME = 'NEERAJ';
-const STORAGE_PREFIX = 'devops-cloud-aws';
-
 const awsQuestions: QuestionItem[] = Array.from({ length: 50 }, (_, index) => {
   const id = 1101 + index;
   let title = '';

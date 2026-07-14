@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { LazyAppear } from '@/components/shared/LazyAppear';
 import { SpotlightCard } from '@/components/ui/SpotlightCard';
 import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
+
 
 export default function DatabasesHubPage() {
   const mounted = useMounted();

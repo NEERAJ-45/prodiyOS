@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useMounted } from '@/hooks/useMounted';
 import {
   FolderOpen, CheckCircle2, Sparkles, Layers,
-  Plus, Pencil, Trash2, X, ExternalLink, Search,
+  Plus, Pencil, Trash2, X, ExternalLink, Search, FileText, FileDown,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -14,8 +14,14 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter,
+} from '@/components/ui/sheet';
+import DocViewer from '@cyntler/react-doc-viewer';
+import '@cyntler/react-doc-viewer/dist/index.css';
 import { cn } from '@/lib/utils';
 import { useProfile } from '@/components/providers/ProfileProvider';
+import { useProjectsQuery, useCreateProject, useUpdateProject, useDeleteProject } from '@/hooks/use-projects';
 
 type ProjectStatus = 'IDEA' | 'IN_PROGRESS' | 'COMPLETED' | 'MAINTAINING' | 'ARCHIVED';
 
@@ -34,6 +40,8 @@ interface Project {
   linkedConcepts: number;
   vision: string;
   architecture: string;
+  architectureImage?: string;
+  docs?: { name: string; url: string }[];
   lessons: string;
 }
 
@@ -65,6 +73,8 @@ const defaultProjects: Project[] = [
     linkedConcepts: 12,
     vision: 'Build a unified notification gateway that handles billions of events daily with sub-100ms latency.',
     architecture: 'Microservices with Go over gRPC. Kafka for ingestion, Redis for dedup, PostgreSQL for audit.',
+    architectureImage: '',
+    docs: [],
     lessons: 'Event-driven design requires careful idempotency handling.',
   },
   {
@@ -82,6 +92,8 @@ const defaultProjects: Project[] = [
     linkedConcepts: 8,
     vision: 'Modern e-commerce with seamless checkout and real-time inventory.',
     architecture: 'Next.js app router + tRPC + Prisma/PostgreSQL + Stripe.',
+    architectureImage: '',
+    docs: [],
     lessons: 'Server components reduce bundle size. Stripe webhook idempotency is critical.',
   },
   {
@@ -99,6 +111,8 @@ const defaultProjects: Project[] = [
     linkedConcepts: 15,
     vision: 'Drag-and-drop project management with real-time collaboration.',
     architecture: 'React + Node.js/Express + Socket.IO + MongoDB.',
+    architectureImage: '',
+    docs: [],
     lessons: 'Optimistic updates with WebSocket ack callbacks prevent state conflicts.',
   },
   {
@@ -116,6 +130,8 @@ const defaultProjects: Project[] = [
     linkedConcepts: 6,
     vision: 'High-performance Rust API gateway with sub-ms overhead.',
     architecture: 'Tokio + Hyper. JWT via jsonwebtoken. Sliding window rate limiting with Redis.',
+    architectureImage: '',
+    docs: [],
     lessons: 'Still in ideation. Researching zero-copy deserialization.',
   },
 ];
@@ -204,44 +220,161 @@ function ProjectCard({ project, onSelect, onEdit, onDelete }: {
   );
 }
 
-function ExpandedDialog({ project, open, onOpenChange }: { project: Project | null; open: boolean; onOpenChange: (v: boolean) => void }) {
-  if (!project) return null;
+function ArchImage({ url }: { url: string }) {
+  const [blobUrl, setBlobUrl] = React.useState<string | null>(null);
+  React.useEffect(() => {
+    if (url.startsWith('data:')) {
+      const b = dataUrlToBlob(url);
+      setBlobUrl(b);
+      return () => URL.revokeObjectURL(b);
+    }
+    setBlobUrl(url);
+  }, [url]);
+  if (!blobUrl) return null;
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl bg-zinc-900 border-zinc-800">
-        <DialogHeader>
-          <div className="flex items-center gap-3 mb-1">
-            <DialogTitle className="text-lg text-zinc-100">{project.name}</DialogTitle>
-            <StatusBadge status={project.status} />
-          </div>
-          <DialogDescription className="text-sm text-zinc-500">{project.description}</DialogDescription>
-        </DialogHeader>
-        <ScrollArea className="max-h-[60vh] pr-4">
-          <div className="space-y-5">
-            <div>
-              <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Vision</h4>
-              <p className="text-sm text-zinc-300 leading-relaxed">{project.vision}</p>
+    <div className="mt-2 border border-zinc-700 rounded-lg overflow-hidden cursor-pointer"
+      onClick={() => window.open(blobUrl, '_blank')}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={blobUrl} alt="Architecture diagram" className="w-full h-auto max-h-64 object-contain bg-zinc-950" />
+    </div>
+  );
+}
+
+function dataUrlToBlob(url: string): string {
+  const [header, base64] = url.split(',', 2);
+  const mime = header?.split(':')[1]?.split(';')[0] || 'application/octet-stream';
+  const raw = atob(base64 || '');
+  const len = raw.length;
+  const buf = new ArrayBuffer(len);
+  const bytes = new Uint8Array(buf);
+  for (let i = 0; i < len; i++) bytes[i] = raw.charCodeAt(i);
+  const blob = new Blob([buf], { type: mime });
+  return URL.createObjectURL(blob);
+}
+
+function ExpandedDialog({ project, open, onOpenChange }: { project: Project | null; open: boolean; onOpenChange: (v: boolean) => void }) {
+  const [viewingDoc, setViewingDoc] = React.useState<{ name: string; url: string } | null>(null);
+  const [docBlobUrl, setDocBlobUrl] = React.useState<string | null>(null);
+  const [imageLoadError, setImageLoadError] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!viewingDoc) {
+      if (docBlobUrl) { URL.revokeObjectURL(docBlobUrl); setDocBlobUrl(null); }
+      return;
+    }
+    if (viewingDoc.url.startsWith('data:')) {
+      const url = dataUrlToBlob(viewingDoc.url);
+      setDocBlobUrl(url);
+      return () => URL.revokeObjectURL(url);
+    }
+    setDocBlobUrl(viewingDoc.url);
+  }, [viewingDoc]);
+
+  if (!project) return null;
+
+  return (
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-2xl bg-zinc-900 border-zinc-800">
+          <DialogHeader>
+            <div className="flex items-center gap-3 mb-1">
+              <DialogTitle className="text-lg text-zinc-100">{project.name}</DialogTitle>
+              <StatusBadge status={project.status} />
             </div>
-            <div>
-              <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Architecture</h4>
-              <p className="text-sm text-zinc-300 leading-relaxed">{project.architecture}</p>
-            </div>
-            <div>
-              <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Lessons Learned</h4>
-              <p className="text-sm text-zinc-300 leading-relaxed">{project.lessons}</p>
-            </div>
-            <div>
-              <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Technologies</h4>
-              <div className="flex flex-wrap gap-1.5 mt-2">
-                {project.technologies.map((tech) => (
-                  <Badge key={tech} variant="secondary" className="text-[11px] px-2 py-0.5 bg-zinc-800 text-zinc-400">{tech}</Badge>
-                ))}
+            <DialogDescription className="text-sm text-zinc-500">{project.description}</DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="max-h-[60vh] pr-4">
+            <div className="space-y-5">
+              <div>
+                <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Vision</h4>
+                <p className="text-sm text-zinc-300 leading-relaxed">{project.vision}</p>
+              </div>
+              <div>
+                <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Architecture</h4>
+                <p className="text-sm text-zinc-300 leading-relaxed">{project.architecture}</p>
+                {project.architectureImage && (
+                  <ArchImage url={project.architectureImage} />
+                )}
+              </div>
+              {project.docs && project.docs.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Documents</h4>
+                  <div className="space-y-1.5">
+                    {project.docs.map((doc, i) => (
+                      <button key={i} onClick={() => setViewingDoc(doc)}
+                        className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded bg-zinc-800/50 border border-zinc-700/50 hover:bg-zinc-800 transition-colors text-left">
+                        <FileText className="h-4 w-4 text-zinc-500 shrink-0" />
+                        <span className="text-xs text-zinc-300 truncate flex-1">{doc.name}</span>
+                        <ExternalLink className="h-3 w-3 text-zinc-600 shrink-0" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div>
+                <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Lessons Learned</h4>
+                <p className="text-sm text-zinc-300 leading-relaxed">{project.lessons}</p>
+              </div>
+              <div>
+                <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Technologies</h4>
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {project.technologies.map((tech) => (
+                    <Badge key={tech} variant="secondary" className="text-[11px] px-2 py-0.5 bg-zinc-800 text-zinc-400">{tech}</Badge>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
-        </ScrollArea>
-      </DialogContent>
-    </Dialog>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={viewingDoc !== null} onOpenChange={(v) => { if (!v) { setViewingDoc(null); setImageLoadError(false); } }}>
+        {viewingDoc && (
+          <DialogContent className="max-w-4xl bg-zinc-900 border-zinc-800 h-[80vh] flex flex-col">
+            <DialogHeader>
+              <DialogTitle className="text-zinc-100 text-sm truncate">{viewingDoc.name}</DialogTitle>
+            </DialogHeader>
+            <div className="flex-1 min-h-0 overflow-hidden">
+              {viewingDoc.url.startsWith('data:image/') ? (
+                imageLoadError ? (
+                  <div className="flex items-center justify-center h-full">
+                    <p className="text-sm text-red-400">Failed to load image.</p>
+                  </div>
+                ) : (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img src={docBlobUrl || viewingDoc.url} alt={viewingDoc.name}
+                    onError={() => setImageLoadError(true)}
+                    className="w-full h-full object-contain rounded-lg" />
+                )
+              ) : docBlobUrl ? (
+                <DocViewer
+                  documents={[{ uri: docBlobUrl, fileName: viewingDoc.name }]}
+                  theme={{ primary: '#18181b', secondary: '#27272a', tertiary: '#3f3f46', textPrimary: '#e4e4e7', textSecondary: '#a1a1aa', textTertiary: '#71717a', disableThemeScrollbar: true }}
+                  config={{ header: { disableHeader: false, disableFileName: false }, pdfZoom: { defaultZoom: 1, zoomJump: 0.5 }, pdfVerticalScrollByDefault: true }}
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-700 border-t-zinc-400" />
+                </div>
+              )}
+            </div>
+            <DialogFooter className="border-t border-zinc-800 pt-3 mt-2">
+              <div className="flex gap-2 w-full justify-end">
+                <Button variant="outline" size="sm" onClick={() => { setViewingDoc(null); setImageLoadError(false); }}>Close</Button>
+                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => {
+                  const a = document.createElement('a');
+                  a.href = viewingDoc.url;
+                  a.download = viewingDoc.name;
+                  a.click();
+                }}>
+                  <FileDown className="h-3.5 w-3.5" /> Download
+                </Button>
+              </div>
+            </DialogFooter>
+          </DialogContent>
+        )}
+      </Dialog>
+    </>
   );
 }
 
@@ -264,6 +397,8 @@ export default function ProjectsPage() {
   const [formFeatures, setFormFeatures] = React.useState<ProjectFeature[]>([emptyFeature()]);
   const [formVision, setFormVision] = React.useState('');
   const [formArch, setFormArch] = React.useState('');
+  const [formArchImage, setFormArchImage] = React.useState('');
+  const [formDocs, setFormDocs] = React.useState<{ name: string; url: string }[]>([]);
   const [formLessons, setFormLessons] = React.useState('');
   const [formConcepts, setFormConcepts] = React.useState(0);
 
@@ -271,20 +406,18 @@ export default function ProjectsPage() {
   const [searchQuery, setSearchQuery] = React.useState('');
   const [statusFilter, setStatusFilter] = React.useState<ProjectStatus | 'ALL'>('ALL');
   const [deleteConfirm, setDeleteConfirm] = React.useState<string | null>(null);
+  const { data: projectsData } = useProjectsQuery();
+  const createProject = useCreateProject();
+  const updateProject = useUpdateProject();
+  const deleteProjectMutation = useDeleteProject();
 
-  async function initProjects() {
-    if (userEmail) {
-      try {
-        const res = await fetch(`/api/db/projects?userEmail=${encodeURIComponent(userEmail)}`);
-        if (res.ok) {
-          const json = await res.json();
-          if (json.projects?.length) {
-            setProjects(json.projects);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(json.projects));
-            return;
-          }
-        }
-      } catch {}
+  React.useEffect(() => {
+    if (!mounted) return;
+
+    if (projectsData?.projects?.length) {
+      setProjects(projectsData.projects as Project[]);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(projectsData.projects));
+      return;
     }
 
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -295,18 +428,11 @@ export default function ProjectsPage() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultProjects));
       if (userEmail) {
         for (const proj of defaultProjects) {
-          fetch('/api/db/projects', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ...proj, userEmail }),
-          }).catch(() => {});
+          createProject.mutate({ ...proj, userEmail });
         }
       }
     }
-  }
-
-  React.useEffect(() => {
-    initProjects();
-  }, [userEmail]);
+  }, [mounted, projectsData, userEmail]);
 
   React.useEffect(() => {
     if (!mounted) return;
@@ -317,7 +443,7 @@ export default function ProjectsPage() {
     setEditingId(null);
     setFormName(''); setFormDesc(''); setFormStatus('IDEA');
     setFormTech(''); setFormTechs([]); setFormFeatures([emptyFeature()]);
-    setFormVision(''); setFormArch(''); setFormLessons(''); setFormConcepts(0);
+    setFormVision(''); setFormArch(''); setFormArchImage(''); setFormDocs([]); setFormLessons(''); setFormConcepts(0);
     setEditOpen(true);
   }
 
@@ -325,7 +451,8 @@ export default function ProjectsPage() {
     setEditingId(p.id);
     setFormName(p.name); setFormDesc(p.description); setFormStatus(p.status);
     setFormTechs(p.technologies); setFormFeatures(p.features.length ? p.features : [emptyFeature()]);
-    setFormVision(p.vision); setFormArch(p.architecture); setFormLessons(p.lessons); setFormConcepts(p.linkedConcepts);
+    setFormVision(p.vision); setFormArch(p.architecture); setFormArchImage(p.architectureImage || '');
+    setFormDocs(p.docs || []); setFormLessons(p.lessons); setFormConcepts(p.linkedConcepts);
     setFormTech('');
     setEditOpen(true);
   }
@@ -346,6 +473,8 @@ export default function ProjectsPage() {
       linkedConcepts: formConcepts,
       vision: formVision.trim(),
       architecture: formArch.trim(),
+      architectureImage: formArchImage,
+      docs: formDocs,
       lessons: formLessons.trim(),
       progress,
     };
@@ -353,18 +482,12 @@ export default function ProjectsPage() {
     if (editingId) {
       setProjects((prev) => prev.map((p) => p.id === editingId ? proj : p));
       if (userEmail) {
-        fetch(`/api/db/projects?id=${editingId}`, {
-          method: 'PUT', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(proj),
-        }).catch(() => {});
+        updateProject.mutate({ id: editingId, data: proj });
       }
     } else {
       setProjects((prev) => [...prev, proj]);
       if (userEmail) {
-        fetch('/api/db/projects', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...proj, userEmail }),
-        }).catch(() => {});
+        createProject.mutate({ ...proj, userEmail });
       }
     }
     setEditOpen(false);
@@ -378,7 +501,7 @@ export default function ProjectsPage() {
     if (!deleteConfirm) return;
     setProjects((prev) => prev.filter((p) => p.id !== deleteConfirm));
     if (userEmail) {
-      fetch(`/api/db/projects?id=${deleteConfirm}`, { method: 'DELETE' }).catch(() => {});
+      deleteProjectMutation.mutate(deleteConfirm);
     }
     setDeleteConfirm(null);
   }
@@ -520,15 +643,15 @@ export default function ProjectsPage() {
 
       <ExpandedDialog project={dialogProject} open={dialogOpen} onOpenChange={setDialogOpen} />
 
-      <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="max-w-xl bg-zinc-900 border-zinc-800 max-h-[85vh]">
-          <DialogHeader>
-            <DialogTitle className="text-zinc-100">{editingId ? 'Edit Project' : 'New Project'}</DialogTitle>
-          </DialogHeader>
-          <ScrollArea className="max-h-[65vh] ml-5 pr-4">
-            <div className="space-y-4 py-2">
+      <Sheet open={editOpen} onOpenChange={setEditOpen}>
+        <SheetContent side="right" className="bg-zinc-900 border-zinc-800 flex flex-col p-0">
+          <SheetHeader className="p-6 pb-2">
+            <SheetTitle className="text-zinc-100">{editingId ? 'Edit Project' : 'New Project'}</SheetTitle>
+          </SheetHeader>
+          <ScrollArea className="flex-1 px-6 py-2">
+            <div className="space-y-4 pb-4">
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5 ml-2">
+                <div className="space-y-1.5">
                   <label className="text-xs text-zinc-400">Name</label>
                   <Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Project name" className="bg-zinc-800 border-zinc-700 text-zinc-200" />
                 </div>
@@ -551,7 +674,7 @@ export default function ProjectsPage() {
                   className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2.5 text-sm text-zinc-200 outline-none resize-none placeholder:text-zinc-600"
                   placeholder="Brief description" />
               </div>
-              <div className="space-y-1.5 ml-2">
+              <div className="space-y-1.5">
                 <label className="text-xs text-zinc-400">Technologies</label>
                 <div className="flex gap-2">
                   <Input value={formTech} onChange={(e) => setFormTech(e.target.value)}
@@ -594,13 +717,66 @@ export default function ProjectsPage() {
                 <label className="text-xs text-zinc-400">Architecture</label>
                 <textarea value={formArch} onChange={(e) => setFormArch(e.target.value)} rows={2}
                   className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2.5 text-sm text-zinc-200 outline-none resize-none placeholder:text-zinc-600" />
+                <div className="flex items-center gap-3 mt-2">
+                  <label className="cursor-pointer px-3 py-1.5 rounded text-[11px] font-medium border border-zinc-700 text-zinc-400 hover:text-zinc-200 hover:border-zinc-500 transition-colors">
+                    {formArchImage ? 'Change Image' : 'Upload Architecture Diagram (JPG)'}
+                    <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = (ev) => setFormArchImage(ev.target?.result as string || '');
+                        reader.readAsDataURL(file);
+                      }} />
+                  </label>
+                  {formArchImage && (
+                    <button onClick={() => setFormArchImage('')}
+                      className="text-[11px] text-red-400 hover:text-red-300 transition-colors">Remove</button>
+                  )}
+                </div>
+                {formArchImage && (
+                  <div className="mt-2 border border-zinc-700 rounded-lg overflow-hidden">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={formArchImage} alt="Architecture diagram" className="w-full h-auto max-h-48 object-contain bg-zinc-950" />
+                  </div>
+                )}
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs text-zinc-400">Documents</label>
+                <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-[11px] font-medium border border-zinc-700 text-zinc-400 hover:text-zinc-200 hover:border-zinc-500 transition-colors">
+                  <FileText className="h-3 w-3" /> Add Document
+                  <input type="file" accept=".pdf,.doc,.docx,image/*" className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.onload = (ev) => {
+                        const url = ev.target?.result as string || '';
+                        setFormDocs((prev) => [...prev, { name: file.name, url }]);
+                      };
+                      reader.readAsDataURL(file);
+                    }} />
+                </label>
+                {formDocs.length > 0 && (
+                  <div className="space-y-1.5 mt-2">
+                    {formDocs.map((doc, i) => (
+                      <div key={i} className="flex items-center gap-2 px-2.5 py-1.5 rounded bg-zinc-800/50 border border-zinc-700/50 cursor-pointer"
+                        onClick={() => setFormDocs((prev) => prev.filter((_, j) => j !== i))}>
+                        <FileText className="h-3.5 w-3.5 text-zinc-500 shrink-0" />
+                        <span className="text-xs text-zinc-300 truncate flex-1">{doc.name}</span>
+                        <button onClick={(e) => { e.stopPropagation(); setFormDocs((prev) => prev.filter((_, j) => j !== i)); }}
+                          className="text-zinc-600 hover:text-red-400 shrink-0"><X className="h-3 w-3" /></button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="space-y-1.5">
                 <label className="text-xs text-zinc-400">Lessons Learned</label>
                 <textarea value={formLessons} onChange={(e) => setFormLessons(e.target.value)} rows={2}
                   className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2.5 text-sm text-zinc-200 outline-none resize-none placeholder:text-zinc-600" />
               </div>
-              <div className="space-y-1.5 ml-2">
+              <div className="space-y-1.5">
                 <label className="text-xs text-zinc-400">Linked Concepts</label>
                 <Input type="number" min={0} value={formConcepts}
                   onChange={(e) => setFormConcepts(Math.max(0, parseInt(e.target.value) || 0))}
@@ -608,14 +784,14 @@ export default function ProjectsPage() {
               </div>
             </div>
           </ScrollArea>
-          <DialogFooter>
+          <SheetFooter className="p-6 pt-2 border-t border-zinc-800">
             <Button variant="outline" size="sm" onClick={() => setEditOpen(false)}>Cancel</Button>
             <Button size="sm" onClick={saveProject} disabled={!formName.trim()}>
               {editingId ? 'Save' : 'Create'}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
 
       <Dialog open={deleteConfirm !== null} onOpenChange={(v) => { if (!v) setDeleteConfirm(null); }}>
         <DialogContent className="max-w-sm bg-zinc-900 border-zinc-800">

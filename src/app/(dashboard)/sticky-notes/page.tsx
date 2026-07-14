@@ -6,6 +6,7 @@ import { useMounted } from '@/hooks/useMounted';
 import { cn } from "@/lib/utils";
 import { LazyAppear } from "@/components/shared/LazyAppear";
 import { useProfile } from "@/components/providers/ProfileProvider";
+import { useNotesQuery, useSaveNote } from '@/hooks/use-notes';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from "@/components/ui/toast";
 import {
@@ -52,70 +53,42 @@ const colorStyles = {
 };
 
 export default function StickyNotesPage() {
-  const { userEmail, customDbUrl } = useProfile();
+  const { userEmail } = useProfile();
   const mounted = useMounted();
   const [stickyNotes, setStickyNotes] = useState<StickyNoteItem[]>([]);
   const [dbConnected, setDbConnected] = useState(false);
 
-  // Fetch sticky notes from MongoDB on load
-  useEffect(() => {
-    if (!mounted) return;
-    async function loadStickyNotes() {
-      try {
-        const headers: Record<string, string> = {
-          'Content-Type': 'application/json',
-          'x-user-email': userEmail,
-        };
-        if (customDbUrl) {
-          headers['x-mongodb-url'] = customDbUrl;
-        }
-        const res = await fetch(`/api/db/notes?userEmail=${encodeURIComponent(userEmail)}`, { headers });
-        const resData = await res.json();
-        if (resData.dbConnected && resData.data) {
-          setDbConnected(true);
-          const list = resData.data.filter((item: any) => item.storagePrefix === 'command-center-sticky');
-          const parsed = list.map((item: any) => {
-            let text = item.note;
-            let color: 'yellow' | 'blue' | 'green' | 'pink' = 'yellow';
-            if (item.note.startsWith('{')) {
-              try {
-                const parsedNote = JSON.parse(item.note);
-                text = parsedNote.text;
-                color = parsedNote.color || 'yellow';
-              } catch {}
-            }
-            return { id: item.itemId, text, color };
-          });
-          setStickyNotes(parsed);
-        }
-      } catch (err) {
-        console.error('Failed to load sticky notes:', err);
-        toast({ variant: 'destructive', title: 'Failed to load sticky notes' });
-      }
-    }
-    loadStickyNotes();
-  }, [mounted, userEmail, customDbUrl]);
+  const { data: notesData } = useNotesQuery('command-center-sticky');
+  const saveNote = useSaveNote();
 
-  // Helper to save sticky notes to database
-  const saveStickyToDB = useCallback((id: string, text: string, color: string) => {
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      'x-user-email': userEmail,
-    };
-    if (customDbUrl) {
-      headers['x-mongodb-url'] = customDbUrl;
+  useEffect(() => {
+    if (!mounted || !notesData) return;
+    if (notesData.dbConnected && notesData.data) {
+      setDbConnected(true);
+      const list = notesData.data.filter((item) => item.storagePrefix === 'command-center-sticky');
+      const parsed = list.map((item) => {
+        let text = item.note;
+        let color: 'yellow' | 'blue' | 'green' | 'pink' = 'yellow';
+        if (item.note.startsWith('{')) {
+          try {
+            const parsedNote = JSON.parse(item.note);
+            text = parsedNote.text;
+            color = parsedNote.color || 'yellow';
+          } catch {}
+        }
+        return { id: item.itemId, text, color };
+      });
+      setStickyNotes(parsed);
     }
-    fetch('/api/db/notes', {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        storagePrefix: 'command-center-sticky',
-        itemId: id,
-        note: JSON.stringify({ text, color }),
-        userEmail,
-      }),
-    }).catch(() => { toast({ variant: 'destructive', title: 'Failed to save sticky note' }); });
-  }, [userEmail, customDbUrl]);
+  }, [mounted, notesData]);
+
+  const saveStickyToDB = useCallback((id: string, text: string, color: string) => {
+    saveNote.mutate({
+      storagePrefix: 'command-center-sticky',
+      itemId: id,
+      note: JSON.stringify({ text, color }),
+    });
+  }, [saveNote]);
 
   // Add a new sticky note
   const addStickyNote = () => {
@@ -137,27 +110,13 @@ export default function StickyNotesPage() {
     saveStickyToDB(id, text, newColor);
   };
 
-  // Delete sticky note
   const deleteStickyNote = (id: string) => {
     setStickyNotes((prev) => prev.filter(n => n.id !== id));
-    
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      'x-user-email': userEmail,
-    };
-    if (customDbUrl) {
-      headers['x-mongodb-url'] = customDbUrl;
-    }
-    fetch('/api/db/notes', {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        storagePrefix: 'command-center-sticky',
-        itemId: id,
-        note: '', // triggers deletion
-        userEmail,
-      }),
-    }).catch(() => { toast({ variant: 'destructive', title: 'Failed to delete sticky note' }); });
+    saveNote.mutate({
+      storagePrefix: 'command-center-sticky',
+      itemId: id,
+      note: '',
+    });
   };
 
   return (

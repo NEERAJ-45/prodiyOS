@@ -6,9 +6,10 @@ import { useMounted } from '@/hooks/useMounted';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useProfile } from '@/components/providers/ProfileProvider';
+import { useCompletionsQuery } from '@/hooks/use-completions';
 
 export default function MasteryPage() {
-  const { userEmail, userName, customDbUrl } = useProfile();
+  const { userEmail, customDbUrl } = useProfile();
   const [completions, setCompletions] = useState<Record<string, { date: string; key: string }>>({});
   const [filter, setFilter] = useState('ALL');
   const mounted = useMounted();

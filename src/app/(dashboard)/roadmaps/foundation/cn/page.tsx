@@ -21,9 +21,6 @@ interface QuestionItem {
   link: string;
 }
 
-const USER_NAME = 'NEERAJ';
-const STORAGE_PREFIX = 'foundation-cn';
-
 const cnQuestions: QuestionItem[] = [
   { id: 201, title: 'What is a Computer Network? Explain LAN, MAN, and WAN.', difficulty: 'EASY', link: 'https://www.geeksforgeeks.org/computer-networks/types-of-area-networks-lan-man-and-wan/' },
   { id: 202, title: 'Explain the OSI Reference Model and list its seven layers.', difficulty: 'EASY', link: 'https://www.geeksforgeeks.org/computer-networks/osi-model-full-form-in-computer-networking/' },

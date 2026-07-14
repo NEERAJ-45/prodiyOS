@@ -22,8 +22,9 @@ export async function sendEmail({ to, subject, text }: SendEmailParams) {
     });
     console.log('[email] Sent successfully:', result);
     return { success: true, data: result };
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('[email] Failed to send:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: message };
   }
 }

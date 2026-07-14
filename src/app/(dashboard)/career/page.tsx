@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 import {
   Target, Quote, Heart, MapPin, Award, TrendingUp,
-  ChevronRight, Brain, Zap, BookOpen, Star, Sparkles, Rocket,
+  ChevronRight, Brain, Zap, BookOpen, Star, Sparkles,
   Clock, CircleDot, Briefcase,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';

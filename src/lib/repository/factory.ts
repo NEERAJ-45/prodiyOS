@@ -3,7 +3,7 @@ import { StaticKnowledgeRepository } from './static-repository';
 
 let repositoryInstance: KnowledgeRepository | null = null;
 
-export function getRepository(mode: 'HOME' | 'OFFICE' = 'OFFICE'): KnowledgeRepository {
+export function getRepository(): KnowledgeRepository {
   if (!repositoryInstance) {
     repositoryInstance = new StaticKnowledgeRepository();
   }

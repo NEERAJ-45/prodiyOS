@@ -14,11 +14,6 @@ function useResumeHeaders() {
   }, [userEmail, customDbUrl]);
 }
 
-function extractApiError(error: unknown): string {
-  if (error instanceof Error) return error.message;
-  return 'An unexpected error occurred';
-}
-
 async function handleResponse<T>(res: Response): Promise<T> {
   if (!res.ok) {
     let message: string;

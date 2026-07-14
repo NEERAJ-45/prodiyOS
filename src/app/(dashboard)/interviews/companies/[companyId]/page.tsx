@@ -3,11 +3,11 @@
 import * as React from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useProfile } from '@/components/providers/ProfileProvider';
+import { useCompanyQuery, useUpdateCompany } from '@/hooks/use-interviews';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { cn } from '@/lib/utils';
 import {
   Building2, ArrowLeft, Save, DollarSign, Cpu, Users, Heart, Plus, X, Globe, Mail,
 } from 'lucide-react';
@@ -36,9 +36,11 @@ export default function CompanyDetailPage() {
   const { userEmail } = useProfile();
   const companyId = params.companyId as string;
 
+  const { data: companyData, isLoading } = useCompanyQuery(companyId);
+  const updateCompanyMutation = useUpdateCompany();
+
   const [company, setCompany] = React.useState<Company | null>(null);
   const [mounted, setMounted] = React.useState(false);
-  const [saving, setSaving] = React.useState(false);
 
   const [editCompRange, setEditCompRange] = React.useState('');
   const [editTechStack, setEditTechStack] = React.useState<string[]>([]);
@@ -49,44 +51,35 @@ export default function CompanyDetailPage() {
 
   React.useEffect(() => {
     setMounted(true);
-    if (!userEmail || !companyId) return;
+  }, []);
 
-    fetch(`/api/companies/${companyId}`)
-      .then((r) => r.json())
-      .then((data) => {
-        const c = data.company;
-        if (c) {
-          setCompany(c);
-          setEditCompRange(c.compRange || '');
-          setEditTechStack(c.techStack || []);
-          setEditWhy(c.whyInterested || '');
-          setEditNotes(c.notes || '');
-          setEditContacts(c.contacts || []);
-        }
-      })
-      .catch(() => {});
-  }, [userEmail, companyId]);
+  React.useEffect(() => {
+    const c = companyData?.company;
+    if (c) {
+      setCompany(c as Company);
+      setEditCompRange(c.compRange || '');
+      setEditTechStack(c.techStack || []);
+      setEditWhy(c.whyInterested || '');
+      setEditNotes(c.notes || '');
+      setEditContacts(c.contacts || []);
+    }
+  }, [companyData]);
 
   async function saveCompany() {
     if (!company) return;
-    setSaving(true);
     try {
-      await fetch(`/api/companies/${company.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          compRange: editCompRange,
-          techStack: editTechStack,
-          contacts: editContacts,
-          whyInterested: editWhy,
-          notes: editNotes,
-        }),
+      await updateCompanyMutation.mutateAsync({
+        id: company.id,
+        compRange: editCompRange,
+        techStack: editTechStack,
+        contacts: editContacts,
+        whyInterested: editWhy,
+        notes: editNotes,
       });
       toast.success('Company details saved');
     } catch {
       toast.error('Failed to save');
     }
-    setSaving(false);
   }
 
   function addTech() {
@@ -133,9 +126,9 @@ export default function CompanyDetailPage() {
             <h1 className="text-xl font-semibold text-zinc-100">{company.name}</h1>
           </div>
         </div>
-        <Button variant="outline" size="sm" onClick={saveCompany} disabled={saving} className="gap-1.5">
+        <Button variant="outline" size="sm" onClick={saveCompany} disabled={updateCompanyMutation.isPending} className="gap-1.5">
           <Save className="h-3.5 w-3.5" />
-          {saving ? 'Saving...' : 'Save'}
+          {updateCompanyMutation.isPending ? 'Saving...' : 'Save'}
         </Button>
       </div>
 

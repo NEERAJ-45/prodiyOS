@@ -21,9 +21,6 @@ interface QuestionItem {
   link: string;
 }
 
-const USER_NAME = 'NEERAJ';
-const STORAGE_PREFIX = 'foundation-os';
-
 const osQuestions: QuestionItem[] = [
   { id: 101, title: 'What is an Operating System and what are its primary functions?', difficulty: 'EASY', link: 'https://www.geeksforgeeks.org/operating-systems/functions-of-operating-system/' },
   { id: 102, title: 'Explain the difference between a process and a thread.', difficulty: 'EASY', link: 'https://www.geeksforgeeks.org/videos/process-vs-threads-in-operating-system/' },

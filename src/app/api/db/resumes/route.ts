@@ -95,7 +95,7 @@ export async function POST(request: Request) {
       pdfData: updateFields.pdfData || undefined,
     });
 
-    const { pdfData: _, ...docData } = doc.toObject();
+    const { pdfData, ...docData } = doc.toObject();
     return NextResponse.json({ success: true, data: docData }, { status: 201 });
   } catch (error: unknown) {
     const message = getErrorMessage(error);

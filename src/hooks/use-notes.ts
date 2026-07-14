@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useProfile } from '@/components/providers/ProfileProvider';
 import { useCallback } from 'react';
+import { fetchNotes, saveNote } from '@/lib/services/notes';
+import type { FetchNotesResponse } from '@/lib/services/notes';
 
 function useNotesHeaders() {
   const { userEmail, customDbUrl } = useProfile();
@@ -14,22 +16,13 @@ function useNotesHeaders() {
   }, [userEmail, customDbUrl]);
 }
 
-interface NotesResponse {
-  dbConnected: boolean;
-  data: Array<{ storagePrefix: string; itemId: string; note: string }>;
-}
-
 export function useNotesQuery(storagePrefix: string) {
   const { userEmail } = useProfile();
   const getHeaders = useNotesHeaders();
 
-  return useQuery<NotesResponse>({
+  return useQuery<FetchNotesResponse>({
     queryKey: ['notes', storagePrefix],
-    queryFn: async () => {
-      const res = await fetch(`/api/db/notes?userEmail=${encodeURIComponent(userEmail)}`, { headers: getHeaders() });
-      if (!res.ok) throw new Error('Failed to fetch notes');
-      return res.json();
-    },
+    queryFn: () => fetchNotes(userEmail, getHeaders()),
     enabled: !!userEmail,
     staleTime: 2 * 60 * 1000,
   });
@@ -42,13 +35,7 @@ export function useSaveNote() {
 
   return useMutation({
     mutationFn: async ({ storagePrefix, itemId, note, itemTitle }: { storagePrefix: string; itemId: string; note?: string; itemTitle?: string }) => {
-      const res = await fetch('/api/db/notes', {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify({ storagePrefix, itemId, note, userEmail, itemTitle }),
-      });
-      if (!res.ok) throw new Error('Failed to save note');
-      return res.json();
+      return saveNote({ storagePrefix, itemId, note, userEmail, itemTitle }, getHeaders());
     },
     onSuccess: (_data, variables) => {
       const prefix = variables.storagePrefix.replace('-notes', '');

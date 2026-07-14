@@ -41,8 +41,9 @@ export async function POST(request: Request) {
       success: true,
       user: { id: user._id.toString(), email: user.email, name: user.name, role: user.role },
     });
-  } catch (error: any) {
-    console.error('[API/auth/register]', error.message);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'An error occurred';
+    console.error('[API/auth/register]', message);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

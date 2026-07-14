@@ -4,10 +4,10 @@ import * as React from 'react';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useMounted } from '@/hooks/useMounted';
 import { cn } from '@/lib/utils';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Plus, Pencil, Trash2, CheckCircle, Circle, RefreshCw, Calendar, BookOpen, RotateCcw } from 'lucide-react';
+import { Plus, Pencil, Trash2, CheckCircle, Circle, Calendar, BookOpen, RotateCcw } from 'lucide-react';
+import { useRevisionsQuery, useSaveRevision, useDeleteRevision } from '@/hooks/use-revision';
 import {
   Dialog,
   DialogTrigger,
@@ -61,40 +61,32 @@ export default function RevisionPage() {
   const [formConcept, setFormConcept] = useState('');
   const [formDueDate, setFormDueDate] = useState('');
 
-  // Load items on mount
+  const { data: revisionsData } = useRevisionsQuery();
+  const saveRevisionMutation = useSaveRevision();
+  const deleteRevisionMutation = useDeleteRevision();
+
   useEffect(() => {
-    async function loadItems() {
-      try {
-        const res = await fetch('/api/db/revision');
-        const resData = await res.json();
-        if (resData.dbConnected) {
-          setDbConnected(true);
-          if (resData.data && resData.data.length > 0) {
-            setItems(resData.data);
-            return;
-          }
-        }
-      } catch (e) {
-        console.error('Failed to load from DB:', e);
+    if (revisionsData?.dbConnected) {
+      setDbConnected(true);
+      if (revisionsData.data?.length) {
+        setItems(revisionsData.data);
+        return;
       }
-
-      // Fallback
-      const localRaw = localStorage.getItem('revision-scheduler-items');
-      if (localRaw) {
-        try {
-          setItems(JSON.parse(localRaw));
-          return;
-        } catch {}
-      }
-
-      setItems(defaultSeeds);
-      localStorage.setItem('revision-scheduler-items', JSON.stringify(defaultSeeds));
     }
-    loadItems();
-  }, []);
+
+    const localRaw = localStorage.getItem('revision-scheduler-items');
+    if (localRaw) {
+      try {
+        setItems(JSON.parse(localRaw));
+        return;
+      } catch {}
+    }
+
+    setItems(defaultSeeds);
+    localStorage.setItem('revision-scheduler-items', JSON.stringify(defaultSeeds));
+  }, [revisionsData]);
 
   const saveItem = useCallback(async (item: RevisionItem) => {
-    // 1. Update State & LocalStorage
     setItems((prev) => {
       const idx = prev.findIndex((x) => x.id === item.id);
       const next = [...prev];
@@ -104,19 +96,10 @@ export default function RevisionPage() {
       return next;
     });
 
-    // 2. Sync to Mongo DB
     if (dbConnected) {
-      try {
-        await fetch('/api/db/revision', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(item),
-        });
-      } catch (e) {
-        console.error('Failed to sync to database:', e);
-      }
+      saveRevisionMutation.mutate({ ...item, userEmail: '' });
     }
-  }, [dbConnected]);
+  }, [dbConnected, saveRevisionMutation]);
 
   const deleteItem = useCallback(async (id: string) => {
     setItems((prev) => {
@@ -126,15 +109,9 @@ export default function RevisionPage() {
     });
 
     if (dbConnected) {
-      try {
-        await fetch(`/api/db/revision?id=${id}`, {
-          method: 'DELETE',
-        });
-      } catch (e) {
-        console.error('Failed to delete from database:', e);
-      }
+      deleteRevisionMutation.mutate(id);
     }
-  }, [dbConnected]);
+  }, [dbConnected, deleteRevisionMutation]);
 
   // Form Handlers
   const handleAddSubmit = (e: React.FormEvent) => {

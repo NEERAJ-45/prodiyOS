@@ -299,7 +299,6 @@ export class StaticKnowledgeRepository implements KnowledgeRepository {
       });
     }
 
-    const now = new Date();
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     const recentSessions = sessions.filter((s) => new Date(s.date) >= thirtyDaysAgo);

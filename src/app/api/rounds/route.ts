@@ -8,8 +8,6 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const userEmail = searchParams.get('userEmail') || request.headers.get('x-user-email') || '';
     const applicationId = searchParams.get('applicationId');
-    const companyId = searchParams.get('companyId');
-
     if (!userEmail) {
       return NextResponse.json({ rounds: [] });
     }
@@ -20,7 +18,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ rounds: [] });
     }
 
-    const filter: any = { userEmail };
+    const filter: Record<string, string> = { userEmail };
     if (applicationId) filter.applicationId = applicationId;
 
     const rounds = await InterviewRound.find(filter).sort({ date: -1 }).lean();
@@ -55,7 +53,8 @@ export async function POST(request: Request) {
     logActivity(userEmail, `Recorded ${data.roundType} interview`);
 
     return NextResponse.json({ round }, { status: 201 });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'An error occurred';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
