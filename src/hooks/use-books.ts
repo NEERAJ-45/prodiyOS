@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useProfile } from '@/components/providers/ProfileProvider';
+import { createBook } from '@/lib/actions/books';
 
 export interface BookData {
   _id?: string;
@@ -49,14 +50,9 @@ export function useAddBook() {
     mutationFn: async (bookData: Omit<BookData, 'id' | 'userEmail'> | FormData) => {
       if (bookData instanceof FormData) {
         bookData.append('userEmail', userEmail!);
-        const res = await fetch('/api/db/books', {
-          method: 'POST',
-          headers: customDbUrl ? { 'x-mongodb-url': customDbUrl } : {},
-          body: bookData,
-        });
-        const json = await res.json();
-        if (!res.ok) throw new Error(json.error || 'Failed to add book');
-        return json;
+        const result = await createBook(bookData);
+        if (result.error) throw new Error(result.error);
+        return result;
       }
       const res = await fetch('/api/db/books', {
         method: 'POST',
