@@ -224,7 +224,7 @@ const PaperCard = React.memo(function PaperCard({
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0 space-y-1.5">
-            <p className="text-sm font-medium text-zinc-200">{paper.title}</p>
+            <a href={paper.url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-zinc-200 hover:text-blue-400 transition-colors">{paper.title}</a>
             <p className="text-xs text-zinc-500">{paper.authors}</p>
             <div className="flex items-center gap-2">
               <span className="text-[11px] text-zinc-600">{paper.source}</span>
