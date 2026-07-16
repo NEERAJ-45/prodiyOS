@@ -185,8 +185,6 @@ export default function QuestionsTable({
             return (
               <a
                 href={link}
-                target="_blank"
-                rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-blue-400 bg-blue-950/40 border border-blue-800/40 rounded hover:bg-blue-950/60 transition-colors"
               >
                 Open <ExternalLink className="h-3 w-3" />
