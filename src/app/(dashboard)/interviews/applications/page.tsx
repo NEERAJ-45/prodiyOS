@@ -3,6 +3,8 @@
 import * as React from 'react';
 import { useMounted } from '@/hooks/useMounted';
 import { useProfile } from '@/components/providers/ProfileProvider';
+import { useApplicationsQuery } from '@/hooks/use-interviews';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -60,7 +62,8 @@ type SortDir = 'asc' | 'desc';
 
 export default function ApplicationsPage() {
   const { userEmail } = useProfile();
-  const [applications, setApplications] = React.useState<Application[]>([]);
+  const { data: appsData, isLoading } = useApplicationsQuery();
+  const queryClient = useQueryClient();
   const [search, setSearch] = React.useState('');
   const [statusFilter, setStatusFilter] = React.useState<string>('ALL');
   const [sortField, setSortField] = React.useState<SortField>('appliedDate');
@@ -69,17 +72,7 @@ export default function ApplicationsPage() {
   const [formOpen, setFormOpen] = React.useState(false);
   const [editingApp, setEditingApp] = React.useState<Application | null>(null);
 
-  const fetchApps = React.useCallback(() => {
-    if (!userEmail) return;
-    fetch(`/api/interviews?userEmail=${encodeURIComponent(userEmail)}`)
-      .then((r) => r.json())
-      .then((data) => setApplications(data.applications || []))
-      .catch(() => {});
-  }, [userEmail]);
-
-  React.useEffect(() => {
-    fetchApps();
-  }, [fetchApps]);
+  const applications = (appsData?.applications ?? []) as Application[];
 
   function toggleSort(field: SortField) {
     if (sortField === field) {
@@ -98,7 +91,7 @@ export default function ApplicationsPage() {
   function handleFormClose() {
     setFormOpen(false);
     setEditingApp(null);
-    fetchApps();
+    queryClient.invalidateQueries({ queryKey: ['interviews', 'applications'] });
   }
 
   const filtered = applications
@@ -133,7 +126,7 @@ export default function ApplicationsPage() {
     );
   };
 
-  if (!mounted) {
+  if (!mounted || isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-700 border-t-zinc-400" />

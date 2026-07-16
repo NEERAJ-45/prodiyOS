@@ -134,27 +134,38 @@ export function ApplicationFormDialog({ open, onClose, userEmail, application }:
       const body: Record<string, unknown> = {
         ...data,
         userEmail,
-        pdfData: pdfDataUrl || application?.pdfData || '',
       };
 
       if (isEdit) {
-        await fetch(`/api/interviews/${application!.id}`, {
+        if (pdfDataUrl) body.pdfData = pdfDataUrl;
+
+        const res = await fetch(`/api/interviews/${application!.id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
         });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || `Server error (${res.status})`);
+        }
         toast.success('Application updated');
       } else {
-        await fetch('/api/interviews', {
+        body.pdfData = pdfDataUrl || '';
+
+        const res = await fetch('/api/interviews', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
         });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || `Server error (${res.status})`);
+        }
         toast.success('Application added');
       }
       onClose();
-    } catch {
-      toast.error('Something went wrong');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Something went wrong');
     }
   }
 
