@@ -25,6 +25,7 @@ export interface Application {
   priority?: string;
   notes?: string;
   nextRoundDate?: string | null;
+  pdfData?: string;
 }
 
 interface ApplicationsResponse {

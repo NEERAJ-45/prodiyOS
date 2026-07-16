@@ -9,13 +9,14 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { FileText, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const formSchema = z.object({
   company: z.string().min(1, 'Company is required'),
   role: z.string().min(1, 'Role is required'),
   appliedDate: z.string().min(1, 'Date is required'),
-  status: z.enum(['APPLIED', 'PHONE_SCREEN', 'TECH_ROUND_1', 'TECH_ROUND_2', 'SYSTEM_DESIGN', 'HR_CULTURE', 'OFFER', 'REJECTED']),
+  status: z.enum(['APPLIED', 'PHONE_SCREEN', 'TECH_ROUND_1', 'TECH_ROUND_2', 'SYSTEM_DESIGN', 'HR_CULTURE', 'OFFER', 'REJECTED', 'GHOSTED', 'DIDNT_SHORTLIST']),
   source: z.enum(['LINKEDIN', 'COMPANY_WEBSITE', 'REFERRAL', 'RECRUITER', 'OTHER']),
   priority: z.enum(['LOW', 'MEDIUM', 'HIGH']),
   notes: z.string().optional(),
@@ -33,6 +34,8 @@ const statusOptions = [
   { value: 'HR_CULTURE', label: 'HR/Culture' },
   { value: 'OFFER', label: 'Offer' },
   { value: 'REJECTED', label: 'Rejected' },
+  { value: 'GHOSTED', label: 'Ghosted' },
+  { value: 'DIDNT_SHORTLIST', label: "Didn't Shortlist" },
 ];
 
 const sourceOptions = [
@@ -63,11 +66,15 @@ interface ApplicationFormDialogProps {
     priority: string;
     notes?: string;
     nextRoundDate?: string | null;
+    pdfData?: string;
   } | null;
 }
 
 export function ApplicationFormDialog({ open, onClose, userEmail, application }: ApplicationFormDialogProps) {
   const isEdit = !!application;
+  const [pdfFile, setPdfFile] = React.useState<File | null>(null);
+  const [pdfDataUrl, setPdfDataUrl] = React.useState<string>('');
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const defaultValues: FormData = application
     ? {
@@ -104,14 +111,30 @@ export function ApplicationFormDialog({ open, onClose, userEmail, application }:
   React.useEffect(() => {
     if (open) {
       reset(defaultValues);
+      setPdfFile(null);
+      setPdfDataUrl('');
     }
   }, [open, application, defaultValues, reset]);
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.type !== 'application/pdf') {
+      toast.error('Only PDF files are allowed');
+      return;
+    }
+    setPdfFile(file);
+    const reader = new FileReader();
+    reader.onload = () => setPdfDataUrl(reader.result as string);
+    reader.readAsDataURL(file);
+  }
 
   async function onSubmit(data: FormData) {
     try {
       const body: Record<string, unknown> = {
         ...data,
         userEmail,
+        pdfData: pdfDataUrl || application?.pdfData || '',
       };
 
       if (isEdit) {
@@ -191,6 +214,39 @@ export function ApplicationFormDialog({ open, onClose, userEmail, application }:
                   <option key={o.value} value={o.value}>{o.label}</option>
                 ))}
               </select>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs text-zinc-400">Resume / PDF (optional)</label>
+            <div className="flex items-center gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,application/pdf"
+                onChange={handleFileChange}
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="flex items-center gap-1.5 px-3 py-2 text-xs text-zinc-400 bg-zinc-800 border border-zinc-700 rounded-lg hover:text-zinc-200 hover:border-zinc-600 transition-colors"
+              >
+                <FileText className="h-3.5 w-3.5" />
+                {pdfFile ? pdfFile.name : 'Choose PDF'}
+              </button>
+              {pdfFile && (
+                <button
+                  type="button"
+                  onClick={() => { setPdfFile(null); setPdfDataUrl(''); }}
+                  className="p-1.5 text-zinc-500 hover:text-red-400 transition-colors"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+              {!pdfFile && application?.pdfData && (
+                <span className="text-xs text-zinc-500">PDF attached</span>
+              )}
             </div>
           </div>
 

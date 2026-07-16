@@ -13,13 +13,15 @@ import { Badge } from '@/components/ui/badge';
 import { Building2, GripVertical } from 'lucide-react';
 
 const statusConfig: Record<string, { label: string; color: string; dot: string }> = {
-  APPLIED:       { label: 'Applied',       color: 'border-blue-800/40 bg-blue-950/10', dot: 'bg-blue-500' },
-  PHONE_SCREEN:  { label: 'Phone Screen',  color: 'border-cyan-800/40 bg-cyan-950/10', dot: 'bg-cyan-500' },
-  TECH_ROUND_1:  { label: 'Tech Round 1',  color: 'border-violet-800/40 bg-violet-950/10', dot: 'bg-violet-500' },
-  TECH_ROUND_2:  { label: 'Tech Round 2',  color: 'border-indigo-800/40 bg-indigo-950/10', dot: 'bg-indigo-500' },
-  SYSTEM_DESIGN: { label: 'System Design', color: 'border-amber-800/40 bg-amber-950/10', dot: 'bg-amber-500' },
-  HR_CULTURE:    { label: 'HR/Culture',    color: 'border-emerald-800/40 bg-emerald-950/10', dot: 'bg-emerald-500' },
-  OFFER:         { label: 'Offer',         color: 'border-green-800/40 bg-green-950/10', dot: 'bg-green-500' },
+  APPLIED:          { label: 'Applied',          color: 'border-blue-800/40 bg-blue-950/10', dot: 'bg-blue-500' },
+  PHONE_SCREEN:     { label: 'Phone Screen',     color: 'border-cyan-800/40 bg-cyan-950/10', dot: 'bg-cyan-500' },
+  TECH_ROUND_1:     { label: 'Tech Round 1',     color: 'border-violet-800/40 bg-violet-950/10', dot: 'bg-violet-500' },
+  TECH_ROUND_2:     { label: 'Tech Round 2',     color: 'border-indigo-800/40 bg-indigo-950/10', dot: 'bg-indigo-500' },
+  SYSTEM_DESIGN:    { label: 'System Design',    color: 'border-amber-800/40 bg-amber-950/10', dot: 'bg-amber-500' },
+  HR_CULTURE:       { label: 'HR/Culture',       color: 'border-emerald-800/40 bg-emerald-950/10', dot: 'bg-emerald-500' },
+  OFFER:            { label: 'Offer',            color: 'border-green-800/40 bg-green-950/10', dot: 'bg-green-500' },
+  GHOSTED:          { label: 'Ghosted',          color: 'border-zinc-700/40 bg-zinc-900/10', dot: 'bg-zinc-500' },
+  DIDNT_SHORTLIST:  { label: "Didn't Shortlist", color: 'border-orange-800/40 bg-orange-950/10', dot: 'bg-orange-500' },
 };
 
 interface Application {

@@ -17,6 +17,7 @@ interface Application {
 const statuses = [
   'APPLIED', 'PHONE_SCREEN', 'TECH_ROUND_1', 'TECH_ROUND_2',
   'SYSTEM_DESIGN', 'HR_CULTURE', 'OFFER',
+  'GHOSTED', 'DIDNT_SHORTLIST',
 ] as const;
 
 export default function PipelinePage() {

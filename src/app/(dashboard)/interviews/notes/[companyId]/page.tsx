@@ -17,14 +17,16 @@ import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 
 const statusLabel: Record<string, { label: string; color: string }> = {
-  APPLIED:       { label: 'Applied', color: 'bg-blue-950 text-blue-300 border-blue-800' },
-  PHONE_SCREEN:  { label: 'Phone Screen', color: 'bg-cyan-950 text-cyan-300 border-cyan-800' },
-  TECH_ROUND_1:  { label: 'Tech Round 1', color: 'bg-violet-950 text-violet-300 border-violet-800' },
-  TECH_ROUND_2:  { label: 'Tech Round 2', color: 'bg-indigo-950 text-indigo-300 border-indigo-800' },
-  SYSTEM_DESIGN: { label: 'System Design', color: 'bg-amber-950 text-amber-300 border-amber-800' },
-  HR_CULTURE:    { label: 'HR/Culture', color: 'bg-emerald-950 text-emerald-300 border-emerald-800' },
-  OFFER:         { label: 'Offer', color: 'bg-green-950 text-green-300 border-green-800' },
-  REJECTED:      { label: 'Rejected', color: 'bg-red-950 text-red-300 border-red-800' },
+  APPLIED:          { label: 'Applied', color: 'bg-blue-950 text-blue-300 border-blue-800' },
+  PHONE_SCREEN:     { label: 'Phone Screen', color: 'bg-cyan-950 text-cyan-300 border-cyan-800' },
+  TECH_ROUND_1:     { label: 'Tech Round 1', color: 'bg-violet-950 text-violet-300 border-violet-800' },
+  TECH_ROUND_2:     { label: 'Tech Round 2', color: 'bg-indigo-950 text-indigo-300 border-indigo-800' },
+  SYSTEM_DESIGN:    { label: 'System Design', color: 'bg-amber-950 text-amber-300 border-amber-800' },
+  HR_CULTURE:       { label: 'HR/Culture', color: 'bg-emerald-950 text-emerald-300 border-emerald-800' },
+  OFFER:            { label: 'Offer', color: 'bg-green-950 text-green-300 border-green-800' },
+  REJECTED:         { label: 'Rejected', color: 'bg-red-950 text-red-300 border-red-800' },
+  GHOSTED:          { label: 'Ghosted', color: 'bg-zinc-800 text-zinc-400 border-zinc-700' },
+  DIDNT_SHORTLIST:  { label: "Didn't Shortlist", color: 'bg-orange-950 text-orange-300 border-orange-800' },
 };
 
 interface Application {

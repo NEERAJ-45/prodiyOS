@@ -8,7 +8,9 @@ export type ApplicationStatus =
   | 'SYSTEM_DESIGN'
   | 'HR_CULTURE'
   | 'OFFER'
-  | 'REJECTED';
+  | 'REJECTED'
+  | 'GHOSTED'
+  | 'DIDNT_SHORTLIST';
 
 export type ApplicationSource = 'LINKEDIN' | 'COMPANY_WEBSITE' | 'REFERRAL' | 'RECRUITER' | 'OTHER';
 
@@ -25,6 +27,7 @@ export interface IApplication extends Document {
   priority: ApplicationPriority;
   notes: string;
   nextRoundDate: Date | null;
+  pdfData: string;
 }
 
 const ApplicationSchema: Schema = new Schema({
@@ -33,11 +36,12 @@ const ApplicationSchema: Schema = new Schema({
   company:      { type: String, required: true },
   role:         { type: String, required: true },
   appliedDate:  { type: Date, required: true },
-  status:       { type: String, enum: ['APPLIED', 'PHONE_SCREEN', 'TECH_ROUND_1', 'TECH_ROUND_2', 'SYSTEM_DESIGN', 'HR_CULTURE', 'OFFER', 'REJECTED'], default: 'APPLIED' },
+  status:       { type: String, enum: ['APPLIED', 'PHONE_SCREEN', 'TECH_ROUND_1', 'TECH_ROUND_2', 'SYSTEM_DESIGN', 'HR_CULTURE', 'OFFER', 'REJECTED', 'GHOSTED', 'DIDNT_SHORTLIST'], default: 'APPLIED' },
   source:       { type: String, enum: ['LINKEDIN', 'COMPANY_WEBSITE', 'REFERRAL', 'RECRUITER', 'OTHER'], default: 'OTHER' },
   priority:     { type: String, enum: ['LOW', 'MEDIUM', 'HIGH'], default: 'MEDIUM' },
   notes:        { type: String, default: '' },
   nextRoundDate: { type: Date, default: null },
+  pdfData:       { type: String, default: '' },
 }, { timestamps: true });
 
 export default mongoose.models.Application || mongoose.model<IApplication>('Application', ApplicationSchema);
