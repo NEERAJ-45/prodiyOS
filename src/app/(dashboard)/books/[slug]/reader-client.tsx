@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import dynamic from 'next/dynamic';
-import { ChevronLeft, ChevronRight, Loader2, ZoomIn, ZoomOut, RotateCw, Maximize2, Minimize2, BookOpen } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2, ZoomIn, ZoomOut, RotateCw, Maximize2, Minimize2, BookOpen, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useProfile } from '@/components/providers/ProfileProvider';
 import type { BookEntry } from '@/data/books';
@@ -120,6 +120,14 @@ export function BookReaderClient({ book, title: propTitle, pdfUrl: propPdfUrl, b
     <div ref={viewerRef} className="flex flex-col h-full">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-4 py-2 border-b border-zinc-800 bg-zinc-900/50">
         <div className="flex items-center gap-3 min-w-0">
+          <a
+            href="/books"
+            className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-300 transition-colors shrink-0"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            Library
+          </a>
+          <div className="w-px h-4 bg-zinc-800 shrink-0" />
           <BookOpen className="h-4 w-4 text-zinc-500 shrink-0" />
           <h1 className="text-sm font-medium text-zinc-200 truncate">{displayTitle}</h1>
         </div>
