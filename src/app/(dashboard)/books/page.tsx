@@ -490,10 +490,6 @@ export default function BooksPage() {
                 <BookOpen className="h-3.5 w-3.5" />
                 Reading
               </TabsTrigger>
-              <TabsTrigger value="papers" className="data-[state=active]:bg-zinc-800 data-[state=active]:text-zinc-100 text-zinc-500 text-xs gap-2">
-                <FileText className="h-3.5 w-3.5" />
-                Research Papers
-              </TabsTrigger>
               <TabsTrigger value="docs" className="data-[state=active]:bg-zinc-800 data-[state=active]:text-zinc-100 text-zinc-500 text-xs gap-2">
                 <FileCode className="h-3.5 w-3.5" />
                 Documentation
@@ -530,21 +526,34 @@ export default function BooksPage() {
                 />
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                {categoryOrder.map((cat) => {
-                  const catBooks = filteredGrouped[cat];
-                  if (!catBooks) return null;
-                  return (
-                    <CategoryCard
-                      key={cat}
-                      catKey={cat}
-                      label={categoryLabels[cat] || cat}
-                      count={catBooks.length}
-                      onClick={() => setSelectedCategory(cat)}
-                    />
-                  );
-                })}
-              </div>
+              <>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {categoryOrder.map((cat) => {
+                    const catBooks = filteredGrouped[cat];
+                    if (!catBooks) return null;
+                    return (
+                      <CategoryCard
+                        key={cat}
+                        catKey={cat}
+                        label={categoryLabels[cat] || cat}
+                        count={catBooks.length}
+                        onClick={() => setSelectedCategory(cat)}
+                      />
+                    );
+                  })}
+                </div>
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold text-zinc-300 flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    Research Papers
+                  </h3>
+                  <div className="space-y-2">
+                    {papers.map((paper) => (
+                      <PaperCard key={paper.id} paper={paper} />
+                    ))}
+                  </div>
+                </div>
+              </>
             )}
           </TabsContent>
 
@@ -573,14 +582,6 @@ export default function BooksPage() {
                 ))}
               </div>
             )}
-          </TabsContent>
-
-          <TabsContent value="papers" className="mt-0 space-y-4">
-            <div className="space-y-2">
-              {papers.map((paper) => (
-                <PaperCard key={paper.id} paper={paper} />
-              ))}
-            </div>
           </TabsContent>
 
           <TabsContent value="docs" className="mt-0">
