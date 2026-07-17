@@ -405,7 +405,7 @@ export default function BooksPage() {
       }
 
       addBook.mutate(
-        formData as any,
+        formData as unknown as FormData,
         {
           onSuccess: () => {
             toast({ title: 'Book added' });

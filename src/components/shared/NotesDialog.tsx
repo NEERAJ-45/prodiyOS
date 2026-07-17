@@ -44,7 +44,6 @@ export function NotesDialog({ id, initialValue, onSave }: NotesDialogProps) {
         </button>
       </DialogTrigger>
       <DialogContent className="border-zinc-800 bg-zinc-950 sm:max-w-[400px] shadow-2xl">
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/[0.03] to-transparent pointer-events-none rounded-xl" />
         <DialogHeader>
           <DialogTitle className="text-zinc-100 flex items-center gap-2.5 text-base font-semibold">
             <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/20">

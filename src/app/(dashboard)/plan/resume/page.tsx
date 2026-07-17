@@ -55,7 +55,7 @@ export default function ResumeDashboard() {
   const deleteResume = useDeleteResume();
   const inputRef = React.useRef<HTMLInputElement>(null);
 
-  React.useEffect(() => { refetch(); }, []);
+  React.useEffect(() => { refetch(); }, [refetch]);
 
   const resumes = React.useMemo(() => resumesData?.data ?? [], [resumesData]);
 
@@ -115,7 +115,7 @@ export default function ResumeDashboard() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
 
-  const columns = React.useMemo(() => [
+  const columns = [
     columnHelper.accessor('title', {
       header: 'Resume',
       cell: (info) => (
@@ -175,7 +175,7 @@ export default function ResumeDashboard() {
       ),
       size: 100,
     }),
-  ], []);
+  ];
 
   const table = useReactTable({
     data: filtered,

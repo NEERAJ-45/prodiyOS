@@ -15,7 +15,6 @@ const pillars = [
     progress: 0,
     hours: 100,
     difficulty: 'Medium' as const,
-    color: 'from-orange-600 to-orange-400',
     domains: [
       { name: 'Core Java', progress: 0, modules: ['OOP', 'Collections', 'Streams', 'Concurrency'] },
       { name: 'Advanced Java', progress: 0, modules: ['JVM Internals', 'Memory Model', 'GC Tuning'] },
@@ -27,7 +26,6 @@ const pillars = [
     progress: 0,
     hours: 120,
     difficulty: 'Medium' as const,
-    color: 'from-green-600 to-green-400',
     domains: [
       { name: 'Core Spring & Web', progress: 0, modules: ['IoC', 'DI', 'AOP', 'REST APIs', 'MVC', 'Security', 'JPA'] },
       { name: 'Microservices', progress: 0, modules: ['Service Discovery', 'API Gateway', 'Circuit Breaker'] },
@@ -153,22 +151,18 @@ function computeBackendProgress() {
 }
 
 export default function BackendRoadmapPage() {
-  const progressData = React.useSyncExternalStore(
-    (callback) => {
-      const bc = new BroadcastChannel('roadmap-progress');
-      bc.onmessage = callback;
-      window.addEventListener('storage', callback);
-      return () => {
-        bc.close();
-        window.removeEventListener('storage', callback);
-      };
-    },
-    computeBackendProgress,
-    () => ({
-      java: { overall: 0, core: 0, advanced: 0 },
-      springboot: { overall: 0, core: 0, micro: 0 }
-    })
-  );
+  const [progressData, setProgressData] = React.useState(computeBackendProgress);
+
+  React.useEffect(() => {
+    const update = () => setProgressData(computeBackendProgress());
+    const bc = new BroadcastChannel('roadmap-progress');
+    bc.onmessage = update;
+    window.addEventListener('storage', update);
+    return () => {
+      bc.close();
+      window.removeEventListener('storage', update);
+    };
+  }, []);
 
   const dynamicPillars = React.useMemo(() => {
     return [

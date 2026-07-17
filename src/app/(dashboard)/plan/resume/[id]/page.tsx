@@ -462,7 +462,7 @@ export default function ResumeEditor() {
               </button>
             </div>
           </div>
-          <div className="flex-1 overflow-y-auto p-4 sm:p-5 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-zinc-900/30 to-transparent">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-5 bg-zinc-950">
             {pdfUrl ? (
               <div className="[&_.react-pdf\_\_Page\_\_textContent\_span]:cursor-pointer">
                 <PdfViewer

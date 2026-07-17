@@ -6,7 +6,6 @@ import { signOut } from 'next-auth/react';
 import { LogOut, User, X, CalendarDays, Flame, Wifi, WifiOff } from 'lucide-react';
 import { toast } from '@/components/ui/toast';
 import { quotes } from '../../../quotes';
-import { SpotlightCard } from '@/components/ui/SpotlightCard';
 import { GlobalSearch } from '@/components/shared/GlobalSearch';
 import { ModeToggle } from '@/components/layout/mode-toggle';
 import { useModeStore } from '@/lib/stores/mode-store';
@@ -42,8 +41,8 @@ export function Navbar({ global = false }: { global?: boolean }) {
             </span>
           </div>
 
-          {/* Centered Search - hidden on mobile */}
-          <div className="hidden md:flex flex-1 max-w-xs mx-4 justify-center">
+          {/* Centered Search */}
+          <div className="flex flex-1 max-w-xs mx-4 justify-center">
             <GlobalSearch />
           </div>
 
@@ -117,7 +116,7 @@ export function Navbar({ global = false }: { global?: boolean }) {
             className="w-full max-w-md relative animate-in fade-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
-            <SpotlightCard className="border-zinc-800 bg-zinc-950 p-6 shadow-2xl rounded-xl relative" spotlightColor="rgba(59, 130, 246, 0.08)">
+            <div className="relative overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-950 p-6 backdrop-blur-sm transition-all duration-300 shadow-2xl">
               {/* Close Button */}
               <button 
           onClick={() => { setProfileOpen(false); setEditingEmail(false); }}
@@ -226,7 +225,7 @@ export function Navbar({ global = false }: { global?: boolean }) {
                   Reset Profile / Sign Out
                 </button>
               </div>
-            </SpotlightCard>
+            </div>
           </div>
         </div>
       )}

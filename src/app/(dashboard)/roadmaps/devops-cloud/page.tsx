@@ -15,7 +15,6 @@ const pillars = [
     progress: 0,
     hours: 60,
     difficulty: 'Easy' as const,
-    color: 'from-blue-500 to-blue-300',
     domains: [
       { name: 'Container Basics', progress: 0, modules: ['Images', 'Containers', 'Dockerfile', 'Volumes'] },
       { name: 'Orchestration & Compose', progress: 0, modules: ['Compose', 'Networking', 'Registry'] },
@@ -27,7 +26,6 @@ const pillars = [
     progress: 0,
     hours: 100,
     difficulty: 'Hard' as const,
-    color: 'from-indigo-600 to-indigo-400',
     domains: [
       { name: 'Pods & Workloads', progress: 0, modules: ['Deployments', 'StatefulSets', 'DaemonSets'] },
       { name: 'Networking & Services', progress: 0, modules: ['Services', 'Ingress', 'CNI'] },
@@ -39,7 +37,6 @@ const pillars = [
     progress: 0,
     hours: 130,
     difficulty: 'Medium' as const,
-    color: 'from-amber-600 to-amber-400',
     domains: [
       { name: 'Compute & Storage', progress: 0, modules: ['EC2', 'Lambda', 'ECS', 'EKS', 'S3', 'EBS', 'RDS'] },
       { name: 'Networking & Security', progress: 0, modules: ['VPC', 'Route53', 'CloudFront', 'IAM'] },
@@ -51,7 +48,6 @@ const pillars = [
     progress: 0,
     hours: 100,
     difficulty: 'Medium' as const,
-    color: 'from-red-600 to-red-400',
     domains: [
       { name: 'CI/CD Pipelines', progress: 0, modules: ['Jenkins', 'GitHub Actions', 'ArgoCD'] },
       { name: 'Monitoring & Logs', progress: 0, modules: ['Prometheus', 'Grafana', 'ELK Stack'] },
@@ -195,24 +191,18 @@ function computeDevOpsCloudProgress() {
 }
 
 export default function DevOpsCloudRoadmapPage() {
-  const progressData = React.useSyncExternalStore(
-    (callback) => {
-      const bc = new BroadcastChannel('roadmap-progress');
-      bc.onmessage = callback;
-      window.addEventListener('storage', callback);
-      return () => {
-        bc.close();
-        window.removeEventListener('storage', callback);
-      };
-    },
-    computeDevOpsCloudProgress,
-    () => ({
-      docker: { overall: 0, basic: 0, compose: 0 },
-      kubernetes: { overall: 0, pods: 0, net: 0 },
-      aws: { overall: 0, compute: 0, net: 0 },
-      devops: { overall: 0, cicd: 0, mon: 0 }
-    })
-  );
+  const [progressData, setProgressData] = React.useState(computeDevOpsCloudProgress);
+
+  React.useEffect(() => {
+    const update = () => setProgressData(computeDevOpsCloudProgress());
+    const bc = new BroadcastChannel('roadmap-progress');
+    bc.onmessage = update;
+    window.addEventListener('storage', update);
+    return () => {
+      bc.close();
+      window.removeEventListener('storage', update);
+    };
+  }, []);
 
   const dynamicPillars = React.useMemo(() => {
     return [

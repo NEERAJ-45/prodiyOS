@@ -470,7 +470,7 @@ export default function AnalyticsPage() {
                                 initial={{ height: 0 }}
                                 animate={{ height: `${Math.max(h, d.value > 0 ? 4 : 2)}%` }}
                                 transition={{ duration: 0.5, delay: i * 0.03 }}
-                                className="w-full rounded-t bg-gradient-to-t from-indigo-600 to-indigo-400 min-h-[2px]"
+                                className="w-full rounded-t bg-indigo-500 min-h-[2px]"
                                 style={{ opacity: d.value > 0 ? 1 : 0.15 }}
                               />
                               <span className="text-[9px] text-zinc-600 truncate w-full text-center leading-none">{d.label}</span>
@@ -556,7 +556,7 @@ export default function AnalyticsPage() {
                             initial={{ width: 0 }}
                             animate={{ width: `${area.pct}%` }}
                             transition={{ duration: 0.6 }}
-                            className="h-full rounded-full bg-gradient-to-r from-amber-600 to-amber-400"
+                            className="h-full rounded-full bg-amber-500"
                           />
                         </div>
                       </div>
@@ -591,7 +591,7 @@ export default function AnalyticsPage() {
                             initial={{ width: 0 }}
                             animate={{ width: `${area.pct}%` }}
                             transition={{ duration: 0.6 }}
-                            className="h-full rounded-full bg-gradient-to-r from-emerald-600 to-emerald-400"
+                            className="h-full rounded-full bg-emerald-500"
                           />
                         </div>
                       </div>

@@ -52,7 +52,7 @@ export async function POST(request: Request) {
   try {
     const contentType = request.headers.get('content-type') || '';
     let userEmail: string;
-    let bookData: Record<string, any>;
+    let bookData: Record<string, unknown>;
     let pdfFile: File | null = null;
 
     if (contentType.includes('multipart/form-data')) {
@@ -82,7 +82,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Database unavailable' }, { status: 503 });
     }
 
-    const bookId = bookData.id || `b-${Date.now()}`;
+    const bookId = (bookData.id as string) || `b-${Date.now()}`;
     let pdfPath: string | undefined;
 
     if (pdfFile) {

@@ -1,12 +1,10 @@
 'use client';
 
 import * as React from 'react';
-import { useSyncExternalStore } from 'react';
 import { useMounted } from '@/hooks/useMounted';
 import { ArrowLeft, Database, Layers, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { LazyAppear } from '@/components/shared/LazyAppear';
-import { SpotlightCard } from '@/components/ui/SpotlightCard';
 import { Badge } from '@/components/ui/badge';
 
 
@@ -36,19 +34,18 @@ function computeDatabaseProgress() {
 
 export default function DatabasesHubPage() {
   const mounted = useMounted();
-  const progress = useSyncExternalStore(
-    (callback) => {
-      const bc = new BroadcastChannel('roadmap-progress');
-      bc.onmessage = callback;
-      window.addEventListener('storage', callback);
-      return () => {
-        bc.close();
-        window.removeEventListener('storage', callback);
-      };
-    },
-    computeDatabaseProgress,
-    () => ({ sqlTheoryPct: 0, sqlLeetcodePct: 0, sqlProgress: 0, nosqlProgress: 0 })
-  );
+  const [progress, setProgress] = React.useState(computeDatabaseProgress);
+
+  React.useEffect(() => {
+    const update = () => setProgress(computeDatabaseProgress());
+    const bc = new BroadcastChannel('roadmap-progress');
+    bc.onmessage = update;
+    window.addEventListener('storage', update);
+    return () => {
+      bc.close();
+      window.removeEventListener('storage', update);
+    };
+  }, []);
   const { sqlTheoryPct, sqlLeetcodePct, sqlProgress, nosqlProgress } = progress;
 
   return (
@@ -76,7 +73,7 @@ export default function DatabasesHubPage() {
           {/* Sub-Roadmap 1: SQL Database */}
           <LazyAppear delay={0.05}>
             <Link href="/roadmaps/databases/sql" className="group block">
-              <SpotlightCard className="h-full hover:border-zinc-700/80 transition-all duration-350" spotlightColor="rgba(99, 102, 241, 0.12)">
+              <div className="relative overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-900/40 p-6 backdrop-blur-sm transition-all duration-300 h-full hover:border-zinc-700/80">
                 <div className="flex flex-col justify-between h-full space-y-6">
                   <div>
                     <div className="flex justify-between items-start mb-3">
@@ -129,14 +126,14 @@ export default function DatabasesHubPage() {
                     <ArrowRight className="ml-1 h-3.5 w-3.5 transform group-hover:translate-x-1 transition-transform duration-200" />
                   </div>
                 </div>
-              </SpotlightCard>
+              </div>
             </Link>
           </LazyAppear>
 
           {/* Sub-Roadmap 2: NoSQL Database */}
           <LazyAppear delay={0.1}>
             <Link href="/roadmaps/databases/nosql" className="group block">
-              <SpotlightCard className="h-full hover:border-zinc-700/80 transition-all duration-350" spotlightColor="rgba(168, 85, 247, 0.12)">
+              <div className="relative overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-900/40 p-6 backdrop-blur-sm transition-all duration-300 h-full hover:border-zinc-700/80">
                 <div className="flex flex-col justify-between h-full space-y-6">
                   <div>
                     <div className="flex justify-between items-start mb-3">
@@ -171,7 +168,7 @@ export default function DatabasesHubPage() {
                     <ArrowRight className="ml-1 h-3.5 w-3.5 transform group-hover:translate-x-1 transition-transform duration-200" />
                   </div>
                 </div>
-              </SpotlightCard>
+              </div>
             </Link>
           </LazyAppear>
         </div>

@@ -15,7 +15,6 @@ const pillars = [
     progress: 48,
     hours: 140,
     difficulty: 'Medium-Hard' as const,
-    color: 'from-violet-600 to-violet-400',
     domains: [
       { name: 'Databases & Caching', progress: 78, modules: ['Relational DBs', 'Indexing', 'ACID', 'Replication', 'Sharding', 'Cache Patterns', 'Eviction'] },
       { name: 'System & Infra Principles', progress: 0, modules: ['Async Processing', 'Load Balancers', 'Resiliency', 'DNS', 'CDNs', 'Security', 'DFS'] },
@@ -27,7 +26,6 @@ const pillars = [
     progress: 0,
     hours: 110,
     difficulty: 'Hard' as const,
-    color: 'from-purple-600 to-purple-400',
     domains: [
       { name: 'Core System Designs', progress: 0, modules: ['TinyURL', 'Pastebin', 'Instagram', 'Dropbox', 'Messenger', 'Twitter', 'YouTube', 'Rate Limiter'] },
       { name: 'Advanced System Designs', progress: 0, modules: ['Unique ID', 'Reddit', 'Notification', 'Calendar', 'LeetCode', 'Payment', 'Flash Sale'] },
@@ -162,22 +160,18 @@ function computeSystemDesignProgress() {
 }
 
 export default function SystemDesignRoadmapPage() {
-  const progressData = React.useSyncExternalStore(
-    (callback) => {
-      const bc = new BroadcastChannel('roadmap-progress');
-      bc.onmessage = callback;
-      window.addEventListener('storage', callback);
-      return () => {
-        bc.close();
-        window.removeEventListener('storage', callback);
-      };
-    },
-    computeSystemDesignProgress,
-    () => ({
-      concepts: { overall: 0, databases: 0, infra: 0 },
-      problems: { overall: 0, core: 0, advanced: 0 }
-    })
-  );
+  const [progressData, setProgressData] = React.useState(computeSystemDesignProgress);
+
+  React.useEffect(() => {
+    const update = () => setProgressData(computeSystemDesignProgress());
+    const bc = new BroadcastChannel('roadmap-progress');
+    bc.onmessage = update;
+    window.addEventListener('storage', update);
+    return () => {
+      bc.close();
+      window.removeEventListener('storage', update);
+    };
+  }, []);
 
   const dynamicPillars = React.useMemo(() => {
     return [

@@ -275,7 +275,7 @@ export default function DailyPage() {
             </div>
             <div className="h-2 w-full rounded-full bg-zinc-800 overflow-hidden">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-blue-500 via-emerald-500 to-amber-500 transition-all duration-700"
+                className="h-full rounded-full bg-blue-500 transition-all duration-700"
                 style={{ width: `${slotProgressPct}%` }}
               />
             </div>

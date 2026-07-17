@@ -148,21 +148,9 @@ export default function PomodoroFocus() {
 
   useEffect(() => {
     setTimeLeft(durations[mode] * 60);
-  }, [mode]);
+  }, [mode, durations]);
 
-  useEffect(() => {
-    if (!isRunning) return;
-    const id = setInterval(() => {
-      setTimeLeft(t => {
-        if (t <= 1) {
-          completeSession();
-          return 0;
-        }
-        return t - 1;
-      });
-    }, 1000);
-    return () => clearInterval(id);
-  }, [isRunning]);
+  const completeSessionRef = React.useRef<() => void>(() => {});
 
   function completeSession() {
     playChime();
@@ -179,6 +167,22 @@ export default function PomodoroFocus() {
     }
     setIsRunning(autoStartRef.current);
   }
+
+  useEffect(() => { completeSessionRef.current = completeSession; });
+
+  useEffect(() => {
+    if (!isRunning) return;
+    const id = setInterval(() => {
+      setTimeLeft(t => {
+        if (t <= 1) {
+          completeSessionRef.current();
+          return 0;
+        }
+        return t - 1;
+      });
+    }, 1000);
+    return () => clearInterval(id);
+  }, [isRunning]);
 
   function switchMode(next: 'focus' | 'short' | 'long') {
     setIsRunning(false);
@@ -306,7 +310,7 @@ export default function PomodoroFocus() {
           width: 100%;
           height: 100%;
           overflow: hidden;
-          background: radial-gradient(120% 130% at 50% 0%, var(--bg-from) 0%, var(--bg-to) 75%);
+          background: var(--bg-from);
           font-family: 'Inter', sans-serif;
           color: #EFEAE0;
           transition: background 900ms ease;
@@ -318,7 +322,6 @@ export default function PomodoroFocus() {
 
         .ember-vignette {
           position: absolute; inset: 0;
-          background: radial-gradient(80% 60% at 50% 40%, transparent 0%, rgba(0,0,0,0.35) 100%);
           pointer-events: none;
         }
 
@@ -525,7 +528,7 @@ export default function PomodoroFocus() {
                 <div
                   key={key}
                   className={`scene-dot${scene === sceneKey ? ' selected' : ''}`}
-                  style={{ background: `linear-gradient(135deg, ${s.accent}, ${s.from})` }}
+                  style={{ background: s.from }}
                   onClick={() => setScene(sceneKey)}
                   title={s.label}
                 />

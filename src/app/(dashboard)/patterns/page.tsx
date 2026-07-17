@@ -15,7 +15,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Loader2, Search, ChevronLeft, ChevronRight,
   ChevronsLeft, ChevronsRight, AlertCircle, ListOrdered, Info,
-  BookOpen, GitBranch, Layers, Clock, Trash2,
+  BookOpen, GitBranch, Layers, Trash2,
 } from "lucide-react";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { toast } from "@/components/ui/toast";

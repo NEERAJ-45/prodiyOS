@@ -57,7 +57,6 @@ const statusConfig: Record<ProjectStatus, { label: string; className: string }> 
 
 const allStatuses: ProjectStatus[] = ['IDEA', 'IN_PROGRESS', 'COMPLETED', 'MAINTAINING', 'ARCHIVED'];
 
-const defaultProjects: Project[] = [];
 
 function StatusBadge({ status }: { status: ProjectStatus }) {
   const config = statusConfig[status];
@@ -191,7 +190,7 @@ function ExpandedDialog({ project, open, onOpenChange }: { project: Project | nu
       return () => URL.revokeObjectURL(url);
     }
     setDocBlobUrl(viewingDoc.url);
-  }, [viewingDoc]);
+  }, [viewingDoc, docBlobUrl]);
 
   if (!project) return null;
 

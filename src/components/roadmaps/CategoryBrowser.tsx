@@ -7,24 +7,24 @@ import { Badge } from '@/components/ui/badge';
 import { ROADMAPS } from '@/data/roadmaps';
 import { cn } from '@/lib/utils';
 
-const categoryMeta: Record<string, { href: string; color: string }> = {
-  'foundation-os': { href: '/roadmaps/foundation/os', color: 'from-cyan-500/10 to-cyan-500/5' },
-  'foundation-dbms': { href: '/roadmaps/foundation/dbms', color: 'from-sky-500/10 to-sky-500/5' },
-  'foundation-cn': { href: '/roadmaps/foundation/cn', color: 'from-teal-500/10 to-teal-500/5' },
-  'system-design-concepts': { href: '/roadmaps/system-design/concepts', color: 'from-violet-500/10 to-violet-500/5' },
-  'system-design-problems': { href: '/roadmaps/system-design/problems', color: 'from-purple-500/10 to-purple-500/5' },
-  'backend-java': { href: '/roadmaps/backend/java', color: 'from-orange-500/10 to-orange-500/5' },
-  'backend-springboot': { href: '/roadmaps/backend/springboot', color: 'from-green-500/10 to-green-500/5' },
-  'frontend-react': { href: '/roadmaps/frontend/react', color: 'from-sky-500/10 to-sky-500/5' },
-  'frontend-nextjs': { href: '/roadmaps/frontend/nextjs', color: 'from-indigo-500/10 to-indigo-500/5' },
-  'frontend-mfe': { href: '/roadmaps/frontend/microfrontends', color: 'from-blue-500/10 to-blue-500/5' },
-  'devops-cloud-devops': { href: '/roadmaps/devops-cloud/devops', color: 'from-blue-500/10 to-blue-500/5' },
-  'devops-cloud-docker': { href: '/roadmaps/devops-cloud/docker', color: 'from-cyan-500/10 to-cyan-500/5' },
-  'devops-cloud-kubernetes': { href: '/roadmaps/devops-cloud/kubernetes', color: 'from-violet-500/10 to-violet-500/5' },
-  'devops-cloud-aws': { href: '/roadmaps/devops-cloud/aws', color: 'from-amber-500/10 to-amber-500/5' },
-  'databases-sql': { href: '/roadmaps/databases/sql', color: 'from-emerald-500/10 to-emerald-500/5' },
-  'databases-nosql': { href: '/roadmaps/databases/nosql', color: 'from-green-500/10 to-green-500/5' },
-  'aptitude': { href: '/roadmaps/aptitude', color: 'from-teal-500/10 to-teal-500/5' },
+const categoryMeta: Record<string, { href: string }> = {
+  'foundation-os': { href: '/roadmaps/foundation/os' },
+  'foundation-dbms': { href: '/roadmaps/foundation/dbms' },
+  'foundation-cn': { href: '/roadmaps/foundation/cn' },
+  'system-design-concepts': { href: '/roadmaps/system-design/concepts' },
+  'system-design-problems': { href: '/roadmaps/system-design/problems' },
+  'backend-java': { href: '/roadmaps/backend/java' },
+  'backend-springboot': { href: '/roadmaps/backend/springboot' },
+  'frontend-react': { href: '/roadmaps/frontend/react' },
+  'frontend-nextjs': { href: '/roadmaps/frontend/nextjs' },
+  'frontend-mfe': { href: '/roadmaps/frontend/microfrontends' },
+  'devops-cloud-devops': { href: '/roadmaps/devops-cloud/devops' },
+  'devops-cloud-docker': { href: '/roadmaps/devops-cloud/docker' },
+  'devops-cloud-kubernetes': { href: '/roadmaps/devops-cloud/kubernetes' },
+  'devops-cloud-aws': { href: '/roadmaps/devops-cloud/aws' },
+  'databases-sql': { href: '/roadmaps/databases/sql' },
+  'databases-nosql': { href: '/roadmaps/databases/nosql' },
+  'aptitude': { href: '/roadmaps/aptitude' },
 };
 
 const categoryColors: Record<string, string> = {

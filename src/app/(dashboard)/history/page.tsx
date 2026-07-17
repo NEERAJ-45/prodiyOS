@@ -71,7 +71,7 @@ export default function HistoryPage() {
     return [...historyData.records].sort((a: DailyRecord, b: DailyRecord) => b.date.localeCompare(a.date));
   }, [historyData]);
 
-  const activities = activityData?.activities ?? [];
+  const activities = React.useMemo(() => activityData?.activities ?? [], [activityData]);
 
   const [page, setPage] = React.useState(0);
   const [expandedDate, setExpandedDate] = React.useState<string | null>(null);

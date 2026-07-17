@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 import { CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { LazyAppear } from '@/components/shared/LazyAppear';
-import { SpotlightCard } from '@/components/ui/SpotlightCard';
+
 
 
 interface CategoryDisplay {
@@ -19,9 +19,7 @@ interface CategoryDisplay {
   progress: number;
   hours: number;
   difficulty: string;
-  gradient: string;
   topics: string[];
-  glow: string;
   storageKeys: string[];
   total: number;
 }
@@ -34,9 +32,7 @@ const CATEGORY_DISPLAY: Omit<CategoryDisplay, 'progress'>[] = [
     href: '/roadmaps/foundation',
     hours: 255,
     difficulty: 'Medium-Hard',
-    gradient: 'from-zinc-500 via-cyan-600 to-cyan-500',
     topics: ['Operating Systems', 'Computer Networks', 'DBMS'],
-    glow: 'rgba(6, 182, 212, 0.12)',
     storageKeys: ['foundation-os-completed', 'foundation-dbms-completed', 'foundation-cn-completed'],
     total: 150,
   },
@@ -47,9 +43,7 @@ const CATEGORY_DISPLAY: Omit<CategoryDisplay, 'progress'>[] = [
     href: '/roadmaps/system-design',
     hours: 250,
     difficulty: 'Hard',
-    gradient: 'from-violet-600 via-purple-600 to-purple-500',
     topics: ['System Design', 'Distributed Systems'],
-    glow: 'rgba(139, 92, 246, 0.12)',
     storageKeys: ['system-design-concepts-completed', 'system-design-problems-completed'],
     total: 100,
   },
@@ -60,9 +54,7 @@ const CATEGORY_DISPLAY: Omit<CategoryDisplay, 'progress'>[] = [
     href: '/roadmaps/backend',
     hours: 220,
     difficulty: 'Medium',
-    gradient: 'from-orange-500 via-amber-600 to-green-500',
     topics: ['Java Core & JVM', 'Spring Boot & Microservices'],
-    glow: 'rgba(249, 115, 22, 0.12)',
     storageKeys: ['backend-java-completed', 'backend-springboot-completed'],
     total: 100,
   },
@@ -73,9 +65,7 @@ const CATEGORY_DISPLAY: Omit<CategoryDisplay, 'progress'>[] = [
     href: '/roadmaps/frontend',
     hours: 260,
     difficulty: 'Medium-Hard',
-    gradient: 'from-sky-500 via-indigo-500 to-cyan-400',
     topics: ['React Core', 'Next.js Framework', 'MicroFrontends'],
-    glow: 'rgba(14, 165, 233, 0.12)',
     storageKeys: ['frontend-react-completed', 'frontend-nextjs-completed', 'frontend-mfe-completed'],
     total: 150,
   },
@@ -86,9 +76,7 @@ const CATEGORY_DISPLAY: Omit<CategoryDisplay, 'progress'>[] = [
     href: '/roadmaps/devops-cloud',
     hours: 390,
     difficulty: 'Medium-Hard',
-    gradient: 'from-blue-500 via-violet-500 to-red-500',
     topics: ['Docker & K8s', 'AWS Cloud Services', 'CI/CD Pipelines'],
-    glow: 'rgba(59, 130, 246, 0.12)',
     storageKeys: ['devops-cloud-docker-completed', 'devops-cloud-kubernetes-completed', 'devops-cloud-aws-completed', 'devops-cloud-devops-completed'],
     total: 200,
   },
@@ -99,9 +87,7 @@ const CATEGORY_DISPLAY: Omit<CategoryDisplay, 'progress'>[] = [
     href: '/roadmaps/aptitude',
     hours: 120,
     difficulty: 'Easy-Medium',
-    gradient: 'from-teal-500 via-emerald-600 to-green-400',
     topics: ['Quantitative Aptitude', 'Logical Reasoning', 'Data Interpretation'],
-    glow: 'rgba(20, 184, 166, 0.12)',
     storageKeys: ['aptitude-completed'],
     total: 50,
   },
@@ -112,9 +98,7 @@ const CATEGORY_DISPLAY: Omit<CategoryDisplay, 'progress'>[] = [
     href: '/roadmaps/databases',
     hours: 180,
     difficulty: 'Medium-Hard',
-    gradient: 'from-rose-500 via-purple-600 to-indigo-500',
     topics: ['SQL Relational (50)', 'NoSQL Non-Relational (50)', 'LeetCode SQL (50)'],
-    glow: 'rgba(244, 63, 94, 0.12)',
     storageKeys: ['databases-sql-completed', 'databases-nosql-completed', 'completed-databases-leetcode'],
     total: 150,
   },
@@ -176,7 +160,7 @@ export default function RoadmapsPage() {
               yOffset={15}
             >
               <Link href={category.href} className="group block">
-                <SpotlightCard className="h-full hover:border-zinc-700/80 transition-all duration-300" spotlightColor={category.glow}>
+                <div className="relative overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-900/40 p-6 backdrop-blur-sm transition-all duration-300 h-full hover:border-zinc-700/80">
                   <div className="flex flex-col justify-between h-full space-y-6">
                     <div>
                       <div className="flex justify-between items-start mb-3">
@@ -216,7 +200,7 @@ export default function RoadmapsPage() {
                       </div>
                     </div>
                   </div>
-                </SpotlightCard>
+                </div>
               </Link>
             </LazyAppear>
           ))}

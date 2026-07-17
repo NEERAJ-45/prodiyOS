@@ -23,6 +23,9 @@ interface PdfViewerProps {
   onLoadSuccess: ({ numPages }: { numPages: number }) => void;
   bookId?: string;
   onTextClick?: (text: string) => void;
+  searchQuery?: string;
+  onSearchResults?: (matches: { page: number; index: number }[]) => void;
+  currentMatch?: number;
 }
 
 interface ToolbarState {
@@ -88,6 +91,9 @@ export default function PdfViewer({
   onLoadSuccess,
   bookId,
   onTextClick,
+  searchQuery = '',
+  onSearchResults,
+  currentMatch = 0,
 }: PdfViewerProps) {
   const options = React.useMemo(
     () => ({
@@ -105,6 +111,8 @@ export default function PdfViewer({
   const pageRef = React.useRef<HTMLDivElement>(null);
   const [toolbar, setToolbar] = React.useState<ToolbarState>({ visible: false, x: 0, y: 0, selectedText: '' });
   const [selectedColor, setSelectedColor] = React.useState(HIGHLIGHT_COLORS[0]);
+  const [searchMatchRects, setSearchMatchRects] = React.useState<DOMRect[]>([]);
+  const [pageLoadKey, setPageLoadKey] = React.useState(0);
 
   const pageHighlights = React.useMemo(
     () => highlights.filter((h) => h.pageNumber === pageNumber),
@@ -115,7 +123,7 @@ export default function PdfViewer({
     const el = containerRef.current;
     if (!el) return;
 
-    function onMouseUp(e: MouseEvent) {
+    function onMouseUp() {
       const container = containerRef.current;
       if (!container) return;
 
@@ -156,6 +164,109 @@ export default function PdfViewer({
       document.removeEventListener('mousedown', onMouseDown);
     };
   }, []);
+
+  React.useEffect(() => {
+    if (!pageRef.current) return;
+    const observer = new MutationObserver(() => {
+      if (pageRef.current?.querySelector('.react-pdf__Page__textContent')) {
+        setPageLoadKey((k) => k + 1);
+      }
+    });
+    observer.observe(pageRef.current, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [pageNumber]);
+
+  React.useEffect(() => {
+    if (!searchQuery || !pageRef.current) {
+      setSearchMatchRects([]);
+      onSearchResults?.([]);
+      return;
+    }
+
+    const textLayer = pageRef.current.querySelector('.react-pdf__Page__textContent');
+    if (!textLayer) {
+      setSearchMatchRects([]);
+      onSearchResults?.([]);
+      const timer = setTimeout(() => setPageLoadKey((k) => k + 1), 300);
+      return () => clearTimeout(timer);
+    }
+
+    const walker = document.createTreeWalker(textLayer, NodeFilter.SHOW_TEXT, null);
+    const textNodes: Text[] = [];
+    const fullText: string[] = [];
+    while (walker.nextNode()) {
+      const node = walker.currentNode as Text;
+      textNodes.push(node);
+      fullText.push(node.textContent || '');
+    }
+    const full = fullText.join('').toLowerCase();
+    const lowerQuery = searchQuery.toLowerCase();
+
+    const matches: { page: number; index: number }[] = [];
+    const rects: DOMRect[] = [];
+    let searchFrom = 0;
+
+    while (searchFrom < full.length) {
+      const pos = full.indexOf(lowerQuery, searchFrom);
+      if (pos === -1) break;
+
+      const matchEnd = pos + lowerQuery.length;
+      let charCount = 0;
+      let startNode: Text | null = null;
+      let startOffset = 0;
+      let endNode: Text | null = null;
+      let endOffset = 0;
+
+      for (let ni = 0; ni < textNodes.length; ni++) {
+        const node = textNodes[ni];
+        const len = (node.textContent || '').length;
+        const nodeStart = charCount;
+        const nodeEnd = charCount + len;
+
+        if (!startNode && pos < nodeEnd) {
+          startNode = node;
+          startOffset = pos - nodeStart;
+        }
+        if (!endNode && matchEnd <= nodeEnd) {
+          endNode = node;
+          endOffset = matchEnd - nodeStart;
+          break;
+        }
+        charCount += len;
+      }
+
+      if (startNode && endNode) {
+        const range = document.createRange();
+        range.setStart(startNode, startOffset);
+        range.setEnd(endNode, endOffset);
+        const rawRects = range.getClientRects();
+        const pageRect = pageRef.current!.getBoundingClientRect();
+        for (const r of rawRects) {
+          rects.push(new DOMRect(
+            r.left - pageRect.left,
+            r.top - pageRect.top,
+            r.width,
+            r.height,
+          ));
+        }
+        matches.push({ page: pageNumber, index: rects.length - 1 });
+      }
+
+      searchFrom = matchEnd + 1;
+    }
+
+    setSearchMatchRects(rects);
+    onSearchResults?.(matches);
+  }, [searchQuery, pageNumber, pageLoadKey, onSearchResults]);
+
+  React.useEffect(() => {
+    if (!searchQuery || searchMatchRects.length === 0 || !containerRef.current) return;
+    const matchIdx = Math.min(currentMatch ?? 0, searchMatchRects.length - 1);
+    const rect = searchMatchRects[matchIdx];
+    const container = containerRef.current;
+    const scrollTop = container.scrollTop + rect.top - container.clientHeight / 2;
+    container.scrollTo({ top: scrollTop, behavior: 'smooth' });
+  }, [currentMatch, searchMatchRects, searchQuery]);
 
   React.useEffect(() => {
     const el = containerRef.current;
@@ -243,6 +354,21 @@ export default function PdfViewer({
               className="shadow-2xl"
             />
             <div className="absolute inset-0 pointer-events-none" style={{ top: 0, left: 0 }}>
+              {searchMatchRects.map((rect, idx) => (
+                <div
+                  key={idx}
+                  className="absolute"
+                  style={{
+                    top: rect.top / scale,
+                    left: rect.left / scale,
+                    width: rect.width / scale,
+                    height: rect.height / scale,
+                    backgroundColor: idx === currentMatch ? 'rgba(250, 204, 21, 0.5)' : 'rgba(250, 204, 21, 0.25)',
+                    border: idx === currentMatch ? '2px solid rgb(250, 204, 21)' : 'none',
+                    borderRadius: '1px',
+                  }}
+                />
+              ))}
               <HighlightOverlay
                 highlights={pageHighlights}
                 scale={scale}

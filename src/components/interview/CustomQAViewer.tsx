@@ -14,7 +14,6 @@ import { Input } from '@/components/ui/input';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
 } from '@/components/ui/dialog';
-import { SpotlightCard } from '@/components/ui/SpotlightCard';
 import { javaSampleQuestions } from '@/data/java-sample-questions';
 import { parseQAText, type CustomQuestion } from '@/lib/parsers';
 import {
@@ -111,21 +110,17 @@ const DEFAULT_SUBJECTS: CustomQABook[] = [
   }
 ];
 
-// Aesthetic gradients for subjects
-const SUBJECT_STYLING: Record<string, { gradient: string; glow: string; topics: string[] }> = {
+const SUBJECT_STYLING: Record<string, { color: string; topics: string[] }> = {
   'java-prep': {
-    gradient: 'from-orange-500 via-amber-600 to-yellow-500',
-    glow: 'rgba(249, 115, 22, 0.12)',
+    color: 'bg-orange-500',
     topics: ['OOP Pillars', 'Collections', 'Multithreading', 'JVM Internals']
   },
   'python-core': {
-    gradient: 'from-blue-500 via-indigo-650 to-cyan-500',
-    glow: 'rgba(59, 130, 246, 0.12)',
+    color: 'bg-blue-500',
     topics: ['Data Structures', 'Decorators', 'Memory Copies']
   },
   'js-runtime': {
-    gradient: 'from-yellow-400 via-amber-500 to-orange-400',
-    glow: 'rgba(234, 179, 8, 0.12)',
+    color: 'bg-yellow-500',
     topics: ['Event Loop', 'Closures', 'Scopes', 'Hoisting']
   }
 };
@@ -196,7 +191,7 @@ export default function CustomQAViewer() {
       });
       setExpandedSections((prev) => ({ ...initialSections, ...prev }));
     }
-  }, [activeSubjectSlug]);
+  }, [activeSubject]);
 
   // Save active slug to localStorage
   const handleSelectSubject = (slug: string | null) => {
@@ -567,8 +562,7 @@ export default function CustomQAViewer() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {allSubjects.map((subject, index) => {
               const styling = SUBJECT_STYLING[subject.slug] || {
-                gradient: 'from-indigo-500 via-purple-650 to-violet-500',
-                glow: 'rgba(99, 102, 241, 0.12)',
+                color: 'bg-indigo-500',
                 topics: subject.sections.map(s => s.title).slice(0, 3)
               };
               
@@ -584,10 +578,7 @@ export default function CustomQAViewer() {
                   className="group relative cursor-pointer"
                   onClick={() => handleSelectSubject(subject.slug)}
                 >
-                  <SpotlightCard 
-                    className="h-full hover:border-zinc-700/80 transition-all duration-300 relative overflow-hidden" 
-                    spotlightColor={styling.glow}
-                  >
+                  <div className="relative overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-900/40 p-6 backdrop-blur-sm transition-all duration-300 h-full hover:border-zinc-700/80">
                     <div className="flex flex-col justify-between h-full space-y-5">
                       <div>
                         <div className="flex justify-between items-start mb-2">
@@ -631,13 +622,13 @@ export default function CustomQAViewer() {
                         </div>
                         <div className="h-1.5 w-full rounded-full bg-zinc-950 overflow-hidden border border-zinc-900">
                           <div
-                            className={`h-full rounded-full bg-gradient-to-r ${styling.gradient} transition-all duration-500`}
+                            className={`h-full rounded-full ${styling.color} transition-all duration-500`}
                             style={{ width: `${stats.pct}%` }}
                           />
                         </div>
                       </div>
                     </div>
-                  </SpotlightCard>
+                  </div>
                 </motion.div>
               );
             })}
@@ -819,7 +810,7 @@ export default function CustomQAViewer() {
               </div>
               <div className="h-2 rounded-full bg-zinc-950 overflow-hidden border border-zinc-900 p-0.5">
                 <div 
-                  className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-emerald-500 transition-all duration-500"
+                  className="h-full rounded-full bg-indigo-500 transition-all duration-500"
                   style={{ width: `${activeStats.pct}%` }}
                 />
               </div>

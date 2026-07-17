@@ -4,13 +4,21 @@ import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { Document, Page, pdfjs } from 'react-pdf';
+import 'react-pdf/dist/Page/TextLayer.css';
+import 'react-pdf/dist/Page/AnnotationLayer.css';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { FileText, X } from 'lucide-react';
+import { FileText, X, ChevronDown, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
+
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.mjs',
+  import.meta.url,
+).toString();
 
 const formSchema = z.object({
   company: z.string().min(1, 'Company is required'),
@@ -74,29 +82,35 @@ export function ApplicationFormDialog({ open, onClose, userEmail, application }:
   const isEdit = !!application;
   const [pdfFile, setPdfFile] = React.useState<File | null>(null);
   const [pdfDataUrl, setPdfDataUrl] = React.useState<string>('');
+  const [showPdfPreview, setShowPdfPreview] = React.useState(false);
+  const [numPages, setNumPages] = React.useState<number>(0);
+  const pdfPreviewUrl = pdfDataUrl || (isEdit && application?.pdfData ? application.pdfData : null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  const defaultValues: FormData = application
-    ? {
-        company: application.company,
-        role: application.role,
-        appliedDate: application.appliedDate ? application.appliedDate.slice(0, 10) : '',
-        status: application.status as FormData['status'],
-        source: application.source as FormData['source'],
-        priority: application.priority as FormData['priority'],
-        notes: application.notes || '',
-        nextRoundDate: application.nextRoundDate ? application.nextRoundDate.slice(0, 16) : '',
-      }
-    : {
-        company: '',
-        role: '',
-        appliedDate: new Date().toISOString().slice(0, 10),
-        status: 'APPLIED',
-        source: 'LINKEDIN',
-        priority: 'MEDIUM',
-        notes: '',
-        nextRoundDate: '',
-      };
+  const defaultValues: FormData = React.useMemo(
+    () => application
+      ? {
+          company: application.company,
+          role: application.role,
+          appliedDate: application.appliedDate ? application.appliedDate.slice(0, 10) : '',
+          status: application.status as FormData['status'],
+          source: application.source as FormData['source'],
+          priority: application.priority as FormData['priority'],
+          notes: application.notes || '',
+          nextRoundDate: application.nextRoundDate ? application.nextRoundDate.slice(0, 16) : '',
+        }
+      : {
+          company: '',
+          role: '',
+          appliedDate: new Date().toISOString().slice(0, 10),
+          status: 'APPLIED',
+          source: 'LINKEDIN',
+          priority: 'MEDIUM',
+          notes: '',
+          nextRoundDate: '',
+        },
+    [application],
+  );
 
   const {
     register,
@@ -260,6 +274,39 @@ export function ApplicationFormDialog({ open, onClose, userEmail, application }:
               )}
             </div>
           </div>
+
+          {pdfPreviewUrl && (
+            <div className="space-y-1.5">
+              <button
+                type="button"
+                onClick={() => setShowPdfPreview(!showPdfPreview)}
+                className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-200 transition-colors"
+              >
+                {showPdfPreview ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                PDF Preview ({numPages} page{numPages !== 1 ? 's' : ''})
+              </button>
+              {showPdfPreview && (
+                <div className="bg-zinc-950 rounded-lg border border-zinc-800 overflow-auto max-h-[400px]">
+                  <Document
+                    file={pdfPreviewUrl}
+                    onLoadSuccess={({ numPages: n }) => setNumPages(n)}
+                    loading={<div className="p-4 text-xs text-zinc-500 text-center">Loading PDF...</div>}
+                    error={<div className="p-4 text-xs text-red-400 text-center">Failed to load PDF</div>}
+                  >
+                    {Array.from({ length: numPages }, (_, i) => (
+                      <Page
+                        key={i + 1}
+                        pageNumber={i + 1}
+                        width={Math.min(500, typeof window !== 'undefined' ? window.innerWidth - 80 : 500)}
+                        renderTextLayer={false}
+                        renderAnnotationLayer={false}
+                      />
+                    ))}
+                  </Document>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="space-y-1.5">
             <label className="text-xs text-zinc-400">Notes</label>

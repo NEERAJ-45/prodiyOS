@@ -15,7 +15,6 @@ const pillars = [
     progress: 55,
     hours: 90,
     difficulty: 'Hard' as const,
-    color: 'from-zinc-600 to-zinc-400',
     domains: [
       { name: 'Process Management', progress: 65, modules: ['Scheduling', 'IPC', 'Threads'] },
       { name: 'Memory Management', progress: 50, modules: ['Paging', 'Segmentation', 'Virtual Memory'] },
@@ -27,7 +26,6 @@ const pillars = [
     progress: 60,
     hours: 85,
     difficulty: 'Medium' as const,
-    color: 'from-sky-600 to-sky-400',
     domains: [
       { name: 'TCP/IP Stack', progress: 75, modules: ['Application', 'Transport', 'Network', 'Link'] },
       { name: 'Protocols', progress: 60, modules: ['HTTP/2', 'TCP', 'UDP', 'DNS', 'TLS'] },
@@ -39,7 +37,6 @@ const pillars = [
     progress: 75,
     hours: 80,
     difficulty: 'Medium' as const,
-    color: 'from-cyan-600 to-cyan-400',
     domains: [
       { name: 'SQL', progress: 90, modules: ['Joins', 'Subqueries', 'Window Functions', 'Indexing'] },
       { name: 'NoSQL', progress: 60, modules: ['Document Stores', 'Key-Value', 'Graph DB'] },
