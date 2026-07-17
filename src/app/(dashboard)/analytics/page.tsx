@@ -1,14 +1,14 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Clock, Flame, BookOpen, Target, TrendingUp,
-  AlertTriangle, CheckCircle, Brain, Activity,
-  Loader2, Database,
+  Flame, BookOpen, Target, Activity,
+  Loader2, TrendingUp, AlertTriangle, CheckCircle,
+  ChevronDown, ChevronRight, CalendarDays,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { ROADMAPS } from '@/data/roadmaps';
 import { useMounted } from '@/hooks/useMounted';
@@ -26,51 +26,8 @@ const CATEGORY_COLORS: Record<string, string> = {
   Aptitude: '#14b8a6',
 };
 
-// ─── Bar Chart ───────────────────────────────────────────────────────────────
-function BarChart({ data, height = 160 }: { data: { label: string; value: number; color?: string }[]; height?: number }) {
-  const max = Math.max(...data.map((d) => d.value), 1);
-  return (
-    <div className="flex items-end gap-1.5 w-full" style={{ height }}>
-      {data.map((d, i) => (
-        <div key={i} className="flex-1 flex flex-col items-center gap-1 min-w-0">
-          <div
-            className="w-full rounded-t transition-all duration-700"
-            style={{
-              height: `${(d.value / max) * 100}%`,
-              backgroundColor: d.color || '#6366f1',
-              minHeight: d.value > 0 ? '4px' : '2px',
-              opacity: d.value > 0 ? 1 : 0.2,
-            }}
-          />
-          <span className="text-[9px] text-zinc-500 truncate w-full text-center leading-none">{d.label}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
+const HEATMAP_COLORS = ['#1a1a2e', '#0f3b5e', '#1a6b4a', '#2ecc71', '#27ae60'];
 
-// ─── Circular Progress ────────────────────────────────────────────────────────
-function CircularProgress({ value, size = 120, strokeWidth = 9, color = '#6366f1' }: { value: number; size?: number; strokeWidth?: number; color?: string }) {
-  const r = (size - strokeWidth) / 2;
-  const circ = 2 * Math.PI * r;
-  const offset = circ - (Math.min(value, 100) / 100) * circ;
-  return (
-    <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
-      <svg width={size} height={size} className="-rotate-90">
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#27272a" strokeWidth={strokeWidth} />
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={strokeWidth}
-          strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round"
-          style={{ transition: 'stroke-dashoffset 1s ease' }} />
-      </svg>
-      <div className="absolute text-center">
-        <p className="text-xl font-bold leading-none">{value}%</p>
-        <p className="text-[10px] text-zinc-500 mt-0.5">done</p>
-      </div>
-    </div>
-  );
-}
-
-// ─── Streak Computation ───────────────────────────────────────────────────────
 function computeStreak(dates: string[]): number {
   if (!dates.length) return 0;
   const daySet = new Set(dates.map((d) => d.split('T')[0]));
@@ -85,29 +42,138 @@ function computeStreak(dates: string[]): number {
   return streak;
 }
 
-// ─── Grouped Accordion Table ──────────────────────────────────────────────────
+function ContributionHeatmap({ dates }: { dates: string[] }) {
+  const dayCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    dates.forEach((d) => {
+      const key = d.split('T')[0];
+      counts[key] = (counts[key] || 0) + 1;
+    });
+    return counts;
+  }, [dates]);
+
+  const { weeks, monthLabels } = useMemo(() => {
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    const start = new Date(today);
+    start.setDate(start.getDate() - 6 * 7 - 6);
+    start.setHours(0, 0, 0, 0);
+
+    const cells: { date: string; count: number; day: number }[] = [];
+    const cur = new Date(start);
+    while (cur <= today) {
+      const key = cur.toISOString().split('T')[0];
+      cells.push({ date: key, count: dayCounts[key] || 0, day: cur.getDay() });
+      cur.setDate(cur.getDate() + 1);
+    }
+
+    const w: { days: typeof cells }[] = [];
+    for (let i = 0; i < cells.length; i += 7) {
+      w.push({ days: cells.slice(i, i + 7) });
+    }
+
+    const labels: { label: string; index: number }[] = [];
+    w.forEach((week, wi) => {
+      const firstDate = new Date(week.days[0]?.date || '');
+      const month = firstDate.toLocaleString('default', { month: 'short' });
+      if (wi === 0 || labels[labels.length - 1]?.label !== month) {
+        labels.push({ label: month, index: wi });
+      }
+    });
+
+    return { weeks: w, monthLabels: labels };
+  }, [dayCounts]);
+
+  const maxCount = Math.max(...Object.values(dayCounts), 1);
+
+  const colorForCount = (count: number) => {
+    if (count === 0) return HEATMAP_COLORS[0];
+    const ratio = count / maxCount;
+    if (ratio < 0.25) return HEATMAP_COLORS[1];
+    if (ratio < 0.5) return HEATMAP_COLORS[2];
+    if (ratio < 0.75) return HEATMAP_COLORS[3];
+    return HEATMAP_COLORS[4];
+  };
+
+  const DAY_LABELS = ['', 'Mon', '', 'Wed', '', 'Fri', ''];
+
+  return (
+    <div className="overflow-x-auto">
+      <div className="min-w-[600px]">
+        <div className="flex text-[10px] text-zinc-500 mb-1" style={{ paddingLeft: 32 }}>
+          {monthLabels.map((m) => (
+            <div key={m.label} style={{ marginLeft: m.index * 14 }}>{m.label}</div>
+          ))}
+        </div>
+        <div className="flex gap-[3px]">
+          <div className="flex flex-col gap-[3px] pr-1.5 pt-0.5">
+            {DAY_LABELS.map((d, i) => (
+              <div key={i} className="h-[10px] text-[9px] text-zinc-500 leading-[10px]">{d}</div>
+            ))}
+          </div>
+          {weeks.map((week, wi) => (
+            <div key={wi} className="flex flex-col gap-[3px]">
+              {[0, 1, 2, 3, 4, 5, 6].map((dayIdx) => {
+                const cell = week.days[dayIdx];
+                if (!cell) return <div key={dayIdx} className="h-[10px] w-[10px]" />;
+                return (
+                  <Tooltip key={cell.date}>
+                    <TooltipTrigger asChild>
+                      <div
+                        className="h-[10px] w-[10px] rounded-sm cursor-pointer transition-colors hover:ring-1 hover:ring-zinc-400"
+                        style={{ backgroundColor: colorForCount(cell.count) }}
+                      />
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="text-xs px-2 py-1">
+                      {cell.count} completion{cell.count !== 1 ? 's' : ''} on {cell.date}
+                    </TooltipContent>
+                  </Tooltip>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+        <div className="flex items-center gap-1 mt-2 justify-end text-[10px] text-zinc-500">
+          <span>Less</span>
+          {HEATMAP_COLORS.map((c) => (
+            <div key={c} className="h-[10px] w-[10px] rounded-sm" style={{ backgroundColor: c }} />
+          ))}
+          <span>More</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AnimatedNumber({ value, suffix = '' }: { value: number; suffix?: string }) {
+  const [display, setDisplay] = useState(0);
+  useEffect(() => {
+    let current = display;
+    const step = Math.max(1, Math.floor(Math.abs(value - current) / 20));
+    const timer = setInterval(() => {
+      if (current < value) {
+        current = Math.min(current + step, value);
+        setDisplay(current);
+      } else {
+        clearInterval(timer);
+        setDisplay(value);
+      }
+    }, 30);
+    return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+  return <>{display}{suffix}</>;
+}
+
 type RoadmapStat = {
-  title: string;
-  storageKey: string;
-  total: number;
-  category: string;
-  color: string;
-  completed: number;
-  pct: number;
-  [key: string]: unknown;
+  title: string; storageKey: string; total: number; category: string; color: string;
+  completed: number; pct: number; [key: string]: unknown;
 };
 
-function GroupedRoadmapTable({
-  roadmapStats,
-  totalCompleted,
-  overallPct,
-}: {
-  roadmapStats: RoadmapStat[];
-  totalCompleted: number;
-  overallPct: number;
+function GroupedRoadmapTable({ roadmapStats, totalCompleted, overallPct }: {
+  roadmapStats: RoadmapStat[]; totalCompleted: number; overallPct: number;
 }) {
   const [openCats, setOpenCats] = useState<Set<string>>(new Set());
-
   const toggle = useCallback((cat: string) => {
     setOpenCats((prev) => {
       const next = new Set(prev);
@@ -116,7 +182,6 @@ function GroupedRoadmapTable({
     });
   }, []);
 
-  // Group by category preserving order
   const grouped = useMemo(() => {
     const map = new Map<string, RoadmapStat[]>();
     roadmapStats.forEach((r) => {
@@ -140,56 +205,28 @@ function GroupedRoadmapTable({
           <span>Progress</span>
           <span className="text-right">%</span>
         </div>
-
         {grouped.map(({ cat, items, done, tot, pct }, gi) => {
           const open = openCats.has(cat);
           const catColor = CATEGORY_COLORS[cat] || '#6366f1';
           return (
             <div key={cat} className={cn(gi < grouped.length - 1 && 'border-b border-zinc-800/70')}>
-              <button
-                onClick={() => toggle(cat)}
-                className="w-full grid grid-cols-[1fr_80px_80px_160px_52px] gap-2 items-center px-5 py-3 hover:bg-zinc-800/40 transition-colors text-left"
-              >
+              <button onClick={() => toggle(cat)}
+                className="w-full grid grid-cols-[1fr_80px_80px_160px_52px] gap-2 items-center px-5 py-3 hover:bg-zinc-800/40 transition-colors text-left">
                 <span className="flex items-center gap-2 font-medium text-zinc-200">
-                  {open ? (
-                    <ChevronDown className="h-3.5 w-3.5 text-zinc-400 shrink-0" />
-                  ) : (
-                    <ChevronRight className="h-3.5 w-3.5 text-zinc-400 shrink-0" />
-                  )}
-                  <span
-                    className="text-xs px-2 py-0.5 rounded-full"
-                    style={{ backgroundColor: `${catColor}18`, color: catColor }}
-                  >
-                    {cat}
-                  </span>
+                  {open ? <ChevronDown className="h-3.5 w-3.5 text-zinc-400 shrink-0" /> : <ChevronRight className="h-3.5 w-3.5 text-zinc-400 shrink-0" />}
+                  <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: `${catColor}18`, color: catColor }}>{cat}</span>
                 </span>
                 <span className="text-right text-sm font-semibold text-zinc-200 tabular-nums">{done}</span>
                 <span className="text-right text-sm text-zinc-500 tabular-nums">{tot}</span>
                 <div className="h-1.5 w-full rounded-full bg-zinc-800 overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all duration-700"
-                    style={{ width: `${pct}%`, backgroundColor: catColor }}
-                  />
+                  <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, backgroundColor: catColor }} />
                 </div>
-                <span
-                  className="text-right text-sm font-semibold tabular-nums"
-                  style={{ color: pct >= 80 ? '#10b981' : pct >= 40 ? '#f59e0b' : '#52525b' }}
-                >
-                  {pct}%
-                </span>
+                <span className="text-right text-sm font-semibold tabular-nums" style={{ color: pct >= 80 ? '#10b981' : pct >= 40 ? '#f59e0b' : '#52525b' }}>{pct}%</span>
               </button>
-
               {open && (
                 <div className="border-t border-zinc-800/50 bg-zinc-950/30">
                   {items.map((r, ri) => (
-                    <div
-                      key={r.title}
-                      className={cn(
-                        'grid grid-cols-[1fr_80px_80px_160px_52px] gap-2 items-center pl-10 pr-5 py-2 text-sm',
-                        ri < items.length - 1 && 'border-b border-zinc-800/40',
-                        'hover:bg-zinc-800/20 transition-colors'
-                      )}
-                    >
+                    <div key={r.title} className={cn('grid grid-cols-[1fr_80px_80px_160px_52px] gap-2 items-center pl-10 pr-5 py-2 text-sm', ri < items.length - 1 && 'border-b border-zinc-800/40', 'hover:bg-zinc-800/20 transition-colors')}>
                       <span className="flex items-center gap-2 text-zinc-400">
                         <div className="h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: r.color }} />
                         {r.title}
@@ -197,17 +234,9 @@ function GroupedRoadmapTable({
                       <span className="text-right text-zinc-300 tabular-nums">{r.completed}</span>
                       <span className="text-right text-zinc-600 tabular-nums">{r.total}</span>
                       <div className="h-1 w-full rounded-full bg-zinc-800 overflow-hidden">
-                        <div
-                          className="h-full rounded-full transition-all duration-700"
-                          style={{ width: `${r.pct}%`, backgroundColor: r.color }}
-                        />
+                        <div className="h-full rounded-full transition-all duration-700" style={{ width: `${r.pct}%`, backgroundColor: r.color }} />
                       </div>
-                      <span
-                        className="text-right text-xs font-medium tabular-nums"
-                        style={{ color: r.pct >= 80 ? '#10b981' : r.pct >= 40 ? '#f59e0b' : '#52525b' }}
-                      >
-                        {r.pct}%
-                      </span>
+                      <span className="text-right text-xs font-medium tabular-nums" style={{ color: r.pct >= 80 ? '#10b981' : r.pct >= 40 ? '#f59e0b' : '#52525b' }}>{r.pct}%</span>
                     </div>
                   ))}
                 </div>
@@ -215,7 +244,6 @@ function GroupedRoadmapTable({
             </div>
           );
         })}
-
         <div className="grid grid-cols-[1fr_80px_80px_160px_52px] gap-2 items-center px-5 py-3 border-t border-zinc-700 bg-zinc-800/30">
           <span className="font-semibold text-zinc-200 text-sm">Total</span>
           <span className="text-right font-bold text-zinc-100 tabular-nums text-sm">{totalCompleted}</span>
@@ -240,10 +268,8 @@ export default function AnalyticsPage() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-
     const localMap: Record<string, Set<string>> = {};
     const localDates: string[] = [];
-
     ROADMAPS.forEach((rm) => {
       const raw = localStorage.getItem(rm.storageKey);
       if (raw) {
@@ -255,28 +281,16 @@ export default function AnalyticsPage() {
       }
       if (!localMap[rm.storageKey]) localMap[rm.storageKey] = new Set();
     });
-
     setCompletionMap({ ...localMap });
     setCompletionDates([...localDates]);
 
     async function loadFromDB() {
-      console.log('[Analytics] Attempting DB connection...', { userEmail, hasCustomUrl: !!customDbUrl });
       try {
         const headers: Record<string, string> = { 'Content-Type': 'application/json', 'x-user-email': userEmail };
         if (customDbUrl) headers['x-mongodb-url'] = customDbUrl;
-
         const res = await fetch(`/api/db/completions?userEmail=${encodeURIComponent(userEmail)}`, { headers });
         const json = await res.json();
-
-        console.log('[Analytics] DB response:', {
-          status: res.status,
-          dbConnected: json.dbConnected,
-          recordCount: Array.isArray(json.data) ? json.data.length : 'N/A',
-          error: json.error || null,
-        });
-
         if (json.dbConnected && Array.isArray(json.data)) {
-          console.log('[Analytics] ✅ Connected to MongoDB. Loaded', json.data.length, 'completion records.');
           const merged: Record<string, Set<string>> = {};
           ROADMAPS.forEach((rm) => { merged[rm.storageKey] = new Set(localMap[rm.storageKey] || []); });
           const dbDates: string[] = [];
@@ -288,12 +302,8 @@ export default function AnalyticsPage() {
           });
           setCompletionMap({ ...merged });
           setCompletionDates([...localDates, ...dbDates]);
-        } else {
-          console.warn('[Analytics] ⚠️ DB not connected. Falling back to localStorage only.', json.error || '');
         }
-      } catch (e) {
-        console.error('[Analytics] ❌ DB load failed (network or parse error):', e);
-      } finally {
+      } catch { /* fallback to local */ } finally {
         setLoading(false);
       }
     }
@@ -338,221 +348,278 @@ export default function AnalyticsPage() {
     }).reverse();
   }, [completionDates]);
 
-  const roadmapBarData = useMemo(() => roadmapStats.map((r) => ({ label: r.title, value: r.completed, color: r.color })), [roadmapStats]);
   const weakAreas = useMemo(() => [...roadmapStats].sort((a, b) => a.pct - b.pct).slice(0, 5), [roadmapStats]);
   const strongAreas = useMemo(() => [...roadmapStats].filter((r) => r.completed > 0).sort((a, b) => b.pct - a.pct).slice(0, 5), [roadmapStats]);
 
   if (!mounted) return null;
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto">
-        <div className="p-4 md:p-6 space-y-6 md:space-y-8 max-w-7xl mx-auto w-full">
+    <TooltipProvider>
+      <div className="flex flex-col h-full">
+        <div className="flex-1 overflow-y-auto">
+          <div className="p-4 md:p-6 space-y-6 md:space-y-8 max-w-7xl mx-auto w-full">
 
-          {/* Header */}
-          <div className="flex items-start justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold tracking-tight">Analytics Center</h1>
-              <p className="text-sm text-muted-foreground mt-1">Live data from your roadmaps &amp; database</p>
-            </div>
-          </div>
+            {/* ── Header ── */}
+            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-2xl font-bold tracking-tight text-foreground">Analytics</h1>
+                  <p className="text-sm text-muted-foreground mt-0.5">
+                    {loading ? 'Loading...' : `${totalCompleted} of ${TOTAL_TOPICS} topics completed (${overallPct}%)`}
+                  </p>
+                </div>
+              </div>
+            </motion.div>
 
-          {/* KPI Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            {[
-              { label: 'Topics Done', value: loading ? '…' : `${totalCompleted} / ${TOTAL_TOPICS}`, icon: BookOpen, color: 'text-blue-400', bg: 'bg-blue-500/10' },
-              { label: 'Current Streak', value: loading ? '…' : `${streak} day${streak !== 1 ? 's' : ''}`, icon: Flame, color: 'text-amber-400', bg: 'bg-amber-500/10' },
-              { label: 'Active Days', value: loading ? '…' : `${activeDays}`, icon: Activity, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-              { label: 'Overall Progress', value: loading ? '…' : `${overallPct}%`, icon: Target, color: 'text-purple-400', bg: 'bg-purple-500/10' },
-            ].map((stat) => {
-              const Icon = stat.icon;
-              return (
-                <Card key={stat.label} className="bg-card/50 border-zinc-800">
-                  <CardContent className="p-5 flex items-center gap-4">
-                    <div className={cn('flex h-10 w-10 items-center justify-center rounded-full shrink-0', stat.bg)}>
-                      <Icon className={cn('h-5 w-5', stat.color)} />
+            {/* ── KPI Row ── */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.05 }}
+              className="grid grid-cols-2 md:grid-cols-4 gap-4"
+            >
+              {[
+                { label: 'Topics Done', value: totalCompleted, icon: BookOpen, color: 'text-blue-400', bg: 'bg-blue-500/10', suffix: `/${TOTAL_TOPICS}` },
+                { label: 'Current Streak', value: streak, icon: Flame, color: 'text-amber-400', bg: 'bg-amber-500/10', suffix: ` day${streak !== 1 ? 's' : ''}` },
+                { label: 'Active Days', value: activeDays, icon: Activity, color: 'text-emerald-400', bg: 'bg-emerald-500/10', suffix: '' },
+                { label: 'Completion Rate', value: overallPct, icon: Target, color: 'text-purple-400', bg: 'bg-purple-500/10', suffix: '%' },
+              ].map((stat, i) => {
+                const Icon = stat.icon;
+                return (
+                  <motion.div
+                    key={stat.label}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.08 + i * 0.05 }}
+                  >
+                    <Card className="bg-card/50 border-zinc-800 hover:border-zinc-700 transition-colors">
+                      <CardContent className="p-5 flex items-center gap-4">
+                        <div className={cn('flex h-11 w-11 items-center justify-center rounded-xl shrink-0', stat.bg)}>
+                          <Icon className={cn('h-5 w-5', stat.color)} />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xl font-bold text-foreground truncate">
+                            {loading ? '...' : <AnimatedNumber value={stat.value} />}
+                            <span className="text-sm font-normal text-muted-foreground ml-0.5">{stat.suffix}</span>
+                          </p>
+                          <p className="text-xs text-muted-foreground">{stat.label}</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                );
+              })}
+            </motion.div>
+
+            {/* ── Contribution Heatmap ── */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <Card className="bg-card/50 border-zinc-800">
+                <CardHeader className="p-5 pb-3">
+                  <div className="flex items-center gap-2">
+                    <CalendarDays className="h-4 w-4 text-indigo-400" />
+                    <CardTitle className="text-sm font-medium">Activity Calendar</CardTitle>
+                    <span className="ml-auto text-[11px] text-muted-foreground">Last 7 weeks</span>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-5 pt-0">
+                  {loading ? (
+                    <div className="flex items-center justify-center h-24"><Loader2 className="h-5 w-5 animate-spin text-zinc-500" /></div>
+                  ) : (
+                    <ContributionHeatmap dates={completionDates} />
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* ── Weekly Activity + Category Progress ── */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.25 }}>
+                <Card className="bg-card/50 border-zinc-800 h-full">
+                  <CardHeader className="p-5 pb-3">
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="h-4 w-4 text-blue-400" />
+                      <CardTitle className="text-sm font-medium">Weekly Activity</CardTitle>
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-xl font-bold truncate">{stat.value}</p>
-                      <p className="text-xs text-muted-foreground">{stat.label}</p>
-                    </div>
+                  </CardHeader>
+                  <CardContent className="p-5 pt-0">
+                    {loading ? (
+                      <div className="flex items-center justify-center h-40"><Loader2 className="h-5 w-5 animate-spin text-zinc-500" /></div>
+                    ) : (
+                      <div className="flex items-end gap-1.5 h-40 w-full">
+                        {weeklyActivity.map((d, i) => {
+                          const max = Math.max(...weeklyActivity.map((w) => w.value), 1);
+                          const h = (d.value / max) * 100;
+                          return (
+                            <div key={i} className="flex-1 flex flex-col items-center gap-1 min-w-0 h-full justify-end">
+                              <AnimatePresence>
+                                {d.value > 0 && (
+                                  <motion.span
+                                    initial={{ opacity: 0, y: 5 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="text-[9px] font-medium text-zinc-400"
+                                  >
+                                    {d.value}
+                                  </motion.span>
+                                )}
+                              </AnimatePresence>
+                              <motion.div
+                                initial={{ height: 0 }}
+                                animate={{ height: `${Math.max(h, d.value > 0 ? 4 : 2)}%` }}
+                                transition={{ duration: 0.5, delay: i * 0.03 }}
+                                className="w-full rounded-t bg-gradient-to-t from-indigo-600 to-indigo-400 min-h-[2px]"
+                                style={{ opacity: d.value > 0 ? 1 : 0.15 }}
+                              />
+                              <span className="text-[9px] text-zinc-600 truncate w-full text-center leading-none">{d.label}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                    <p className="text-[10px] text-zinc-500 mt-3 text-center">Completions per week (last 8 weeks)</p>
                   </CardContent>
                 </Card>
-              );
-            })}
-          </div>
+              </motion.div>
 
-          {/* Row 2: Overall / Weekly / Category */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Card className="bg-card/50 border-zinc-800">
-              <CardHeader className="p-5 pb-3">
-                <div className="flex items-center gap-2">
-                  <Target className="h-4 w-4 text-purple-400" />
-                  <CardTitle className="text-sm font-medium">Overall Completion</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="p-5 pt-0 flex flex-col items-center gap-4">
-                <CircularProgress value={loading ? 0 : overallPct} size={140} strokeWidth={10} color="#6366f1" />
-                <div className="w-full space-y-1.5">
-                  {[['Completed', totalCompleted], ['Remaining', TOTAL_TOPICS - totalCompleted], ['Total', TOTAL_TOPICS]].map(([l, v]) => (
-                    <div key={String(l)} className="flex justify-between text-xs text-zinc-400">
-                      <span>{l}</span><span className="font-medium text-zinc-200">{v}</span>
+              <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}>
+                <Card className="bg-card/50 border-zinc-800 h-full">
+                  <CardHeader className="p-5 pb-3">
+                    <div className="flex items-center gap-2">
+                      <Target className="h-4 w-4 text-emerald-400" />
+                      <CardTitle className="text-sm font-medium">Category Progress</CardTitle>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                  </CardHeader>
+                  <CardContent className="p-5 pt-0 space-y-3">
+                    {loading ? (
+                      <div className="flex items-center justify-center h-40"><Loader2 className="h-5 w-5 animate-spin text-zinc-500" /></div>
+                    ) : (
+                      categoryStats.map((cat, i) => (
+                        <motion.div
+                          key={cat.label}
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.35 + i * 0.04 }}
+                        >
+                          <div className="flex items-center justify-between text-xs mb-1">
+                            <div className="flex items-center gap-2">
+                              <div className="h-2 w-2 rounded-full" style={{ backgroundColor: cat.color }} />
+                              <span className="text-zinc-300">{cat.label}</span>
+                            </div>
+                            <span className="text-zinc-500">
+                              {cat.completed}/{cat.total}
+                              <span className="ml-1.5 font-semibold" style={{ color: cat.color }}>{cat.pct}%</span>
+                            </span>
+                          </div>
+                          <div className="h-2 w-full rounded-full bg-zinc-800 overflow-hidden">
+                            <motion.div
+                              initial={{ width: 0 }}
+                              animate={{ width: `${cat.pct}%` }}
+                              transition={{ duration: 0.8, delay: 0.4 + i * 0.04 }}
+                              className="h-full rounded-full"
+                              style={{ backgroundColor: cat.color }}
+                            />
+                          </div>
+                        </motion.div>
+                      ))
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </div>
 
-            <Card className="bg-card/50 border-zinc-800">
-              <CardHeader className="p-5 pb-3">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-blue-400" />
-                  <CardTitle className="text-sm font-medium">Weekly Activity</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="p-5 pt-0">
-                {loading ? (
-                  <div className="flex items-center justify-center h-40"><Loader2 className="h-5 w-5 animate-spin text-zinc-500" /></div>
-                ) : (
-                  <BarChart data={weeklyActivity} height={160} />
-                )}
-                <p className="text-[10px] text-zinc-500 mt-3 text-center">Topics completed per week (last 8 weeks)</p>
-              </CardContent>
-            </Card>
+            {/* ── Weak & Strong Areas ── */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
+                <Card className="bg-card/50 border-zinc-800">
+                  <CardHeader className="p-5 pb-3">
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="h-4 w-4 text-amber-400" />
+                      <CardTitle className="text-sm font-medium">Needs Attention</CardTitle>
+                      <span className="ml-auto text-[11px] text-muted-foreground">Bottom 5</span>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-5 pt-0 space-y-3">
+                    {weakAreas.map((area) => (
+                      <div key={area.title} className="space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-zinc-300 truncate mr-2">{area.title}</span>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className="text-zinc-500">{area.completed}/{area.total}</span>
+                            <span className="w-8 text-right font-medium tabular-nums" style={{ color: area.pct >= 40 ? '#f59e0b' : '#71717a' }}>{area.pct}%</span>
+                          </div>
+                        </div>
+                        <div className="h-1.5 w-full rounded-full bg-zinc-800 overflow-hidden">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${area.pct}%` }}
+                            transition={{ duration: 0.6 }}
+                            className="h-full rounded-full bg-gradient-to-r from-amber-600 to-amber-400"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              </motion.div>
 
-            <Card className="bg-card/50 border-zinc-800">
-              <CardHeader className="p-5 pb-3">
-                <div className="flex items-center gap-2">
-                  <Brain className="h-4 w-4 text-emerald-400" />
-                  <CardTitle className="text-sm font-medium">Category Progress</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="p-5 pt-0 space-y-3">
-                {categoryStats.map((cat) => (
-                  <div key={cat.label} className="space-y-1">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-zinc-300">{cat.label}</span>
-                      <span className="text-zinc-500">{cat.completed}/{cat.total} <span className="ml-1 font-medium" style={{ color: cat.color }}>{cat.pct}%</span></span>
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
+                <Card className="bg-card/50 border-zinc-800">
+                  <CardHeader className="p-5 pb-3">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-emerald-400" />
+                      <CardTitle className="text-sm font-medium">Strongest Areas</CardTitle>
+                      <span className="ml-auto text-[11px] text-muted-foreground">Top 5</span>
                     </div>
-                    <div className="h-1.5 w-full rounded-full bg-zinc-800 overflow-hidden">
-                      <div className="h-full rounded-full transition-all duration-700" style={{ width: `${cat.pct}%`, backgroundColor: cat.color }} />
-                    </div>
+                  </CardHeader>
+                  <CardContent className="p-5 pt-0 space-y-3">
+                    {strongAreas.length === 0 ? (
+                      <p className="text-xs text-zinc-500 text-center py-4">No completions yet — start a roadmap!</p>
+                    ) : strongAreas.map((area) => (
+                      <div key={area.title} className="space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-zinc-300 truncate mr-2">{area.title}</span>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className="text-zinc-500">{area.completed}/{area.total}</span>
+                            <span className="w-8 text-right font-medium tabular-nums text-emerald-400">{area.pct}%</span>
+                          </div>
+                        </div>
+                        <div className="h-1.5 w-full rounded-full bg-zinc-800 overflow-hidden">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${area.pct}%` }}
+                            transition={{ duration: 0.6 }}
+                            className="h-full rounded-full bg-gradient-to-r from-emerald-600 to-emerald-400"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </div>
+
+            {/* ── Roadmap Table ── */}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }}>
+              <Card className="bg-card/50 border-zinc-800">
+                <CardHeader className="p-5 pb-3">
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="h-4 w-4 text-zinc-400" />
+                    <CardTitle className="text-sm font-medium">All Roadmaps</CardTitle>
+                    <span className="ml-auto text-[11px] text-muted-foreground">Click a category to expand</span>
                   </div>
-                ))}
-              </CardContent>
-            </Card>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <GroupedRoadmapTable roadmapStats={roadmapStats} totalCompleted={totalCompleted} overallPct={overallPct} />
+                </CardContent>
+              </Card>
+            </motion.div>
+
           </div>
-
-          {/* Per-Roadmap Bar Chart */}
-          <Card className="bg-card/50 border-zinc-800">
-            <CardHeader className="p-5 pb-3">
-              <div className="flex items-center gap-2">
-                <Database className="h-4 w-4 text-indigo-400" />
-                <CardTitle className="text-sm font-medium">Per-Roadmap Completions</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent className="p-5 pt-0">
-              {loading ? (
-                <div className="flex items-center justify-center h-40"><Loader2 className="h-5 w-5 animate-spin text-zinc-500" /></div>
-              ) : (
-                <BarChart data={roadmapBarData} height={180} />
-              )}
-              <p className="text-[10px] text-zinc-500 mt-3 text-center">Completions per sub-roadmap (50 each)</p>
-            </CardContent>
-          </Card>
-
-          {/* Weak / Strong / Legend */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Card className="bg-card/50 border-zinc-800">
-              <CardHeader className="p-5 pb-3">
-                <div className="flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4 text-amber-400" />
-                  <CardTitle className="text-sm font-medium">Needs Attention</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="p-5 pt-0 space-y-3">
-                  {weakAreas.map((area) => (
-                  <div key={area.title} className="space-y-1">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-zinc-300">{area.title}</span>
-                      <span className="text-zinc-500">{area.completed}/{area.total}</span>
-                    </div>
-                    <div className="h-1.5 w-full rounded-full bg-zinc-800 overflow-hidden">
-                      <div className="h-full rounded-full bg-amber-500 transition-all duration-700" style={{ width: `${area.pct}%` }} />
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-
-            <Card className="bg-card/50 border-zinc-800">
-              <CardHeader className="p-5 pb-3">
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-emerald-400" />
-                  <CardTitle className="text-sm font-medium">Strongest Areas</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="p-5 pt-0 space-y-3">
-                {strongAreas.length === 0 ? (
-                  <p className="text-xs text-zinc-500 text-center py-4">No completions yet — start a roadmap!</p>
-                ) : strongAreas.map((area) => (
-                  <div key={area.title} className="space-y-1">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-zinc-300">{area.title}</span>
-                      <span className="text-zinc-500">{area.completed}/{area.total}</span>
-                    </div>
-                    <div className="h-1.5 w-full rounded-full bg-zinc-800 overflow-hidden">
-                      <div className="h-full rounded-full bg-emerald-500 transition-all duration-700" style={{ width: `${area.pct}%` }} />
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-
-            <Card className="bg-card/50 border-zinc-800">
-              <CardHeader className="p-5 pb-3">
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-blue-400" />
-                  <CardTitle className="text-sm font-medium">Completion % at a Glance</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="p-5 pt-0">
-                <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-                  {roadmapStats.map((r) => (
-                    <div key={r.title} className="flex items-center gap-2 min-w-0">
-                      <div className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: r.color }} />
-                      <span className="text-[11px] text-zinc-400 truncate flex-1">{r.title}</span>
-                      <span className="text-[11px] font-semibold shrink-0"
-                        style={{ color: r.pct >= 80 ? '#10b981' : r.pct >= 40 ? '#f59e0b' : '#71717a' }}>
-                        {r.pct}%
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Grouped Accordion Table */}
-          <Card className="bg-card/50 border-zinc-800">
-            <CardHeader className="p-5 pb-3">
-              <div className="flex items-center gap-2">
-                <BookOpen className="h-4 w-4 text-zinc-400" />
-                <CardTitle className="text-sm font-medium">All Roadmaps — Detailed View</CardTitle>
-                <span className="ml-auto text-[11px] text-zinc-500">Click a category to expand</span>
-              </div>
-            </CardHeader>
-            <CardContent className="p-0">
-              <GroupedRoadmapTable
-                roadmapStats={roadmapStats}
-                totalCompleted={totalCompleted}
-                overallPct={overallPct}
-              />
-            </CardContent>
-          </Card>
-
         </div>
       </div>
-    </div>
+    </TooltipProvider>
   );
 }
