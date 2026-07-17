@@ -57,84 +57,7 @@ const statusConfig: Record<ProjectStatus, { label: string; className: string }> 
 
 const allStatuses: ProjectStatus[] = ['IDEA', 'IN_PROGRESS', 'COMPLETED', 'MAINTAINING', 'ARCHIVED'];
 
-const defaultProjects: Project[] = [
-  {
-    id: '1', name: 'Notification Service',
-    description: 'Real-time notification delivery system with multi-channel support.',
-    status: 'IN_PROGRESS',
-    technologies: ['Go', 'Redis', 'Kafka', 'PostgreSQL', 'gRPC'],
-    features: [
-      { name: 'Email dispatch', done: true },
-      { name: 'Push notifications', done: true },
-      { name: 'SMS integration', done: false },
-      { name: 'Template engine', done: true },
-      { name: 'Delivery tracking', done: false },
-    ],
-    linkedConcepts: 12,
-    vision: 'Build a unified notification gateway that handles billions of events daily with sub-100ms latency.',
-    architecture: 'Microservices with Go over gRPC. Kafka for ingestion, Redis for dedup, PostgreSQL for audit.',
-    architectureImage: '',
-    docs: [],
-    lessons: 'Event-driven design requires careful idempotency handling.',
-  },
-  {
-    id: '2', name: 'E-Commerce Platform',
-    description: 'Full-stack e-commerce solution with marketplace capabilities.',
-    status: 'COMPLETED',
-    technologies: ['Next.js', 'TypeScript', 'Stripe', 'Prisma', 'tRPC'],
-    features: [
-      { name: 'Product catalog', done: true },
-      { name: 'Cart & checkout', done: true },
-      { name: 'Payment processing', done: true },
-      { name: 'Order management', done: true },
-      { name: 'Admin dashboard', done: true },
-    ],
-    linkedConcepts: 8,
-    vision: 'Modern e-commerce with seamless checkout and real-time inventory.',
-    architecture: 'Next.js app router + tRPC + Prisma/PostgreSQL + Stripe.',
-    architectureImage: '',
-    docs: [],
-    lessons: 'Server components reduce bundle size. Stripe webhook idempotency is critical.',
-  },
-  {
-    id: '3', name: 'Task Management System',
-    description: 'Kanban-style project management with real-time collaboration.',
-    status: 'IN_PROGRESS',
-    technologies: ['React', 'Node.js', 'Socket.IO', 'MongoDB', 'Docker'],
-    features: [
-      { name: 'Board view', done: true },
-      { name: 'Real-time sync', done: true },
-      { name: 'File attachments', done: false },
-      { name: 'User assignments', done: true },
-      { name: 'Activity log', done: false },
-    ],
-    linkedConcepts: 15,
-    vision: 'Drag-and-drop project management with real-time collaboration.',
-    architecture: 'React + Node.js/Express + Socket.IO + MongoDB.',
-    architectureImage: '',
-    docs: [],
-    lessons: 'Optimistic updates with WebSocket ack callbacks prevent state conflicts.',
-  },
-  {
-    id: '4', name: 'API Gateway',
-    description: 'Lightweight API gateway with rate limiting and auth.',
-    status: 'IDEA',
-    technologies: ['Rust', 'Tokio', 'Hyper', 'JWT', 'Redis'],
-    features: [
-      { name: 'Route forwarding', done: false },
-      { name: 'Rate limiting', done: false },
-      { name: 'JWT validation', done: false },
-      { name: 'Metrics export', done: false },
-      { name: 'Circuit breaker', done: false },
-    ],
-    linkedConcepts: 6,
-    vision: 'High-performance Rust API gateway with sub-ms overhead.',
-    architecture: 'Tokio + Hyper. JWT via jsonwebtoken. Sliding window rate limiting with Redis.',
-    architectureImage: '',
-    docs: [],
-    lessons: 'Still in ideation. Researching zero-copy deserialization.',
-  },
-];
+const defaultProjects: Project[] = [];
 
 function StatusBadge({ status }: { status: ProjectStatus }) {
   const config = statusConfig[status];
@@ -423,14 +346,6 @@ export default function ProjectsPage() {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       try { setProjects(JSON.parse(saved)); } catch {}
-    } else {
-      setProjects(defaultProjects);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultProjects));
-      if (userEmail) {
-        for (const proj of defaultProjects) {
-          createProject.mutate({ ...proj, userEmail });
-        }
-      }
     }
   }, [mounted, projectsData, userEmail]);
 
@@ -588,15 +503,15 @@ export default function ProjectsPage() {
           })}
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="relative flex-1 max-w-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="relative w-full sm:max-w-xs">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500" />
             <Input
               value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search projects..." className="bg-zinc-800 border-zinc-700 text-zinc-200 pl-8 h-9 text-sm"
             />
           </div>
-          <div className="flex gap-1 overflow-x-auto -mx-1 px-1 flex-nowrap">
+          <div className="flex gap-1 flex-wrap">
             {(['ALL', 'IDEA', 'IN_PROGRESS', 'COMPLETED', 'MAINTAINING', 'ARCHIVED'] as const).map((s) => (
               <button key={s} onClick={() => setStatusFilter(s)}
                 className={cn('px-2.5 py-1 rounded text-[11px] font-medium border transition-colors',
