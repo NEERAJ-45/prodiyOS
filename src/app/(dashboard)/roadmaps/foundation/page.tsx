@@ -178,23 +178,18 @@ function computeFoundationProgress() {
 }
 
 export default function FoundationRoadmapPage() {
-  const progressData = React.useSyncExternalStore(
-    (callback) => {
-      const bc = new BroadcastChannel('roadmap-progress');
-      bc.onmessage = callback;
-      window.addEventListener('storage', callback);
-      return () => {
-        bc.close();
-        window.removeEventListener('storage', callback);
-      };
-    },
-    computeFoundationProgress,
-    () => ({
-      os: { overall: 0, process: 0, memory: 0 },
-      cn: { overall: 0, tcp: 0, protocols: 0 },
-      dbms: { overall: 0, sql: 0, nosql: 0 }
-    })
-  );
+  const [progressData, setProgressData] = React.useState(computeFoundationProgress);
+
+  React.useEffect(() => {
+    const update = () => setProgressData(computeFoundationProgress());
+    const bc = new BroadcastChannel('roadmap-progress');
+    bc.onmessage = update;
+    window.addEventListener('storage', update);
+    return () => {
+      bc.close();
+      window.removeEventListener('storage', update);
+    };
+  }, []);
 
   const dynamicPillars = React.useMemo(() => {
     return [
