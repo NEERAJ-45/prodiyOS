@@ -15,12 +15,18 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Loader2, Search, ChevronLeft, ChevronRight,
   ChevronsLeft, ChevronsRight, AlertCircle, ListOrdered, Info,
-  BookOpen, GitBranch,
+  BookOpen, GitBranch, Layers, Clock, Trash2,
 } from "lucide-react";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { toast } from "@/components/ui/toast";
 import { striverSheet, striverTotalProblems } from "@/data/striver-sheet";
 import { cn } from "@/lib/utils";
+import dynamic from "next/dynamic";
+import { useCustomRoadmapsQuery, useDeleteCustomRoadmap } from "@/hooks/use-custom-roadmaps";
+import { AddRoadmapDialog } from "@/components/shared/AddRoadmapDialog";
+import type { QuestionItem } from "@/components/roadmaps/QuestionsTable";
+
+const QuestionsTable = dynamic(() => import("@/components/roadmaps/QuestionsTable"), { ssr: false });
 
 interface PatternRow {
   key: string;
@@ -51,11 +57,17 @@ function useDebounce<T>(value: T, delay: number): T {
 
 function PatternsContent() {
   const searchParams = useSearchParams();
-  const [view, setView] = useState<"patterns" | "striver">("patterns");
+  const [view, setView] = useState<"patterns" | "striver" | "custom">("patterns");
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [selectedCustomSlug, setSelectedCustomSlug] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 15 });
+
+  const { data: customRoadmapsData, isLoading: customLoading } = useCustomRoadmapsQuery();
+  const deleteCustomRoadmap = useDeleteCustomRoadmap();
+
+  const customRoadmaps = useMemo(() => customRoadmapsData?.data ?? [], [customRoadmapsData]);
 
   const debouncedSearch = useDebounce(search, 300);
 
@@ -169,6 +181,10 @@ function PatternsContent() {
     ? striverSheet.find((d) => d.key === selectedDay) ?? null
     : null;
 
+  const selectedCustomRoadmap = view === "custom" && selectedCustomSlug
+    ? customRoadmaps.find((r) => r.slug === selectedCustomSlug) ?? null
+    : null;
+
   // ---- Early returns for drill-downs ----
   if (striverDay) {
     return (
@@ -189,6 +205,39 @@ function PatternsContent() {
         patternKey={selectedKey}
         onBack={() => setSelectedKey(null)}
       />
+    );
+  }
+
+  if (selectedCustomRoadmap) {
+    const questions: QuestionItem[] = selectedCustomRoadmap.questions.map((q) => ({
+      id: q.id,
+      title: q.title,
+      difficulty: q.difficulty,
+      link: q.link,
+    }));
+    return (
+      <div className="flex h-full flex-col p-4 md:p-6">
+        <div className="mb-4">
+          <button
+            onClick={() => setSelectedCustomSlug(null)}
+            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-2"
+          >
+            <ChevronLeft size={14} />
+            Back to Custom
+          </button>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+            {selectedCustomRoadmap.title}
+          </h1>
+          {selectedCustomRoadmap.description && (
+            <p className="mt-1 text-sm text-muted-foreground">{selectedCustomRoadmap.description}</p>
+          )}
+        </div>
+        <QuestionsTable
+          questions={questions}
+          storagePrefix={selectedCustomRoadmap.storageKey}
+          searchPlaceholder="Search questions..."
+        />
+      </div>
     );
   }
 
@@ -216,6 +265,16 @@ function PatternsContent() {
           <BookOpen className="h-3.5 w-3.5" />
           Striver Sheet
         </button>
+        <button
+          onClick={() => { setView("custom"); setSelectedKey(null); setSelectedDay(null); setSelectedCustomSlug(null); setSearch(""); }}
+          className={cn(
+            "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all",
+            view === "custom" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <Layers className="h-3.5 w-3.5" />
+          Custom
+        </button>
       </div>
 
       <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 transition-all duration-200 focus-within:border-primary/50 focus-within:bg-background focus-within:ring-2 focus-within:ring-primary/20 flex-1 max-w-xs">
@@ -223,7 +282,7 @@ function PatternsContent() {
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder={view === "patterns" ? "Search patterns..." : "Search topics..."}
+          placeholder={view === "patterns" ? "Search patterns..." : view === "striver" ? "Search topics..." : "Search roadmaps..."}
           className="w-full bg-transparent py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
         />
         {isFetching && (
@@ -395,7 +454,6 @@ function PatternsContent() {
           </table>
         </div>
 
-        {/* Pagination */}
         {data && data.total > 0 && (
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-3 mt-4 border border-border rounded-lg bg-muted/20 text-sm text-muted-foreground">
             <div className="hidden sm:flex items-center gap-1.5 text-xs">
@@ -420,15 +478,11 @@ function PatternsContent() {
                 <span className="text-[10px] sm:text-xs">Show</span>
                 <select
                   value={pagination.pageSize}
-                  onChange={(e) => {
-                    table.setPageSize(Number(e.target.value));
-                  }}
+                  onChange={(e) => { table.setPageSize(Number(e.target.value)); }}
                   className="bg-background border border-border text-foreground text-[10px] sm:text-xs rounded px-1.5 sm:px-2 py-1 focus:outline-none focus:border-primary/50 transition-colors"
                 >
                   {[10, 15, 20, 30, 50].map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
+                    <option key={s} value={s}>{s}</option>
                   ))}
                 </select>
               </div>
@@ -451,10 +505,8 @@ function PatternsContent() {
                   <ChevronLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </button>
                 <span className="text-[10px] sm:text-xs px-1 sm:px-2 select-none whitespace-nowrap">
-                  <strong className="text-foreground font-semibold">
-                    {pagination.pageIndex + 1}
-                  </strong>
-                  <span className="hidden sm:inline">{" "}of{" "}</span>
+                  <strong className="text-foreground font-semibold">{pagination.pageIndex + 1}</strong>
+                  <span className="hidden sm:inline"> of </span>
                   <span className="hidden sm:inline font-semibold text-foreground">{data.totalPages}</span>
                 </span>
                 <button
@@ -484,94 +536,206 @@ function PatternsContent() {
   // ============================
   // STRIVER VIEW
   // ============================
-  const totalSolved = (() => {
-    if (typeof window === "undefined") return 0;
-    let solved = 0;
-    for (const day of striverSheet) {
-      const key = `completed-striver-${day.key}`;
-      try {
-        const raw = localStorage.getItem(key);
-        if (raw) {
-          const map = JSON.parse(raw) as Record<string, string>;
-          solved += Object.keys(map).length;
-        }
-      } catch {}
-    }
-    return solved;
-  })();
+  if (view === "striver") {
+    const totalSolved = (() => {
+      if (typeof window === "undefined") return 0;
+      let solved = 0;
+      for (const day of striverSheet) {
+        const key = `completed-striver-${day.key}`;
+        try {
+          const raw = localStorage.getItem(key);
+          if (raw) {
+            const map = JSON.parse(raw) as Record<string, string>;
+            solved += Object.keys(map).length;
+          }
+        } catch {}
+      }
+      return solved;
+    })();
+
+    return (
+      <div className="flex h-full mt10 flex-col p-4 md:p-6">
+        <div className="mb-4">
+          <div className="flex items-center gap-2">
+            <BookOpen className="h-5 w-5 text-foreground" />
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+              Striver SDE Sheet
+            </h1>
+          </div>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {striverSheet.length} days &middot; {striverTotalProblems} problems &middot; {totalSolved} solved
+          </p>
+        </div>
+
+        {toggleBar}
+
+        <div className="overflow-x-auto rounded-lg border border-border relative">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border bg-muted/50">
+                <th className="px-4 py-2.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground text-center" style={{ width: 44 }}>#</th>
+                <th className="px-4 py-2.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground text-left">Topic</th>
+                <th className="px-4 py-2.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground text-center">Day</th>
+                <th className="px-4 py-2.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground text-center">Easy</th>
+                <th className="px-4 py-2.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground text-center">Medium</th>
+                <th className="px-4 py-2.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground text-center">Hard</th>
+                <th className="px-4 py-2.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground text-center">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <AnimatePresence>
+                {filteredDays.length === 0 ? (
+                  <motion.tr key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                    <td colSpan={7} className="px-4 py-16">
+                      <div className="flex flex-col items-center justify-center gap-3 text-muted-foreground">
+                        <ListOrdered className="h-8 w-8" />
+                        <p className="text-sm">No topics match your search</p>
+                      </div>
+                    </td>
+                  </motion.tr>
+                ) : (
+                  filteredDays.map((day, i) => {
+                    const easy = day.problems.easy.length;
+                    const medium = day.problems.medium.length;
+                    const hard = day.problems.hard.length;
+                    const total = easy + medium + hard;
+                    return (
+                      <motion.tr
+                        key={day.key}
+                        initial={{ opacity: 0, y: 12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: i * 0.03, ease: "easeOut" }}
+                        className="border-b border-border transition-colors hover:bg-muted/30 cursor-pointer last:border-0"
+                        onClick={() => setSelectedDay(day.key)}
+                      >
+                        <td className="px-4 py-2.5 text-center text-xs text-muted-foreground tabular-nums">{i + 1}</td>
+                        <td className="px-4 py-2.5 text-left">
+                          <span className="font-medium text-foreground text-sm">{day.topic}</span>
+                        </td>
+                        <td className="px-4 py-2.5 text-center text-xs text-muted-foreground">Day {day.day}</td>
+                        <td className="px-4 py-2.5 text-center text-xs text-emerald-400 font-medium">{easy}</td>
+                        <td className="px-4 py-2.5 text-center text-xs text-amber-400 font-medium">{medium}</td>
+                        <td className="px-4 py-2.5 text-center text-xs text-red-400 font-medium">{hard}</td>
+                        <td className="px-4 py-2.5 text-center text-xs font-semibold text-foreground">{total}</td>
+                      </motion.tr>
+                    );
+                  })
+                )}
+              </AnimatePresence>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  }
+
+  // ============================
+  // CUSTOM VIEW
+  // ============================
+  const filteredCustom = customRoadmaps.filter((r) =>
+    r.title.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <div className="flex h-full mt10 flex-col p-4 md:p-6">
       <div className="mb-4">
-        <div className="flex items-center gap-2">
-          <BookOpen className="h-5 w-5 text-foreground" />
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-            Striver SDE Sheet
-          </h1>
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <Layers className="h-5 w-5 text-foreground" />
+              <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+                Custom Roadmaps
+              </h1>
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {customRoadmaps.length} custom roadmap{customRoadmaps.length !== 1 ? 's' : ''}
+            </p>
+          </div>
+          <AddRoadmapDialog />
         </div>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {striverSheet.length} days &middot; {striverTotalProblems} problems &middot; {totalSolved} solved
-        </p>
       </div>
 
       {toggleBar}
 
-      <div className="overflow-x-auto rounded-lg border border-border relative">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border bg-muted/50">
-              <th className="px-4 py-2.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground text-center" style={{ width: 44 }}>#</th>
-              <th className="px-4 py-2.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground text-left">Topic</th>
-              <th className="px-4 py-2.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground text-center">Day</th>
-              <th className="px-4 py-2.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground text-center">Easy</th>
-              <th className="px-4 py-2.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground text-center">Medium</th>
-              <th className="px-4 py-2.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground text-center">Hard</th>
-              <th className="px-4 py-2.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground text-center">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            <AnimatePresence>
-              {filteredDays.length === 0 ? (
-                <motion.tr key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                  <td colSpan={7} className="px-4 py-16">
-                    <div className="flex flex-col items-center justify-center gap-3 text-muted-foreground">
-                      <ListOrdered className="h-8 w-8" />
-                      <p className="text-sm">No topics match your search</p>
-                    </div>
-                  </td>
-                </motion.tr>
-              ) : (
-                filteredDays.map((day, i) => {
-                  const easy = day.problems.easy.length;
-                  const medium = day.problems.medium.length;
-                  const hard = day.problems.hard.length;
-                  const total = easy + medium + hard;
-                  return (
-                    <motion.tr
-                      key={day.key}
-                      initial={{ opacity: 0, y: 12 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3, delay: i * 0.03, ease: "easeOut" }}
-                      className="border-b border-border transition-colors hover:bg-muted/30 cursor-pointer last:border-0"
-                      onClick={() => setSelectedDay(day.key)}
-                    >
-                      <td className="px-4 py-2.5 text-center text-xs text-muted-foreground tabular-nums">{i + 1}</td>
-                      <td className="px-4 py-2.5 text-left">
-                        <span className="font-medium text-foreground text-sm">{day.topic}</span>
-                      </td>
-                      <td className="px-4 py-2.5 text-center text-xs text-muted-foreground">Day {day.day}</td>
-                      <td className="px-4 py-2.5 text-center text-xs text-emerald-400 font-medium">{easy}</td>
-                      <td className="px-4 py-2.5 text-center text-xs text-amber-400 font-medium">{medium}</td>
-                      <td className="px-4 py-2.5 text-center text-xs text-red-400 font-medium">{hard}</td>
-                      <td className="px-4 py-2.5 text-center text-xs font-semibold text-foreground">{total}</td>
-                    </motion.tr>
-                  );
-                })
-              )}
-            </AnimatePresence>
-          </tbody>
-        </table>
-      </div>
+      {customLoading ? (
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      ) : filteredCustom.length === 0 ? (
+        <div className="flex flex-col items-center justify-center gap-3 py-16 text-muted-foreground">
+          <Layers className="h-8 w-8" />
+          <p className="text-sm">No custom roadmaps yet. Click &quot;Add Roadmap&quot; to create one.</p>
+        </div>
+      ) : (
+        <div className="overflow-x-auto rounded-lg border border-border relative">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border bg-muted/50">
+                <th className="px-4 py-2.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground text-center" style={{ width: 44 }}>#</th>
+                <th className="px-4 py-2.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground text-left">Title</th>
+                <th className="px-4 py-2.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground text-left">Description</th>
+                <th className="px-4 py-2.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground text-center">Questions</th>
+                <th className="px-4 py-2.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground text-center">Difficulty</th>
+                <th className="px-4 py-2.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground text-center">Hours</th>
+                <th className="px-4 py-2.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground text-center" style={{ width: 72 }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <AnimatePresence>
+                {filteredCustom.map((roadmap, i) => (
+                  <motion.tr
+                    key={roadmap.slug}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: i * 0.03, ease: "easeOut" }}
+                    className="border-b border-border transition-colors hover:bg-muted/30 cursor-pointer last:border-0"
+                    onClick={() => setSelectedCustomSlug(roadmap.slug)}
+                  >
+                    <td className="px-4 py-2.5 text-center text-xs text-muted-foreground tabular-nums">{i + 1}</td>
+                    <td className="px-4 py-2.5 text-left">
+                      <span className="font-medium text-foreground text-sm">{roadmap.title}</span>
+                    </td>
+                    <td className="px-4 py-2.5 text-left text-xs text-muted-foreground max-w-[220px] truncate">
+                      {roadmap.description || '—'}
+                    </td>
+                    <td className="px-4 py-2.5 text-center text-xs font-semibold text-foreground">{roadmap.questions.length}</td>
+                    <td className="px-4 py-2.5 text-center">
+                      <span className="text-xs font-medium text-zinc-300">{roadmap.difficulty}</span>
+                    </td>
+                    <td className="px-4 py-2.5 text-center text-xs text-muted-foreground">{roadmap.hours || '—'}</td>
+                    <td className="px-4 py-2.5 text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedCustomSlug(roadmap.slug);
+                          }}
+                          className="p-1.5 rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                          title="Open"
+                        >
+                          <BookOpen size={14} />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (confirm('Delete this custom roadmap?')) {
+                              deleteCustomRoadmap.mutate({ slug: roadmap.slug });
+                            }
+                          }}
+                          className="p-1.5 rounded text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                          title="Delete"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </td>
+                  </motion.tr>
+                ))}
+              </AnimatePresence>
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
