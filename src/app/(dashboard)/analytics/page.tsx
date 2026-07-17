@@ -5,7 +5,7 @@ import { ChevronDown, ChevronRight } from 'lucide-react';
 import {
   Clock, Flame, BookOpen, Target, TrendingUp,
   AlertTriangle, CheckCircle, Brain, Activity,
-  Loader2, Database, ShieldAlert,
+  Loader2, Database,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -13,7 +13,6 @@ import { cn } from '@/lib/utils';
 import { ROADMAPS } from '@/data/roadmaps';
 import { useMounted } from '@/hooks/useMounted';
 import { useProfile } from '@/components/providers/ProfileProvider';
-import { useLoginStreakQuery } from '@/hooks/use-login-streak';
 
 const TOTAL_TOPICS = ROADMAPS.reduce((s, r) => s + r.total, 0);
 
@@ -238,8 +237,6 @@ export default function AnalyticsPage() {
   const [completionDates, setCompletionDates] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const mounted = useMounted();
-  const { data: streakData } = useLoginStreakQuery();
-  const loginStreak = streakData?.streak ?? 0;
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -365,7 +362,6 @@ export default function AnalyticsPage() {
             {[
               { label: 'Topics Done', value: loading ? '…' : `${totalCompleted} / ${TOTAL_TOPICS}`, icon: BookOpen, color: 'text-blue-400', bg: 'bg-blue-500/10' },
               { label: 'Current Streak', value: loading ? '…' : `${streak} day${streak !== 1 ? 's' : ''}`, icon: Flame, color: 'text-amber-400', bg: 'bg-amber-500/10' },
-              { label: 'Login Streak', value: loading ? '…' : `${loginStreak} day${loginStreak !== 1 ? 's' : ''}`, icon: ShieldAlert, color: 'text-orange-455', bg: 'bg-orange-500/10' },
               { label: 'Active Days', value: loading ? '…' : `${activeDays}`, icon: Activity, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
               { label: 'Overall Progress', value: loading ? '…' : `${overallPct}%`, icon: Target, color: 'text-purple-400', bg: 'bg-purple-500/10' },
             ].map((stat) => {
