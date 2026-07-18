@@ -14,6 +14,7 @@ import {
   Plus, Search, ArrowUpDown, Building2, ExternalLink,
 } from 'lucide-react';
 import { ApplicationFormDialog } from '@/components/interviews/application-form';
+import { PdfPreviewDialog } from '@/components/interviews/pdf-preview-dialog';
 import { format } from 'date-fns';
 
 const statusLabel: Record<string, { label: string; color: string }> = {
@@ -71,6 +72,7 @@ export default function ApplicationsPage() {
   const mounted = useMounted();
   const [formOpen, setFormOpen] = React.useState(false);
   const [editingApp, setEditingApp] = React.useState<Application | null>(null);
+  const [previewPdf, setPreviewPdf] = React.useState<Application | null>(null);
 
   const applications = (appsData?.applications ?? []) as Application[];
 
@@ -237,16 +239,16 @@ export default function ApplicationsPage() {
                     </td>
                     <td className="px-4 py-3">
                       {app.pdfData ? (
-                        <a
-                          href={app.pdfData}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPreviewPdf(app);
+                          }}
                           className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-blue-400 bg-blue-950/40 border border-blue-800/40 rounded hover:bg-blue-950/60 transition-colors"
-                          onClick={(e) => e.stopPropagation()}
                         >
                           <ExternalLink className="h-3 w-3" />
-                          Open
-                        </a>
+                          Preview
+                        </button>
                       ) : (
                         <span className="text-[11px] text-zinc-700">—</span>
                       )}
@@ -270,6 +272,13 @@ export default function ApplicationsPage() {
         onClose={handleFormClose}
         userEmail={userEmail}
         application={editingApp}
+      />
+
+      <PdfPreviewDialog
+        open={previewPdf !== null}
+        onOpenChange={(v) => { if (!v) setPreviewPdf(null); }}
+        pdfData={previewPdf?.pdfData ?? ''}
+        fileName={`${previewPdf?.company ?? ''} - ${previewPdf?.role ?? ''}`}
       />
     </div>
   );
