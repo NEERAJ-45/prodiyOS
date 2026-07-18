@@ -175,6 +175,7 @@ export default function ApplicationsPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-zinc-800 bg-zinc-900/80">
+                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 w-10">#</th>
                 {(['company', 'role', 'appliedDate', 'status', 'priority', 'source'] as const).map((col) => (
                   <th
                     key={col}
@@ -192,7 +193,7 @@ export default function ApplicationsPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((app) => {
+              {filtered.map((app, idx) => {
                 const status = statusLabel[app.status] || { label: app.status, color: 'bg-zinc-800 text-zinc-400' };
                 const priority = priorityConfig[app.priority] || { label: app.priority, color: 'bg-zinc-800 text-zinc-400' };
                 return (
@@ -201,6 +202,7 @@ export default function ApplicationsPage() {
                     className="border-b border-zinc-800/50 hover:bg-zinc-800/20 transition-colors cursor-pointer"
                     onClick={() => handleEdit(app)}
                   >
+                    <td className="px-4 py-3 text-zinc-600 text-xs">{idx + 1}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <Building2 className="h-4 w-4 text-zinc-500 shrink-0" />
