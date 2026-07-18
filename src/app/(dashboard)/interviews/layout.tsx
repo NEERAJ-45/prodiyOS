@@ -3,12 +3,12 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Briefcase, Table2, Columns3, StickyNote, Building2 } from 'lucide-react';
+import { Briefcase, Table2, StickyNote, Building2 } from 'lucide-react';
 
 const subNav = [
   { label: 'Overview', href: '/interviews', icon: Briefcase },
   { label: 'Applications', href: '/interviews/applications', icon: Table2 },
-  { label: 'Pipeline', href: '/interviews/pipeline', icon: Columns3 },
+
   { label: 'Notes', href: '/interviews/notes', icon: StickyNote, hide: true },
   { label: 'Company', href: '/interviews/companies', icon: Building2, hide: true },
 ];
