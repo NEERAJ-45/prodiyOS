@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import {
   Building2, ArrowLeft, Save, DollarSign, Cpu, Users, Heart, Plus, X, Globe, Mail,
 } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { toast } from '@/components/ui/toast';
 
 interface Contact {
   name: string;

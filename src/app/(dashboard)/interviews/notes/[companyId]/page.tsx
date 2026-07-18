@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 import {
   Building2, ArrowLeft, Save, Star, Clock, Plus, Trash2,
 } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { toast } from '@/components/ui/toast';
 import { format } from 'date-fns';
 
 const statusLabel: Record<string, { label: string; color: string }> = {

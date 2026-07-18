@@ -16,7 +16,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
 import { format, isWithinInterval, startOfWeek, endOfWeek, parseISO } from 'date-fns';
-import toast from 'react-hot-toast';
+import { toast } from '@/components/ui/toast';
 
 const statusLabel: Record<string, { label: string; color: string }> = {
   APPLIED:          { label: 'Applied', color: 'bg-blue-950 text-blue-300 border-blue-800' },
