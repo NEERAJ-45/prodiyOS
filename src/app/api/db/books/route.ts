@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db';
 import Book from '@/lib/models/Book';
+import BookContent from '@/lib/models/BookContent';
+import { extractTextFromPdfBuffer } from '@/lib/pdf-extractor';
 import { logActivity } from '@/lib/activity-logger';
 function getErrorResponse(error: unknown) {
   const message = error instanceof Error ? error.message : 'Internal server error';
@@ -88,6 +90,31 @@ export async function POST(request: Request) {
     });
 
     logActivity(userEmail, `Added book "${bookData.title}"`);
+
+    if (pdfBuffer) {
+      try {
+        const text = await extractTextFromPdfBuffer(pdfBuffer);
+        const cleanText = text.replace(/\s+/g, ' ').trim();
+        if (cleanText.length > 20) {
+          await BookContent.findOneAndUpdate(
+            { bookId, sourceType: 'tracked' },
+            {
+              bookId,
+              sourceType: 'tracked',
+              title: String(bookData.title || ''),
+              author: String(bookData.author || ''),
+              category: String(bookData.category || 'other'),
+              content: cleanText.slice(0, 50000),
+              contentLength: cleanText.length,
+              indexedAt: new Date(),
+            },
+            { upsert: true }
+          );
+        }
+      } catch {
+        // non-fatal
+      }
+    }
 
     return NextResponse.json({ book }, { status: 201 });
   } catch (error) {

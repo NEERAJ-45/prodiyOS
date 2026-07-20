@@ -16,6 +16,7 @@ import {
   type BookData,
   type BookStatus,
 } from '@/hooks/use-books';
+import { useBookSearchQuery } from '@/hooks/use-book-search';
 import { BookFormDialog, type BookFormState } from '@/components/books/BookFormDialog';
 import { toast } from '@/components/ui/toast';
 import { getCategoryLabel } from '@/data/book-categories';
@@ -67,8 +68,16 @@ export default function ReadingPage() {
   const [form, setForm] = React.useState<BookFormState>(emptyFormState);
 
   const trackedBooks: BookData[] = booksData?.books ?? [];
-  const q = searchQuery.toLowerCase().trim();
-  const filtered = !q ? trackedBooks : trackedBooks.filter((b) => b.title.toLowerCase().includes(q));
+  const q = searchQuery.trim();
+  const enableSearch = q.length > 1;
+  const { data: searchData, isFetching: searchFetching } = useBookSearchQuery(q, 'tracked', enableSearch);
+
+  const searchMatches = searchData?.results ?? [];
+  const searchBookIds = new Set(searchMatches.map((r) => r.bookId));
+  const filtered = !enableSearch
+    ? trackedBooks
+    : trackedBooks.filter((b) => searchBookIds.has(b.id) || searchBookIds.has(b._id || ''));
+  const isSearching = enableSearch && (searchFetching || searchData === undefined);
 
   function openAddDialog() {
     setDialogMode('add');
@@ -162,9 +171,10 @@ export default function ReadingPage() {
         </Button>
       </div>
 
-      {isLoading ? (
+      {isLoading || isSearching ? (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-6 w-6 animate-spin text-zinc-500" />
+          {isSearching && <span className="ml-2 text-sm text-zinc-500">Searching full text...</span>}
         </div>
       ) : filtered.length === 0 ? (
         <Card className="border-zinc-800 bg-zinc-900/30">
