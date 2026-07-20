@@ -17,6 +17,7 @@ import {
   Loader2,
   ArrowLeft,
   FileType,
+  Bookmark,
 } from 'lucide-react';
 import {
   Card,
@@ -40,7 +41,6 @@ import {
 import { BookFormDialog, type BookFormState } from '@/components/books/BookFormDialog';
 import { toast } from '@/components/ui/toast';
 import books, { type BookEntry, categoryLabels } from '@/data/books';
-import QuestionsTable, { type QuestionItem } from '@/components/roadmaps/QuestionsTable';
 
 type PaperStatus = 'TO_READ' | 'READING' | 'COMPLETED';
 
@@ -127,14 +127,44 @@ const RatingStars = React.memo(function RatingStars({
   );
 });
 
+function BookmarkButton({
+  slug,
+  bookmarked,
+  onToggle,
+}: {
+  slug: string;
+  bookmarked: boolean;
+  onToggle: (slug: string) => void;
+}) {
+  return (
+    <button
+      onClick={(e) => { e.preventDefault(); e.stopPropagation(); onToggle(slug); }}
+      className={cn(
+        'p-1.5 rounded transition-colors cursor-pointer',
+        bookmarked
+          ? 'text-amber-400 hover:text-amber-300'
+          : 'text-zinc-600 hover:text-zinc-300'
+      )}
+      title={bookmarked ? 'Remove Bookmark' : 'Bookmark'}
+      type="button"
+    >
+      <Bookmark className={cn('h-3.5 w-3.5', bookmarked && 'fill-amber-400')} />
+    </button>
+  );
+}
+
 const TrackedBookCard = React.memo(function TrackedBookCard({
   book,
   onEdit,
   onDelete,
+  bookmarked,
+  onToggleBookmark,
 }: {
   book: BookData;
   onEdit: (book: BookData) => void;
   onDelete: (id: string) => void;
+  bookmarked: boolean;
+  onToggleBookmark: (slug: string) => void;
 }) {
   const config = bookStatusConfig[book.status];
   const hasPdf = !!book.pdfPath;
@@ -185,6 +215,7 @@ const TrackedBookCard = React.memo(function TrackedBookCard({
                 <FileType className="h-3.5 w-3.5" />
               </Link>
             )}
+            <BookmarkButton slug={book._id || book.id} bookmarked={bookmarked} onToggle={onToggleBookmark} />
             <button
               onClick={() => onEdit(book)}
               className="p-1.5 rounded hover:bg-zinc-800 text-zinc-600 hover:text-zinc-300 transition-colors cursor-pointer"
@@ -215,8 +246,12 @@ const TrackedBookCard = React.memo(function TrackedBookCard({
 
 const PaperCard = React.memo(function PaperCard({
   paper,
+  bookmarked,
+  onToggleBookmark,
 }: {
   paper: ResearchPaper;
+  bookmarked: boolean;
+  onToggleBookmark: (slug: string) => void;
 }) {
   const config = paperStatusConfig[paper.status];
   return (
@@ -243,6 +278,7 @@ const PaperCard = React.memo(function PaperCard({
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
+            <BookmarkButton slug={`paper-${paper.id}`} bookmarked={bookmarked} onToggle={onToggleBookmark} />
             <Badge variant="outline" className={cn('text-[10px] font-medium', config.className)}>
               {config.label}
             </Badge>
@@ -272,35 +308,6 @@ const categoryColors: Record<string, { bg: string; border: string; text: string;
   '06-Meta-Learning': { bg: 'bg-cyan-950/40', border: 'border-cyan-800/40', text: 'text-cyan-300', icon: '#06b6d4' },
   '07-Others': { bg: 'bg-zinc-800/40', border: 'border-zinc-700/40', text: 'text-zinc-300', icon: '#71717a' },
 };
-
-const categoryToDifficulty: Record<string, string> = {
-  '01-Foundations': 'EASY',
-  '02-Distributed-Systems': 'MEDIUM',
-  '03-Architecture': 'MEDIUM',
-  '04-Performance': 'HARD',
-  '05-Deep-Mastery': 'HARD',
-  '06-Meta-Learning': 'MEDIUM',
-  '07-Others': 'EASY',
-};
-
-function slugToNumber(slug: string): number {
-  let hash = 0;
-  for (let i = 0; i < slug.length; i++) {
-    hash = ((hash << 5) - hash) + slug.charCodeAt(i);
-    hash |= 0;
-  }
-  return Math.abs(hash);
-}
-
-function bookToQuestionItem(book: BookEntry): QuestionItem {
-  return {
-    id: slugToNumber(book.slug),
-    title: book.title,
-    description: categoryLabels[book.category] || book.category,
-    difficulty: categoryToDifficulty[book.category] || 'EASY',
-    link: `/books/${book.slug}`,
-  };
-}
 
 const CategoryCard = React.memo(function CategoryCard({
   catKey,
@@ -357,18 +364,45 @@ export default function BooksPage() {
   const [form, setForm] = React.useState<BookFormState>(emptyFormState);
   const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null);
 
+  const [bookmarked, setBookmarked] = React.useState<Set<string>>(() => {
+    if (typeof window === 'undefined') return new Set();
+    try { return new Set(JSON.parse(localStorage.getItem('books-bookmarks') || '[]')); }
+    catch { return new Set(); }
+  });
+
+  function toggleBookmark(slug: string) {
+    setBookmarked((prev) => {
+      const next = new Set(prev);
+      if (next.has(slug)) next.delete(slug);
+      else next.add(slug);
+      localStorage.setItem('books-bookmarks', JSON.stringify([...next]));
+      return next;
+    });
+  }
+
   const trackedBooks: BookData[] = booksData?.books ?? [];
 
+  const q = searchQuery.toLowerCase().trim();
+
   const filteredGrouped = React.useMemo(() => {
-    if (!searchQuery.trim()) return grouped;
-    const q = searchQuery.toLowerCase();
+    if (!q) return grouped;
     const result: Record<string, BookEntry[]> = {};
     for (const [cat, catBooks] of Object.entries(grouped)) {
       const filtered = catBooks.filter((b) => b.title.toLowerCase().includes(q));
       if (filtered.length > 0) result[cat] = filtered;
     }
     return result;
-  }, [grouped, searchQuery]);
+  }, [grouped, q]);
+
+  const filteredTrackedBooks = React.useMemo(
+    () => !q ? trackedBooks : trackedBooks.filter((b) => b.title.toLowerCase().includes(q)),
+    [trackedBooks, q]
+  );
+
+  const filteredPapers = React.useMemo(
+    () => !q ? papers : papers.filter((p) => p.title.toLowerCase().includes(q)),
+    [papers, q]
+  );
 
   function openAddDialog() {
     setDialogMode('add');
@@ -490,6 +524,10 @@ export default function BooksPage() {
                 <BookOpen className="h-3.5 w-3.5" />
                 Reading
               </TabsTrigger>
+              <TabsTrigger value="papers" className="data-[state=active]:bg-zinc-800 data-[state=active]:text-zinc-100 text-zinc-500 text-xs gap-2">
+                <FileText className="h-3.5 w-3.5" />
+                Papers
+              </TabsTrigger>
               <TabsTrigger value="docs" className="data-[state=active]:bg-zinc-800 data-[state=active]:text-zinc-100 text-zinc-500 text-xs gap-2">
                 <FileCode className="h-3.5 w-3.5" />
                 Documentation
@@ -519,41 +557,54 @@ export default function BooksPage() {
                     {(grouped[selectedCategory] || []).length} books
                   </p>
                 </div>
-                <QuestionsTable
-                  questions={(grouped[selectedCategory] || []).map(bookToQuestionItem)}
-                  storagePrefix={`books-cat-${selectedCategory}`}
-                  searchPlaceholder={`Search books in ${categoryLabels[selectedCategory] || selectedCategory}...`}
-                />
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {(grouped[selectedCategory] || []).map((book) => (
+                    <Link
+                      key={book.slug}
+                      href={`/books/${book.slug}`}
+                      className="block group"
+                    >
+                      <Card className="border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900 transition-colors h-full">
+                        <CardHeader className="p-5 pb-3">
+                          <div className="flex items-start justify-between gap-3">
+                            <CardTitle className="text-sm font-medium text-zinc-100 truncate flex-1 min-w-0">
+                              {book.title}
+                            </CardTitle>
+                            <BookmarkButton
+                              slug={`lib-${book.slug}`}
+                              bookmarked={bookmarked.has(`lib-${book.slug}`)}
+                              onToggle={toggleBookmark}
+                            />
+                          </div>
+                          <CardDescription className="text-xs text-zinc-500 mt-1">
+                            {categoryLabels[book.category] || book.category}
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-5 pt-0 flex items-center gap-2">
+                          <FileType className="h-3.5 w-3.5 text-zinc-600" />
+                          <span className="text-xs text-zinc-600">PDF</span>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  ))}
+                </div>
               </div>
             ) : (
-              <>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {categoryOrder.map((cat) => {
-                    const catBooks = filteredGrouped[cat];
-                    if (!catBooks) return null;
-                    return (
-                      <CategoryCard
-                        key={cat}
-                        catKey={cat}
-                        label={categoryLabels[cat] || cat}
-                        count={catBooks.length}
-                        onClick={() => setSelectedCategory(cat)}
-                      />
-                    );
-                  })}
-                </div>
-                <div className="space-y-3">
-                  <h3 className="text-sm font-semibold text-zinc-300 flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    Research Papers
-                  </h3>
-                  <div className="space-y-2">
-                    {papers.map((paper) => (
-                      <PaperCard key={paper.id} paper={paper} />
-                    ))}
-                  </div>
-                </div>
-              </>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                {categoryOrder.map((cat) => {
+                  const catBooks = filteredGrouped[cat];
+                  if (!catBooks) return null;
+                  return (
+                    <CategoryCard
+                      key={cat}
+                      catKey={cat}
+                      label={categoryLabels[cat] || cat}
+                      count={catBooks.length}
+                      onClick={() => setSelectedCategory(cat)}
+                    />
+                  );
+                })}
+              </div>
             )}
           </TabsContent>
 
@@ -562,22 +613,50 @@ export default function BooksPage() {
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="h-6 w-6 animate-spin text-zinc-500" />
               </div>
-            ) : trackedBooks.length === 0 ? (
+            ) : filteredTrackedBooks.length === 0 ? (
               <Card className="border-zinc-800 bg-zinc-900/30">
                 <CardContent className="p-12 flex flex-col items-center justify-center text-center">
                   <BookOpen className="h-10 w-10 text-zinc-700 mb-3" />
-                  <p className="text-sm font-medium text-zinc-400">No books tracked yet</p>
-                  <p className="text-xs text-zinc-600 mt-1">Click &ldquo;Add Book&rdquo; to start tracking your reading</p>
+                  <p className="text-sm font-medium text-zinc-400">
+                    {searchQuery ? 'No books match your search' : 'No books tracked yet'}
+                  </p>
+                  <p className="text-xs text-zinc-600 mt-1">&ldquo;Add Book&rdquo; to start tracking your reading</p>
                 </CardContent>
               </Card>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {trackedBooks.map((book) => (
+                {filteredTrackedBooks.map((book) => (
                   <TrackedBookCard
                     key={book._id || book.id}
                     book={book}
                     onEdit={openEditDialog}
                     onDelete={handleDelete}
+                    bookmarked={bookmarked.has(book._id || book.id)}
+                    onToggleBookmark={toggleBookmark}
+                  />
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="papers" className="mt-0 space-y-3">
+            {filteredPapers.length === 0 ? (
+              <Card className="border-zinc-800 bg-zinc-900/30">
+                <CardContent className="p-12 flex flex-col items-center justify-center text-center">
+                  <FileText className="h-10 w-10 text-zinc-700 mb-3" />
+                  <p className="text-sm font-medium text-zinc-400">
+                    {searchQuery ? 'No papers match your search' : 'No research papers'}
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-2">
+                {filteredPapers.map((paper) => (
+                  <PaperCard
+                    key={paper.id}
+                    paper={paper}
+                    bookmarked={bookmarked.has(`paper-${paper.id}`)}
+                    onToggleBookmark={toggleBookmark}
                   />
                 ))}
               </div>

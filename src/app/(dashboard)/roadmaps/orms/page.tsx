@@ -4,6 +4,7 @@ import * as React from 'react';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { RoadmapCardRow } from '@/components/roadmaps/RoadmapCardRow';
+import { HubExportButton } from '@/components/roadmaps/HubExportButton';
 
 const pillars = [
   {
@@ -183,6 +184,10 @@ export default function OrmsRoadmapPage() {
           <p className="text-sm text-zinc-500 mt-1">
             Master object-relational mapping across three paradigms: Java Hibernate (JPA), TypeScript Prisma (schema-first), and Drizzle (SQL-first).
           </p>
+        </div>
+
+        <div className="flex justify-end mb-4">
+          <HubExportButton pillars={dynamicPillars} hubName="ORMs" />
         </div>
 
         <div className="space-y-3">
