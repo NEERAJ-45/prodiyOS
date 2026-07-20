@@ -16,6 +16,18 @@ const NAV_ITEMS = [
 export default function BooksLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      if (localStorage.getItem('book-library-indexed')) return;
+    } catch {}
+    fetch('/api/books/index-library', { method: 'POST' })
+      .then(() => {
+        try { localStorage.setItem('book-library-indexed', '1'); } catch {}
+      })
+      .catch(() => {});
+  }, []);
+
   return (
     <motion.div
       initial={{ opacity: 0, x: 60 }}
