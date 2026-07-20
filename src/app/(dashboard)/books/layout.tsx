@@ -22,14 +22,21 @@ export default function BooksLayout({ children }: { children: React.ReactNode })
     try {
       if (localStorage.getItem('book-library-indexed')) return;
     } catch {}
-    toast({ title: 'Indexing library books...' });
+    toast({ title: 'Indexing library books...', duration: 5000 });
     fetch('/api/books/index-library', { method: 'POST' })
       .then(async (res) => {
         const data = await res.json();
-        toast({ title: `Indexed ${data.indexed} (${data.skipped} skipped, ${data.errors} errors) of ${data.total} library books` });
+        if (!res.ok) {
+          toast({ variant: 'destructive', title: 'Indexing failed', description: data.detail || data.error || 'Unknown error' });
+          return;
+        }
+        const errList = Array.isArray(data.errors) && data.errors.length > 0
+          ? ` (${data.errors.length} failed: ${data.errors.map((e: { slug: string }) => e.slug).join(', ')})`
+          : '';
+        toast({ title: `Indexed ${data.indexed} of ${data.total} books${errList}`, duration: 4000 });
         try { localStorage.setItem('book-library-indexed', '1'); } catch {}
       })
-      .catch(() => toast({ variant: 'destructive', title: 'Failed to index library' }));
+      .catch((err) => toast({ variant: 'destructive', title: 'Network error', description: err.message }));
   }, []);
 
   return (
