@@ -1,6 +1,4 @@
 import { NextResponse } from 'next/server';
-import { readFile } from 'fs/promises';
-import path from 'path';
 import { connectToDatabase } from '@/lib/db';
 import Book from '@/lib/models/Book';
 
@@ -16,15 +14,14 @@ export async function GET(
       return NextResponse.json({ error: 'Database unavailable' }, { status: 503 });
     }
 
-    const book = await Book.findOne({ id }).lean();
-    if (!book || !book.pdfPath) {
+    const book = await Book.findOne({ id }).select('+pdfData title').lean();
+    if (!book || !book.pdfData) {
       return NextResponse.json({ error: 'Book or PDF not found' }, { status: 404 });
     }
 
-    const filePath = path.join(process.cwd(), 'public', book.pdfPath);
-    const bytes = await readFile(filePath);
+    const pdfBytes = new Uint8Array(book.pdfData.buffer);
 
-    return new NextResponse(bytes, {
+    return new NextResponse(pdfBytes as BodyInit, {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `inline; filename="${book.title}.pdf"`,

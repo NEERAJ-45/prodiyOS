@@ -8,6 +8,8 @@ export interface IBook {
   progress: number;
   rating: number;
   userEmail: string;
+  pdfData?: Buffer;
+  hasPdf?: boolean;
   pdfPath?: string;
 }
 
@@ -24,6 +26,8 @@ const BookSchema = new Schema<IBook>(
     progress: { type: Number, default: 0, min: 0, max: 100 },
     rating: { type: Number, default: 0, min: 0, max: 5 },
     userEmail: { type: String, required: true, index: true },
+    pdfData: { type: Buffer, default: null, select: false },
+    hasPdf: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

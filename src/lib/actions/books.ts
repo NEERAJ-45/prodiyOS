@@ -1,7 +1,5 @@
 'use server';
 
-import { writeFile, mkdir } from 'fs/promises';
-import path from 'path';
 import { connectToDatabase } from '@/lib/db';
 import Book from '@/lib/models/Book';
 import { logActivity } from '@/lib/activity-logger';
@@ -26,16 +24,11 @@ export async function createBook(formData: FormData) {
     }
 
     const bookId = `b-${Date.now()}`;
-    let pdfPath: string | undefined;
+    let pdfBuffer: Buffer | undefined;
 
     if (pdfFile) {
-      const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'books');
-      await mkdir(uploadDir, { recursive: true });
-      const filename = `${bookId}.pdf`;
-      const filePath = path.join(uploadDir, filename);
       const bytes = await pdfFile.arrayBuffer();
-      await writeFile(filePath, Buffer.from(bytes));
-      pdfPath = `uploads/books/${filename}`;
+      pdfBuffer = Buffer.from(bytes);
     }
 
     const book = await Book.create({
@@ -45,7 +38,8 @@ export async function createBook(formData: FormData) {
       status,
       progress,
       rating,
-      pdfPath,
+      pdfData: pdfBuffer || undefined,
+      hasPdf: !!pdfBuffer,
       userEmail,
     });
 

@@ -13,6 +13,7 @@ export interface BookData {
   progress: number;
   rating: number;
   userEmail?: string;
+  hasPdf?: boolean;
   pdfPath?: string;
 }
 

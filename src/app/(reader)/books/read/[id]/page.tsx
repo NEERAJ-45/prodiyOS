@@ -34,7 +34,7 @@ export default function UploadedBookReaderPage() {
     );
   }
 
-  const pdfUrl = book.pdfPath
+  const pdfUrl = (book.hasPdf || book.pdfPath)
     ? `/api/books/read/${book.id}`
     : undefined;
 

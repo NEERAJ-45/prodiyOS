@@ -1,6 +1,4 @@
 import { NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
-import path from 'path';
 import { connectToDatabase } from '@/lib/db';
 import Book from '@/lib/models/Book';
 import { logActivity } from '@/lib/activity-logger';
@@ -16,17 +14,6 @@ function getEmail(request: Request): string {
 
 function getDbUri(request: Request): string | undefined {
   return request.headers.get('x-mongodb-url') || undefined;
-}
-
-async function savePdf(file: File, bookId: string): Promise<string> {
-  const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'books');
-  await mkdir(uploadDir, { recursive: true });
-  const ext = file.name.endsWith('.pdf') ? '.pdf' : '.pdf';
-  const filename = `${bookId}${ext}`;
-  const filePath = path.join(uploadDir, filename);
-  const bytes = await file.arrayBuffer();
-  await writeFile(filePath, Buffer.from(bytes));
-  return `uploads/books/${filename}`;
 }
 
 export async function GET(request: Request) {
@@ -83,16 +70,19 @@ export async function POST(request: Request) {
     }
 
     const bookId = (bookData.id as string) || `b-${Date.now()}`;
-    let pdfPath: string | undefined;
+
+    let pdfBuffer: Buffer | undefined;
 
     if (pdfFile) {
-      pdfPath = await savePdf(pdfFile, bookId);
+      const bytes = await pdfFile.arrayBuffer();
+      pdfBuffer = Buffer.from(bytes);
     }
 
     const book = await Book.create({
       ...bookData,
       id: bookId,
-      pdfPath,
+      pdfData: pdfBuffer || undefined,
+      hasPdf: !!pdfBuffer,
       userEmail,
     });
 

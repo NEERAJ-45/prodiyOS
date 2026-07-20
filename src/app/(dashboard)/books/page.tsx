@@ -167,7 +167,7 @@ const TrackedBookCard = React.memo(function TrackedBookCard({
   onToggleBookmark: (slug: string) => void;
 }) {
   const config = bookStatusConfig[book.status];
-  const hasPdf = !!book.pdfPath;
+  const hasPdf = !!(book.hasPdf || book.pdfPath);
 
   const card = (
     <Card className={cn(
