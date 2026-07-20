@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, useMemo, useEffect } from "react";
+import { Suspense, useState, useMemo, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -15,8 +15,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Loader2, Search, ChevronLeft, ChevronRight,
   ChevronsLeft, ChevronsRight, AlertCircle, ListOrdered, Info,
-  BookOpen, GitBranch, Layers, Trash2,
+  BookOpen, GitBranch, Layers, Trash2, Download,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { toast } from "@/components/ui/toast";
 import { striverSheet, striverTotalProblems } from "@/data/striver-sheet";
@@ -107,6 +113,52 @@ function PatternsContent() {
   useEffect(() => {
     setPagination((p) => ({ ...p, pageIndex: 0 }));
   }, [debouncedSearch]);
+
+  const escapeCsv = (val: string) => {
+    if (/[",\n\r]/.test(val)) return `"${val.replace(/"/g, '""')}"`;
+    return val;
+  };
+
+  const handleExportCSV = useCallback(async () => {
+    try {
+      const res = await fetch('/api/patterns?page=1&pageSize=100');
+      const all = await res.json();
+      if (!all.patterns) return;
+      const header = '#,Pattern,Description,Easy,Medium,Hard,Total';
+      const rows = all.patterns.map((p: PatternRow, i: number) =>
+        [i + 1, escapeCsv(p.name), escapeCsv(p.description || ''), p.easy, p.medium, p.hard, p.total].join(',')
+      );
+      const bom = '\uFEFF';
+      const blob = new Blob([bom + header + '\n' + rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'dsa-patterns.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch { toast({ variant: 'destructive', title: 'Export failed' }); }
+  }, []);
+
+  const handleExportText = useCallback(async () => {
+    try {
+      const res = await fetch('/api/patterns?page=1&pageSize=100');
+      const all = await res.json();
+      if (!all.patterns) return;
+      const lines = all.patterns.map((p: PatternRow, i: number) => {
+        const parts = [`${i + 1}. ${p.name}`];
+        if (p.description) parts.push(`   ${p.description}`);
+        parts.push(`   Easy: ${p.easy}  Medium: ${p.medium}  Hard: ${p.hard}  Total: ${p.total}`);
+        return parts.join('\n');
+      });
+      const blob = new Blob([lines.join('\n\n')], { type: 'text/plain;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'dsa-patterns.txt';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch { toast({ variant: 'destructive', title: 'Export failed' }); }
+  }, []);
 
   // ---- Shared hooks (always called, not conditionally) ----
   const patternRows = useMemo(() => data?.patterns ?? [], [data]);
@@ -351,6 +403,23 @@ function PatternsContent() {
                 </ol>
               </TooltipContent>
             </Tooltip>
+            <div className="flex-1" />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border border-border text-muted-foreground bg-muted/30 hover:bg-muted/60 hover:text-foreground transition-colors shrink-0">
+                  <Download size={13} />
+                  Export
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-popover border-border text-popover-foreground min-w-[140px]">
+                <DropdownMenuItem onClick={handleExportCSV} className="text-xs cursor-pointer focus:bg-zinc-800 focus:text-zinc-100">
+                  Export as CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportText} className="text-xs cursor-pointer focus:bg-zinc-800 focus:text-zinc-100">
+                  Export as Text
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
           </TooltipProvider>
           <p className="mt-1 text-sm text-muted-foreground">

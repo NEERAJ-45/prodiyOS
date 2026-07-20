@@ -4,6 +4,7 @@ export interface IBook {
   id: string;
   title: string;
   author: string;
+  category: string;
   status: 'TO_READ' | 'READING' | 'COMPLETED' | 'REFERENCE';
   progress: number;
   rating: number;
@@ -18,6 +19,7 @@ const BookSchema = new Schema<IBook>(
     id: { type: String, required: true, unique: true },
     title: { type: String, required: true },
     author: { type: String, default: '' },
+    category: { type: String, default: 'other' },
     status: {
       type: String,
       enum: ['TO_READ', 'READING', 'COMPLETED', 'REFERENCE'],

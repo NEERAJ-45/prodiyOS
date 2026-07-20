@@ -9,6 +9,7 @@ export async function createBook(formData: FormData) {
     const userEmail = formData.get('userEmail') as string;
     const title = formData.get('title') as string;
     const author = formData.get('author') as string || '';
+    const category = formData.get('category') as string || 'other';
     const status = formData.get('status') as string || 'TO_READ';
     const progress = parseInt(formData.get('progress') as string || '0', 10);
     const rating = parseInt(formData.get('rating') as string || '0', 10);
@@ -35,6 +36,7 @@ export async function createBook(formData: FormData) {
       id: bookId,
       title: title.trim(),
       author,
+      category,
       status,
       progress,
       rating,

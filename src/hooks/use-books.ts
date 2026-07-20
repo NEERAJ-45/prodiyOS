@@ -9,6 +9,7 @@ export interface BookData {
   id: string;
   title: string;
   author: string;
+  category: string;
   status: 'TO_READ' | 'READING' | 'COMPLETED' | 'REFERENCE';
   progress: number;
   rating: number;

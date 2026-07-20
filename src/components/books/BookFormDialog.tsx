@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { BOOK_STATUSES, type BookStatus } from '@/hooks/use-books';
+import { BOOK_CATEGORIES } from '@/data/book-categories';
 
 const STATUS_LABELS: Record<BookStatus, string> = {
   TO_READ: 'To Read',
@@ -30,6 +31,7 @@ const STATUS_LABELS: Record<BookStatus, string> = {
 interface BookFormState {
   title: string;
   author: string;
+  category: string;
   status: BookStatus;
   progress: number;
   rating: number;
@@ -100,6 +102,24 @@ export function BookFormDialog({
               placeholder="Author name"
               className="bg-zinc-900 border-zinc-700 text-zinc-100"
             />
+          </Field>
+          <Field label="Category">
+            <Select value={form.category} onValueChange={(v) => set('category', v)}>
+              <SelectTrigger className="bg-zinc-900 border-zinc-700 text-zinc-100">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-zinc-900 border-zinc-700 text-zinc-100">
+                {BOOK_CATEGORIES.map((c) => (
+                  <SelectItem
+                    key={c.value}
+                    value={c.value}
+                    className="text-zinc-300 focus:bg-zinc-800 focus:text-zinc-100"
+                  >
+                    {c.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </Field>
           <Field label="PDF File">
             <div className="flex items-center gap-2">

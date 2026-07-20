@@ -49,6 +49,7 @@ export async function POST(request: Request) {
       bookData = {
         title: formData.get('title') as string || '',
         author: formData.get('author') as string || '',
+        category: formData.get('category') as string || 'other',
         status: formData.get('status') as string || 'TO_READ',
         progress: parseInt(formData.get('progress') as string || '0', 10),
         rating: parseInt(formData.get('rating') as string || '0', 10),
