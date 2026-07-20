@@ -24,12 +24,19 @@ import {
   ListOrdered,
   RotateCcw,
   ExternalLink,
+  Download,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NotesDialog } from '@/components/shared/NotesDialog';
 import { AddItemDialog } from '@/components/shared/AddItemDialog';
 import { CompletionDatePicker } from '@/components/shared/CompletionDatePicker';
 import { cn } from '@/lib/utils';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   Dialog,
   DialogContent,
@@ -266,6 +273,60 @@ export default function QuestionsTable({
     enableSortingRemoval: false,
   });
 
+  const allExportItems = useMemo(
+    () => [...questions, ...customItems] as QuestionItem[],
+    [questions, customItems]
+  );
+
+  const escapeCsv = (val: string) => {
+    if (/[",\n\r]/.test(val)) return `"${val.replace(/"/g, '""')}"`;
+    return val;
+  };
+
+  const handleExportCSV = () => {
+    const header = '#,Question/Topic,Difficulty,Status,Notes,Link';
+    const rows = allExportItems.map((q, i) => {
+      const done = !!completedMap[q.id];
+      const note = (notesMap[q.id] ?? '').replace(/\n/g, ' ');
+      return [
+        i + 1,
+        escapeCsv(q.title),
+        q.difficulty,
+        done ? 'Done' : 'Pending',
+        escapeCsv(note),
+        escapeCsv(q.link),
+      ].join(',');
+    });
+    const bom = '\uFEFF';
+    const blob = new Blob([bom + header + '\n' + rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${storagePrefix}-roadmap.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportText = () => {
+    const lines = allExportItems.map((q, i) => {
+      const done = !!completedMap[q.id];
+      const note = notesMap[q.id] ?? '';
+      const status = done ? '[x]' : '[ ]';
+      const parts = [`${i + 1}. ${status} ${q.title}`];
+      parts.push(`   Difficulty: ${q.difficulty}`);
+      if (q.link) parts.push(`   Link: ${q.link}`);
+      if (note) parts.push(`   Notes: ${note}`);
+      return parts.join('\n');
+    });
+    const blob = new Blob([lines.join('\n\n')], { type: 'text/plain;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${storagePrefix}-roadmap.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const solvedCount = useMemo(() => {
     if (!mounted) return 0;
     const all = [...questions, ...customItems] as QuestionItem[];
@@ -296,6 +357,22 @@ export default function QuestionsTable({
             <RotateCcw size={13} />
             Reset
           </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border border-zinc-700/50 text-zinc-300 bg-zinc-900/60 hover:bg-zinc-800/60 hover:text-zinc-100 transition-colors shrink-0">
+                <Download size={13} />
+                Export
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-800 text-zinc-300 min-w-[140px]">
+              <DropdownMenuItem onClick={handleExportCSV} className="text-xs cursor-pointer focus:bg-zinc-800 focus:text-zinc-100">
+                Export as CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportText} className="text-xs cursor-pointer focus:bg-zinc-800 focus:text-zinc-100">
+                Export as Text
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {mounted && (
