@@ -32,7 +32,8 @@ export async function POST() {
         let buffer: Buffer;
         try {
           buffer = await readFile(filePath);
-        } catch {
+        } catch (e) {
+          console.error(`[index-library] readFile failed: ${book.path}`, (e as Error).message);
           errors++;
           continue;
         }
@@ -44,6 +45,7 @@ export async function POST() {
           .trim();
 
         if (cleanText.length < 20) {
+          console.error(`[index-library] text too short (${cleanText.length}) for ${book.path}`);
           errors++;
           continue;
         }
@@ -64,7 +66,8 @@ export async function POST() {
         );
 
         indexed++;
-      } catch {
+      } catch (e) {
+        console.error(`[index-library] upsert failed for ${book.slug}`, (e as Error).message);
         errors++;
       }
     }

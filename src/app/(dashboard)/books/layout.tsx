@@ -26,7 +26,7 @@ export default function BooksLayout({ children }: { children: React.ReactNode })
     fetch('/api/books/index-library', { method: 'POST' })
       .then(async (res) => {
         const data = await res.json();
-        toast({ title: `Indexed ${data.indexed} library books` });
+        toast({ title: `Indexed ${data.indexed} (${data.skipped} skipped, ${data.errors} errors) of ${data.total} library books` });
         try { localStorage.setItem('book-library-indexed', '1'); } catch {}
       })
       .catch(() => toast({ variant: 'destructive', title: 'Failed to index library' }));
