@@ -1,12 +1,34 @@
 'use client';
 
 import * as React from 'react';
-import { useMounted } from '@/hooks/useMounted';
-import { ArrowLeft, Database, Layers, ArrowRight } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
-import { LazyAppear } from '@/components/shared/LazyAppear';
-import { Badge } from '@/components/ui/badge';
+import { RoadmapCardRow } from '@/components/roadmaps/RoadmapCardRow';
+import { HubExportButton } from '@/components/roadmaps/HubExportButton';
 
+const pillars = [
+  {
+    name: 'SQL Database',
+    slug: 'sql',
+    progress: 0,
+    hours: 100,
+    difficulty: 'Medium',
+    domains: [
+      { name: 'SQL Theory', progress: 0 },
+      { name: 'SQL LeetCode', progress: 0 },
+    ],
+  },
+  {
+    name: 'NoSQL Database',
+    slug: 'nosql',
+    progress: 0,
+    hours: 80,
+    difficulty: 'Medium-Hard',
+    domains: [
+      { name: 'Distributed Storage', progress: 0 },
+    ],
+  },
+];
 
 function computeDatabaseProgress() {
   const getCompletedCount = (prefix: string) => {
@@ -27,13 +49,12 @@ function computeDatabaseProgress() {
   return {
     sqlTheoryPct: Math.round((sqlTheory / 50) * 100),
     sqlLeetcodePct: Math.round((sqlLeetcode / 50) * 100),
-    sqlProgress: Math.round(((sqlTheory + sqlLeetcode) / 100) * 100),
-    nosqlProgress: Math.round((nosqlTheory / 50) * 100),
+    sqlOverall: Math.round(((sqlTheory + sqlLeetcode) / 100) * 100),
+    nosqlOverall: Math.round((nosqlTheory / 50) * 100),
   };
 }
 
 export default function DatabasesHubPage() {
-  const mounted = useMounted();
   const [progress, setProgress] = React.useState(computeDatabaseProgress);
 
   React.useEffect(() => {
@@ -46,131 +67,57 @@ export default function DatabasesHubPage() {
       window.removeEventListener('storage', update);
     };
   }, []);
-  const { sqlTheoryPct, sqlLeetcodePct, sqlProgress, nosqlProgress } = progress;
+
+  const dynamicPillars = React.useMemo(() => {
+    return [
+      {
+        ...pillars[0],
+        progress: progress.sqlOverall,
+        domains: [
+          { name: 'SQL Theory', progress: progress.sqlTheoryPct },
+          { name: 'SQL LeetCode', progress: progress.sqlLeetcodePct },
+        ],
+      },
+      {
+        ...pillars[1],
+        progress: progress.nosqlOverall,
+        domains: [
+          { name: 'Distributed Storage', progress: progress.nosqlOverall },
+        ],
+      },
+    ];
+  }, [progress]);
 
   return (
-    <div className="flex flex-col h-full ">
+    <div className="flex flex-col h-full">
       <div className="flex-1 p-4 md:p-6 overflow-y-auto max-w-7xl mx-auto w-full">
-        {/* Back navigation & Header */}
-        <div className="mb-8">
+        <div className="mb-6">
           <Link
             href="/roadmaps"
-            className="inline-flex items-center gap-2 text-sm text-zinc-400 hover:text-zinc-200 mb-3 transition-colors"
+            className="inline-flex items-center gap-2 text-sm text-zinc-400 hover:text-zinc-200 mb-4 transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
             Back to Roadmaps
           </Link>
-          <h1 className="text-3xl font-bold tracking-tight text-zinc-100 flex items-center gap-2">
-            <Database className="h-7 w-7 text-indigo-400" />
-            Database
-          </h1>
-          <p className="text-base text-zinc-400 mt-2 max-w-3xl leading-relaxed">
-            Select a specialized relational or non-relational path below to track your database mastery and practice coding.
-          </p>
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight text-zinc-100">Databases</h1>
+              <p className="text-sm text-zinc-500 mt-1">
+                Select a specialized relational or non-relational path below to track your database mastery.
+              </p>
+            </div>
+            <HubExportButton pillars={dynamicPillars} hubName="Databases" />
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-          {/* Sub-Roadmap 1: SQL Database */}
-          <LazyAppear delay={0.05}>
-            <Link href="/roadmaps/databases/sql" className="group block">
-              <div className="relative overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-900/40 p-6 backdrop-blur-sm transition-all duration-300 h-full hover:border-zinc-700/80">
-                <div className="flex flex-col justify-between h-full space-y-6">
-                  <div>
-                    <div className="flex justify-between items-start mb-3">
-                      <h3 className="text-lg font-bold text-zinc-100 group-hover:text-indigo-400 transition-colors duration-200 flex items-center gap-2">
-                        <Layers className="h-5 w-5 text-indigo-400" />
-                        SQL Database
-                      </h3>
-                      <Badge variant="outline" className="text-xs bg-indigo-500/10 text-indigo-400 border-indigo-500/20 font-semibold">
-                        50 Theory + 50 LeetCode
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-zinc-400 leading-relaxed min-h-[64px]">
-                      Syllabus on schemas, normal forms, joins, transaction isolation (ACID), indexes (B+ Trees), deadlocks, query plans, and 50 LeetCode practice problems.
-                    </p>
-                  </div>
-
-                  <div>
-                    <div className="flex justify-between items-center mb-1.5">
-                      <span className="text-xs font-semibold text-zinc-400">Path Progress</span>
-                      <span className="text-xs font-bold text-zinc-200">{mounted ? sqlProgress : 0}%</span>
-                    </div>
-                    <div className="h-2 w-full rounded-full bg-zinc-800 overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-indigo-600 transition-all duration-500"
-                        style={{ width: `${mounted ? sqlProgress : 0}%` }}
-                      />
-                    </div>
-                    {mounted && (
-                      <div className="mt-2 pt-2 border-t border-zinc-800/50 space-y-1.5">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[11px] text-zinc-500 w-20 truncate shrink-0">SQL Theory</span>
-                          <div className="flex-1 h-1 rounded-full bg-zinc-800 overflow-hidden">
-                            <div className="h-full rounded-full bg-indigo-500/70" style={{ width: `${sqlTheoryPct}%` }} />
-                          </div>
-                          <span className="text-[10px] text-zinc-500 w-7 text-right tabular-nums">{sqlTheoryPct}%</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[11px] text-zinc-500 w-20 truncate shrink-0">SQL LeetCode</span>
-                          <div className="flex-1 h-1 rounded-full bg-zinc-800 overflow-hidden">
-                            <div className="h-full rounded-full bg-emerald-500/70" style={{ width: `${sqlLeetcodePct}%` }} />
-                          </div>
-                          <span className="text-[10px] text-zinc-500 w-7 text-right tabular-nums">{sqlLeetcodePct}%</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex items-center justify-end text-xs font-bold text-zinc-200 group-hover:text-indigo-400 pt-2 transition-colors">
-                    <span>Enter SQL Roadmap</span>
-                    <ArrowRight className="ml-1 h-3.5 w-3.5 transform group-hover:translate-x-1 transition-transform duration-200" />
-                  </div>
-                </div>
-              </div>
-            </Link>
-          </LazyAppear>
-
-          {/* Sub-Roadmap 2: NoSQL Database */}
-          <LazyAppear delay={0.1}>
-            <Link href="/roadmaps/databases/nosql" className="group block">
-              <div className="relative overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-900/40 p-6 backdrop-blur-sm transition-all duration-300 h-full hover:border-zinc-700/80">
-                <div className="flex flex-col justify-between h-full space-y-6">
-                  <div>
-                    <div className="flex justify-between items-start mb-3">
-                      <h3 className="text-lg font-bold text-zinc-100 group-hover:text-purple-400 transition-colors duration-200 flex items-center gap-2">
-                        <Database className="h-5 w-5 text-purple-400" />
-                        NoSQL Database
-                      </h3>
-                      <Badge variant="outline" className="text-xs bg-purple-500/10 text-purple-400 border-purple-500/20 font-semibold">
-                        50 Theory
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-zinc-400 leading-relaxed min-h-[64px]">
-                      Syllabus on distributed storage trade-offs (CAP/PACELC), Raft/Paxos consensus, document stores (MongoDB), wide-column models, and Vector DBs.
-                    </p>
-                  </div>
-
-                  <div>
-                    <div className="flex justify-between items-center mb-1.5">
-                      <span className="text-xs font-semibold text-zinc-400">Path Progress</span>
-                      <span className="text-xs font-bold text-zinc-200">{mounted ? nosqlProgress : 0}%</span>
-                    </div>
-                    <div className="h-2 w-full rounded-full bg-zinc-800 overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-indigo-650 transition-all duration-500"
-                        style={{ width: `${mounted ? nosqlProgress : 0}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-end text-xs font-bold text-zinc-200 group-hover:text-purple-400 pt-2 transition-colors">
-                    <span>Enter NoSQL Roadmap</span>
-                    <ArrowRight className="ml-1 h-3.5 w-3.5 transform group-hover:translate-x-1 transition-transform duration-200" />
-                  </div>
-                </div>
-              </div>
-            </Link>
-          </LazyAppear>
+        <div className="space-y-3">
+          {dynamicPillars.map((pillar) => (
+            <RoadmapCardRow
+              key={pillar.name}
+              pillar={pillar}
+              href={`/roadmaps/databases/${pillar.slug}`}
+            />
+          ))}
         </div>
       </div>
     </div>

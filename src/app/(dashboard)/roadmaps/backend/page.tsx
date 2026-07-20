@@ -1,12 +1,10 @@
 'use client';
 
 import * as React from 'react';
-import { Clock, ArrowLeft, ArrowRight } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
-import { cn } from '@/lib/utils';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-
+import { RoadmapCardRow } from '@/components/roadmaps/RoadmapCardRow';
+import { HubExportButton } from '@/components/roadmaps/HubExportButton';
 
 const pillars = [
   {
@@ -14,10 +12,10 @@ const pillars = [
     slug: 'java',
     progress: 0,
     hours: 100,
-    difficulty: 'Medium' as const,
+    difficulty: 'Medium',
     domains: [
-      { name: 'Core Java', progress: 0, modules: ['OOP', 'Collections', 'Streams', 'Concurrency'] },
-      { name: 'Advanced Java', progress: 0, modules: ['JVM Internals', 'Memory Model', 'GC Tuning'] },
+      { name: 'Core Java', progress: 0 },
+      { name: 'Advanced Java', progress: 0 },
     ],
   },
   {
@@ -25,84 +23,13 @@ const pillars = [
     slug: 'springboot',
     progress: 0,
     hours: 120,
-    difficulty: 'Medium' as const,
+    difficulty: 'Medium',
     domains: [
-      { name: 'Core Spring & Web', progress: 0, modules: ['IoC', 'DI', 'AOP', 'REST APIs', 'MVC', 'Security', 'JPA'] },
-      { name: 'Microservices', progress: 0, modules: ['Service Discovery', 'API Gateway', 'Circuit Breaker'] },
+      { name: 'Core Spring & Web', progress: 0 },
+      { name: 'Microservices', progress: 0 },
     ],
   },
 ];
-
-const difficultyColors: Record<string, string> = {
-  Easy: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
-  Medium: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
-  Hard: 'bg-red-500/15 text-red-400 border-red-500/30',
-};
-
-function RoadmapCard({
-  pillar,
-}: {
-  pillar: (typeof pillars)[0];
-}) {
-  return (
-    <Link href={`/roadmaps/backend/${pillar.slug}`} className="block">
-      <Card
-        className="group cursor-pointer border-zinc-800 bg-zinc-900/50 transition-all hover:border-zinc-700 hover:bg-zinc-900"
-      >
-        <CardHeader className="p-5 pb-3">
-          <div className="flex items-start justify-between">
-            <div className="flex-1 min-w-0">
-              <CardTitle className="text-lg font-semibold text-zinc-100 group-hover:text-zinc-50 transition-colors">
-                {pillar.name}
-              </CardTitle>
-              <div className="flex items-center gap-3 mt-2">
-                <Badge
-                  variant="secondary"
-                  className={cn('text-xs font-medium border', difficultyColors[pillar.difficulty])}
-                >
-                  {pillar.difficulty}
-                </Badge>
-                <div className="flex items-center gap-1 text-xs text-zinc-400">
-                  <Clock className="h-3 w-3" />
-                  {pillar.hours}h
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 shrink-0 ml-3">
-              <span className="text-sm font-semibold text-zinc-200">{pillar.progress}%</span>
-              <ArrowRight className="h-4 w-4 text-zinc-500 transition-transform group-hover:translate-x-1 group-hover:text-zinc-300" />
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="p-5 pt-0">
-          <div className="h-1.5 w-full rounded-full bg-zinc-800 overflow-hidden">
-            <div
-              className="h-full rounded-full bg-indigo-650 transition-all duration-500"
-              style={{ width: `${pillar.progress}%` }}
-            />
-          </div>
-          {pillar.domains && pillar.domains.length > 0 && (
-            <div className="mt-3 pt-3 border-t border-zinc-800/50 space-y-2">
-              <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider">Domains</span>
-              {pillar.domains.map((domain) => (
-                <div key={domain.name} className="flex items-center gap-2">
-                  <span className="text-xs text-zinc-400 truncate flex-1">{domain.name}</span>
-                  <div className="h-1 w-20 rounded-full bg-zinc-800 overflow-hidden shrink-0">
-                    <div
-                      className="h-full rounded-full bg-indigo-650"
-                      style={{ width: `${domain.progress}%` }}
-                    />
-                  </div>
-                  <span className="text-[11px] text-zinc-500 w-7 text-right tabular-nums">{domain.progress}%</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </Link>
-  );
-}
 
 function computeBackendProgress() {
   const getCompletedCountInRange = (prefix: string, rangeStart: number, rangeEnd: number) => {
@@ -186,7 +113,7 @@ export default function BackendRoadmapPage() {
   }, [progressData]);
 
   return (
-    <div className="flex flex-col h-full ">
+    <div className="flex flex-col h-full">
       <div className="flex-1 p-4 md:p-6 overflow-y-auto max-w-7xl mx-auto w-full">
         <div className="mb-6">
           <Link
@@ -196,17 +123,23 @@ export default function BackendRoadmapPage() {
             <ArrowLeft className="h-4 w-4" />
             Back to Roadmaps
           </Link>
-          <h1 className="text-3xl font-bold tracking-tight text-zinc-100">Backend Development</h1>
-          <p className="text-sm text-zinc-500 mt-1">
-            Master backend engineering with Java and Spring Boot ecosystems.
-          </p>
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight text-zinc-100">Backend Development</h1>
+              <p className="text-sm text-zinc-500 mt-1">
+                Master backend engineering with Java and Spring Boot ecosystems.
+              </p>
+            </div>
+            <HubExportButton pillars={dynamicPillars} hubName="Backend" />
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+        <div className="space-y-3">
           {dynamicPillars.map((pillar) => (
-            <RoadmapCard
+            <RoadmapCardRow
               key={pillar.name}
               pillar={pillar}
+              href={`/roadmaps/backend/${pillar.slug}`}
             />
           ))}
         </div>

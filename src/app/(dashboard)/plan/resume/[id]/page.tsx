@@ -14,7 +14,7 @@ import { useProfile } from '@/components/providers/ProfileProvider';
 import { useQueryClient } from '@tanstack/react-query';
 
 const PdfViewer = dynamic(
-  () => import('@/app/(dashboard)/books/[slug]/pdf-viewer'),
+  () => import('@/app/(reader)/books/[slug]/pdf-viewer'),
   { ssr: false, loading: () => <div className="flex items-center justify-center h-full text-zinc-600 text-sm"><Loader2 className="h-5 w-5 animate-spin mr-2" />Loading viewer...</div> },
 );
 

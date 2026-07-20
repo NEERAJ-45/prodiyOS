@@ -339,7 +339,7 @@ export default function QuestionsTable({
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="w-full md:max-w-md flex items-center gap-3">
-          <div className="flex-grow flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900/40 px-3 transition-all duration-200 focus-within:border-primary/50 focus-within:bg-zinc-900/80">
+          <div className="flex-grow flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 transition-all duration-200 focus-within:border-primary/50 focus-within:bg-muted/50">
             <Search className="h-4 w-4 shrink-0 text-zinc-500" />
             <input
               value={search}
@@ -359,12 +359,12 @@ export default function QuestionsTable({
           </button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border border-zinc-700/50 text-zinc-300 bg-zinc-900/60 hover:bg-zinc-800/60 hover:text-zinc-100 transition-colors shrink-0">
+              <button className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border border-border text-muted-foreground bg-muted/30 hover:bg-muted/60 hover:text-foreground transition-colors shrink-0">
                 <Download size={13} />
                 Export
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-800 text-zinc-300 min-w-[140px]">
+            <DropdownMenuContent align="end" className="bg-popover border-border text-popover-foreground min-w-[140px]">
               <DropdownMenuItem onClick={handleExportCSV} className="text-xs cursor-pointer focus:bg-zinc-800 focus:text-zinc-100">
                 Export as CSV
               </DropdownMenuItem>
@@ -380,7 +380,7 @@ export default function QuestionsTable({
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.3 }}
-            className="flex items-center gap-4 bg-zinc-900/60 border border-zinc-800 px-4 py-2 rounded-lg shrink-0 self-start md:self-auto"
+            className="flex items-center gap-4 bg-muted/30 border border-border px-4 py-2 rounded-lg shrink-0 self-start md:self-auto"
           >
             <div>
               <div className="text-xs text-zinc-500 font-medium">Progress</div>
@@ -392,11 +392,11 @@ export default function QuestionsTable({
         )}
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-zinc-800 bg-zinc-900/10">
+      <div className="overflow-x-auto rounded-lg border border-border bg-muted/10">
         <table className="w-full border-collapse">
           <thead>
             {table.getHeaderGroups().map((hg) => (
-              <tr key={hg.id} className="border-b border-zinc-800 bg-zinc-900/50">
+              <tr key={hg.id} className="border-b border-border bg-muted/40">
                 {hg.headers.map((header) => (
                   <th
                     key={header.id}
@@ -454,8 +454,8 @@ export default function QuestionsTable({
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.25, delay: i * 0.025, ease: 'easeOut' }}
                       className={cn(
-                        'border-b border-zinc-800/60 transition-colors last:border-0 hover:bg-zinc-900/20',
-                        done && 'bg-zinc-900/10'
+                        'border-b border-border/60 transition-colors last:border-0 hover:bg-muted/20',
+                        done && 'bg-muted/10'
                       )}
                     >
                       {row.getVisibleCells().map((cell) => (
@@ -477,7 +477,7 @@ export default function QuestionsTable({
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.2 }}
-          className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-3 border border-zinc-800 rounded-lg bg-zinc-900/20 text-sm text-zinc-400"
+          className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-3 border border-border rounded-lg bg-muted/10 text-sm text-muted-foreground"
         >
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <span>Showing</span>
@@ -502,7 +502,7 @@ export default function QuestionsTable({
               <select
                 value={table.getState().pagination.pageSize}
                 onChange={(e) => table.setPageSize(Number(e.target.value))}
-                className="bg-zinc-950 border border-zinc-800 text-zinc-300 text-xs rounded px-2 py-1 focus:outline-none focus:border-zinc-700 transition-colors"
+                className="bg-background border border-border text-foreground text-xs rounded px-2 py-1 focus:outline-none focus:border-muted-foreground transition-colors"
               >
                 {[10, 20, 30, 40, 50].map((size) => (
                   <option key={size} value={size}>{size}</option>
@@ -512,11 +512,11 @@ export default function QuestionsTable({
 
             <div className="flex items-center gap-1">
               <button onClick={() => table.setPageIndex(0)} disabled={!table.getCanPreviousPage()}
-                className="p-1.5 rounded border border-zinc-800 bg-zinc-950 hover:bg-zinc-900 hover:text-zinc-200 disabled:opacity-50 disabled:pointer-events-none transition-colors" title="First">
+                className="p-1.5 rounded border border-border bg-background hover:bg-muted hover:text-foreground disabled:opacity-50 disabled:pointer-events-none transition-colors" title="First">
                 <ChevronsLeft className="h-4 w-4" />
               </button>
               <button onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}
-                className="p-1.5 rounded border border-zinc-800 bg-zinc-950 hover:bg-zinc-900 hover:text-zinc-200 disabled:opacity-50 disabled:pointer-events-none transition-colors" title="Previous">
+                className="p-1.5 rounded border border-border bg-background hover:bg-muted hover:text-foreground disabled:opacity-50 disabled:pointer-events-none transition-colors" title="Previous">
                 <ChevronLeft className="h-4 w-4" />
               </button>
               <span className="text-xs px-2 select-none">
@@ -524,11 +524,11 @@ export default function QuestionsTable({
                 <strong className="text-zinc-200 font-semibold">{table.getPageCount()}</strong>
               </span>
               <button onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}
-                className="p-1.5 rounded border border-zinc-800 bg-zinc-950 hover:bg-zinc-900 hover:text-zinc-200 disabled:opacity-50 disabled:pointer-events-none transition-colors" title="Next">
+                className="p-1.5 rounded border border-border bg-background hover:bg-muted hover:text-foreground disabled:opacity-50 disabled:pointer-events-none transition-colors" title="Next">
                 <ChevronRight className="h-4 w-4" />
               </button>
               <button onClick={() => table.setPageIndex(table.getPageCount() - 1)} disabled={!table.getCanNextPage()}
-                className="p-1.5 rounded border border-zinc-800 bg-zinc-950 hover:bg-zinc-900 hover:text-zinc-200 disabled:opacity-50 disabled:pointer-events-none transition-colors" title="Last">
+                className="p-1.5 rounded border border-border bg-background hover:bg-muted hover:text-foreground disabled:opacity-50 disabled:pointer-events-none transition-colors" title="Last">
                 <ChevronsRight className="h-4 w-4" />
               </button>
             </div>
@@ -537,7 +537,7 @@ export default function QuestionsTable({
       )}
 
       <Dialog open={showResetConfirm} onOpenChange={setShowResetConfirm}>
-        <DialogContent className="border-zinc-800 bg-zinc-950 text-zinc-100 sm:max-w-[400px]">
+        <DialogContent className="border-border bg-background text-foreground sm:max-w-[400px]">
           <DialogHeader>
             <DialogTitle className="text-zinc-100 flex items-center gap-2">
               <RotateCcw size={18} className="text-red-400" />

@@ -139,7 +139,7 @@ export function AddRoadmapDialog() {
           Add Roadmap
         </button>
       </DialogTrigger>
-      <DialogContent className="border-zinc-800 bg-zinc-950 text-zinc-100 sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="border-border bg-background text-foreground sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-zinc-100 flex items-center gap-2">
             <Upload size={18} className="text-primary" />
@@ -176,7 +176,7 @@ export function AddRoadmapDialog() {
                 2,
               )}
               rows={8}
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-300 placeholder:text-zinc-600 font-mono outline-none focus:border-primary/50 transition-colors resize-y"
+              className="w-full bg-muted/40 border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground font-mono outline-none focus:border-primary/50 transition-colors resize-y"
             />
           </div>
 
@@ -184,7 +184,7 @@ export function AddRoadmapDialog() {
             type="button"
             onClick={handleParse}
             disabled={!rawJson.trim()}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-zinc-300 cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold bg-muted hover:bg-muted/70 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-foreground cursor-pointer"
           >
             <Upload size={14} />
             Preview &amp; Validate
@@ -198,7 +198,7 @@ export function AddRoadmapDialog() {
           )}
 
           {parsed && (
-            <div className="space-y-3 p-3 rounded-lg bg-zinc-900 border border-zinc-800">
+            <div className="space-y-3 p-3 rounded-lg bg-muted/30 border border-border">
               <div className="flex items-center gap-2 text-emerald-400">
                 <CheckCircle size={14} />
                 <span className="text-xs font-semibold">Validated — {parsed.questions.length} questions</span>
@@ -254,7 +254,7 @@ export function AddRoadmapDialog() {
 
         <DialogFooter className="gap-2 pt-2">
           <DialogClose asChild>
-            <button type="button" className="px-3.5 py-2 rounded-lg text-xs font-semibold border border-zinc-800 hover:bg-zinc-900 transition-colors text-zinc-400 cursor-pointer">
+            <button type="button" className="px-3.5 py-2 rounded-lg text-xs font-semibold border border-border hover:bg-muted/50 transition-colors text-muted-foreground cursor-pointer">
               Cancel
             </button>
           </DialogClose>

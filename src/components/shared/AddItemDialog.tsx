@@ -48,7 +48,7 @@ export function AddItemDialog({
           Add {itemLabel}
         </button>
       </DialogTrigger>
-      <DialogContent className="border-zinc-800 bg-zinc-950 text-zinc-100 sm:max-w-[425px]">
+      <DialogContent className="border-border bg-background text-foreground sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle className="text-zinc-100 flex items-center gap-2">
             <Plus size={18} className="text-primary" />
@@ -64,7 +64,7 @@ export function AddItemDialog({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder={titlePlaceholder}
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-300 placeholder:text-zinc-500 outline-none focus:border-primary/50 transition-colors"
+              className="w-full bg-muted/40 border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary/50 transition-colors"
             />
           </div>
           <div className="space-y-1.5">
@@ -72,7 +72,7 @@ export function AddItemDialog({
             <select
               value={difficulty}
               onChange={(e) => setDifficulty(e.target.value)}
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-300 outline-none focus:border-primary/50 transition-colors"
+              className="w-full bg-muted/40 border border-border rounded-lg px-3 py-2 text-sm text-foreground outline-none focus:border-primary/50 transition-colors"
             >
               <option value="EASY">Easy</option>
               <option value="MEDIUM">Medium</option>
@@ -86,12 +86,12 @@ export function AddItemDialog({
               value={link}
               onChange={(e) => setLink(e.target.value)}
               placeholder={linkPlaceholder}
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-300 placeholder:text-zinc-500 outline-none focus:border-primary/50 transition-colors"
+              className="w-full bg-muted/40 border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary/50 transition-colors"
             />
           </div>
           <DialogFooter className="gap-2 pt-2">
             <DialogClose asChild>
-              <button type="button" className="px-3.5 py-2 rounded-lg text-xs font-semibold border border-zinc-800 hover:bg-zinc-900 transition-colors text-zinc-400 cursor-pointer">
+              <button type="button" className="px-3.5 py-2 rounded-lg text-xs font-semibold border border-border hover:bg-muted/50 transition-colors text-muted-foreground cursor-pointer">
                 Cancel
               </button>
             </DialogClose>

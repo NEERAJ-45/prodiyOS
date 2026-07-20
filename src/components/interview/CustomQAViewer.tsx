@@ -73,41 +73,7 @@ const DEFAULT_SUBJECTS: CustomQABook[] = [
       })),
     }))
   },
-  {
-    slug: 'python-core',
-    title: 'Python Core Concepts',
-    totalQuestions: 5,
-    sections: [
-      {
-        id: '1',
-        title: 'Data Structures & OOP',
-        questions: [
-          { id: 'py1', question: 'What is the difference between list and tuple?', answer: 'Lists are mutable (can be changed) and defined with square brackets []. Tuples are immutable (cannot be changed) and defined with parentheses ().' },
-          { id: 'py2', question: 'What is PEP 8 in Python?', answer: 'PEP 8 is the official style guide for Python code. It outlines best practices for naming conventions, code layout, line spacing, indentation, and comment style.' },
-          { id: 'py3', question: 'What are Python decorators?', answer: 'Decorators are a structural design pattern that allows developers to add new functionality to an existing object (like a function or class) without modifying its structure.' },
-          { id: 'py4', question: 'Explain list comprehensions with an example.', answer: 'List comprehensions offer a shorter syntax to create a new list based on the values of an existing list. Example: `squared = [x**2 for x in range(10)]`.' },
-          { id: 'py5', question: 'What is the difference between deepcopy and shallowcopy?', answer: 'A shallow copy creates a new object but inserts references into the nested objects. A deep copy recursively copies everything, creating a completely independent clone.' }
-        ]
-      }
-    ]
-  },
-  {
-    slug: 'js-runtime',
-    title: 'JavaScript Concurrency',
-    totalQuestions: 4,
-    sections: [
-      {
-        id: '1',
-        title: 'Asynchrony & Event Loop',
-        questions: [
-          { id: 'js1', question: 'What are the primitive data types in JavaScript?', answer: 'String, Number, BigInt, Boolean, Undefined, Null, and Symbol.' },
-          { id: 'js2', question: 'What is the difference between let, const, and var?', answer: 'var is function-scoped and hoisted. let and const are block-scoped, not hoisted, and reside in a temporal dead zone until declared. const variables cannot be reassigned after declaration.' },
-          { id: 'js3', question: 'What is a closure in JavaScript?', answer: 'A closure is the combination of a function bundled together (enclosed) with references to its surrounding state (the lexical environment). In other words, a closure gives an inner function access to the outer function\'s scope even after the outer function has returned.' },
-          { id: 'js4', question: 'What is the event loop and how does it work?', answer: 'The event loop is a mechanism that allows JavaScript to perform non-blocking I/O operations despite being single-threaded. It constantly monitors the call stack and the callback queue; when the call stack is empty, it pushes callbacks from the queue onto the stack.' }
-        ]
-      }
-    ]
-  }
+   
 ];
 
 const SUBJECT_STYLING: Record<string, { color: string; topics: string[] }> = {
@@ -517,12 +483,12 @@ export default function CustomQAViewer() {
         <div className="h-6 w-48 bg-zinc-900 rounded-md animate-pulse" />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-44 w-full bg-zinc-900/30 rounded-xl border border-zinc-850 p-6 flex flex-col justify-between animate-pulse">
+            <div key={i} className="h-44 w-full bg-zinc-900/30 rounded-xl border border-border p-6 flex flex-col justify-between animate-pulse">
               <div className="space-y-2.5">
-                <div className="h-4 w-1/3 bg-zinc-850 rounded" />
-                <div className="h-3 w-2/3 bg-zinc-850 rounded" />
+                <div className="h-4 w-1/3 bg-muted rounded" />
+                <div className="h-3 w-2/3 bg-muted rounded" />
               </div>
-              <div className="h-3 w-full bg-zinc-850 rounded-full" />
+              <div className="h-3 w-full bg-muted rounded-full" />
             </div>
           ))}
         </div>
@@ -674,7 +640,7 @@ export default function CustomQAViewer() {
                     onDragLeave={handleDrag}
                     onDrop={handleDrop}
                     className={`border border-dashed rounded-lg p-5 text-center flex flex-col items-center justify-center transition-all ${
-                      isDragActive ? 'border-indigo-500 bg-indigo-950/10 text-indigo-300' : 'border-zinc-850 bg-zinc-950/30 text-zinc-400 hover:border-zinc-750'
+                      isDragActive ? 'border-indigo-500 bg-indigo-950/10 text-indigo-300' : 'border-border bg-zinc-950/30 text-zinc-400 hover:border-zinc-700'
                     }`}
                   >
                     <input type="file" id="file-upload" accept=".json,.csv,.txt,.tsv" className="hidden" onChange={handleFileUpload} />
@@ -699,7 +665,7 @@ export default function CustomQAViewer() {
                       onChange={(e) => setInputText(e.target.value)}
                       placeholder='Paste JSON array of questions, CSV text, or plain Q: & A: blocks...'
                       rows={6}
-                      className="w-full bg-zinc-950 border border-zinc-850 rounded-lg p-2.5 text-xs font-mono text-zinc-300 outline-none focus:border-zinc-700 placeholder:text-zinc-700"
+                      className="w-full bg-zinc-950 border border-border rounded-lg p-2.5 text-xs font-mono text-zinc-300 outline-none focus:border-zinc-700 placeholder:text-zinc-700"
                     />
                   </div>
 
@@ -710,13 +676,13 @@ export default function CustomQAViewer() {
                         <button
                           key={fmt}
                           onClick={() => setFormat(fmt)}
-                          className={`text-[9px] font-bold px-2 py-0.5 rounded capitalize ${format === fmt ? 'bg-indigo-600 text-white' : 'bg-zinc-905 border border-zinc-800 text-zinc-400'}`}
+                          className={`text-[9px] font-bold px-2 py-0.5 rounded capitalize ${format === fmt ? 'bg-indigo-600 text-white' : 'bg-zinc-900 border border-zinc-800 text-zinc-400'}`}
                         >
                           {fmt === 'auto' ? 'Auto' : fmt}
                         </button>
                       ))}
                     </div>
-                    <Button size="sm" onClick={() => handleParse()} disabled={!inputText.trim()} className="bg-indigo-650 hover:bg-indigo-500 text-white text-xs h-7 px-3">
+                    <Button size="sm" onClick={() => handleParse()} disabled={!inputText.trim()} className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs h-7 px-3">
                       Parse & Import Card
                     </Button>
                   </div>
@@ -776,13 +742,13 @@ export default function CustomQAViewer() {
 
             {/* Stats Summary cards */}
             <div className="grid grid-cols-3 gap-3">
-              <Card className="border-zinc-850 bg-zinc-900/30">
+              <Card className="border-border bg-zinc-900/30">
                 <CardContent className="p-3 text-center">
                   <p className="text-xs text-zinc-500 font-medium">Questions</p>
                   <p className="text-lg font-bold text-zinc-100 mt-0.5">{activeStats.total}</p>
                 </CardContent>
               </Card>
-              <Card className="border-zinc-850 bg-zinc-900/30">
+              <Card className="border-border bg-zinc-900/30">
                 <CardContent className="p-3 text-center">
                   <p className="text-xs text-zinc-500 font-medium">Mastered</p>
                   <p className="text-lg font-bold text-emerald-400 mt-0.5 flex items-center justify-center gap-1">
@@ -791,7 +757,7 @@ export default function CustomQAViewer() {
                   </p>
                 </CardContent>
               </Card>
-              <Card className="border-zinc-850 bg-zinc-900/30">
+              <Card className="border-border bg-zinc-900/30">
                 <CardContent className="p-3 text-center">
                   <p className="text-xs text-zinc-500 font-medium">Flagged</p>
                   <p className="text-lg font-bold text-amber-400 mt-0.5 flex items-center justify-center gap-1">
@@ -823,7 +789,7 @@ export default function CustomQAViewer() {
                 placeholder="Search questions or answers..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 bg-zinc-900/50 border-zinc-800 text-zinc-100 placeholder:text-zinc-650 animate-fade-in"
+                className="pl-9 bg-zinc-900/50 border-zinc-800 text-zinc-100 placeholder:text-muted-foreground animate-fade-in"
               />
             </div>
 
@@ -840,16 +806,16 @@ export default function CustomQAViewer() {
                     {/* Section Header Accordion */}
                     <div 
                       onClick={() => toggleSection(section.id)}
-                      className="flex items-center justify-between border-b border-zinc-850 pb-2 cursor-pointer group"
+                      className="flex items-center justify-between border-b border-border pb-2 cursor-pointer group"
                     >
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold text-zinc-600 bg-zinc-900 border border-zinc-850 rounded px-1.5 py-0.5">
+                        <span className="text-[10px] font-bold text-zinc-600 bg-zinc-900 border border-border rounded px-1.5 py-0.5">
                           Section
                         </span>
                         <h3 className="text-sm font-bold text-zinc-300 group-hover:text-zinc-100 transition-colors">
                           {section.title}
                         </h3>
-                        <Badge variant="outline" className="bg-zinc-950/40 text-zinc-500 border-zinc-850 text-[9px] font-semibold px-1.5 py-0">
+                        <Badge variant="outline" className="bg-zinc-950/40 text-zinc-500 border-border text-[9px] font-semibold px-1.5 py-0">
                           {matchedQs.length} Q{matchedQs.length !== 1 ? 's' : ''}
                         </Badge>
                       </div>
@@ -869,7 +835,7 @@ export default function CustomQAViewer() {
                             <Card 
                               key={q.id} 
                               className={`border transition-all duration-300 ${
-                                isExpanded ? 'border-zinc-700 bg-zinc-900/60 shadow-md' : 'border-zinc-850 bg-zinc-900/20 hover:bg-zinc-900/40 hover:border-zinc-800'
+                                isExpanded ? 'border-zinc-700 bg-zinc-900/60 shadow-md' : 'border-border bg-zinc-900/20 hover:bg-zinc-900/40 hover:border-zinc-800'
                               }`}
                             >
                               <CardContent className="p-3.5 space-y-3">
@@ -948,7 +914,7 @@ export default function CustomQAViewer() {
                                                 setCopiedQId(q.id);
                                                 setTimeout(() => setCopiedQId(null), 2000);
                                               }}
-                                              className="h-6 gap-1 text-zinc-550 hover:text-zinc-300 hover:bg-zinc-800 px-1.5"
+                                              className="h-6 gap-1 text-zinc-400 hover:text-zinc-300 hover:bg-zinc-800 px-1.5"
                                             >
                                               {copiedQId === q.id ? (
                                                 <><Check className="h-3 w-3 text-emerald-400" /><span>Copied</span></>
@@ -960,7 +926,7 @@ export default function CustomQAViewer() {
                                               variant="ghost"
                                               size="sm"
                                               onClick={() => copyAnswer(q.id, q.answer)}
-                                              className="h-6 gap-1 text-zinc-550 hover:text-zinc-300 hover:bg-zinc-800 px-1.5"
+                                              className="h-6 gap-1 text-zinc-400 hover:text-zinc-300 hover:bg-zinc-800 px-1.5"
                                             >
                                               {copiedId === q.id ? (
                                                 <><Check className="h-3 w-3 text-emerald-400" /><span>Copied</span></>
@@ -970,7 +936,7 @@ export default function CustomQAViewer() {
                                             </Button>
                                           </div>
                                         </div>
-                                        <div className="bg-zinc-950/40 p-3 rounded-lg border border-zinc-850/60">
+                                        <div className="bg-zinc-950/40 p-3 rounded-lg border border-border/60">
                                           <AnswerFormatter text={q.answer} search={search} />
                                         </div>
                                       </div>
@@ -992,7 +958,7 @@ export default function CustomQAViewer() {
                 <div className="text-center py-10">
                   <Search className="h-8 w-8 text-zinc-700 mx-auto mb-2" />
                   <p className="text-xs text-zinc-500">No questions matched search text.</p>
-                  <Button variant="ghost" size="sm" onClick={() => setSearch('')} className="mt-2 text-indigo-455 hover:text-indigo-300 text-xs">Clear Search</Button>
+                  <Button variant="ghost" size="sm" onClick={() => setSearch('')} className="mt-2 text-indigo-400 hover:text-indigo-300 text-xs">Clear Search</Button>
                 </div>
               )}
             </div>

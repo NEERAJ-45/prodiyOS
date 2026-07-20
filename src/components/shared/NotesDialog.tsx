@@ -36,14 +36,14 @@ export function NotesDialog({ id, initialValue, onSave }: NotesDialogProps) {
             "flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs border font-medium transition-all cursor-pointer mx-auto",
             initialValue
               ? "border-indigo-500/30 bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500/20"
-              : "border-zinc-800 bg-zinc-900/50 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50 hover:border-zinc-700"
+              : "border-border bg-muted/30 text-muted-foreground hover:text-foreground hover:bg-muted/50 hover:border-border/80"
           )}
         >
           <StickyNote size={13} />
           {initialValue ? 'Note' : 'Add Note'}
         </button>
       </DialogTrigger>
-      <DialogContent className="border-zinc-800 bg-zinc-950 sm:max-w-[400px] shadow-2xl">
+      <DialogContent className="border-border bg-background sm:max-w-[400px] shadow-2xl">
         <DialogHeader>
           <DialogTitle className="text-zinc-100 flex items-center gap-2.5 text-base font-semibold">
             <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
@@ -57,12 +57,12 @@ export function NotesDialog({ id, initialValue, onSave }: NotesDialogProps) {
           value={val}
           onChange={(e) => setVal(e.target.value)}
           placeholder="Type your notes here..."
-          className="w-full min-h-[160px] bg-zinc-900/60 border border-zinc-800 rounded-lg p-3.5 text-sm text-zinc-200 placeholder:text-zinc-600 outline-none resize-none leading-relaxed transition-colors focus:border-indigo-500/40 focus:ring-1 focus:ring-indigo-500/10"
+          className="w-full min-h-[160px] bg-muted/40 border border-border rounded-lg p-3.5 text-sm text-foreground placeholder:text-muted-foreground outline-none resize-none leading-relaxed transition-colors focus:border-indigo-500/40 focus:ring-1 focus:ring-indigo-500/10"
         />
 
         <DialogFooter className="gap-2">
           <DialogClose asChild>
-            <button className="px-4 py-2 rounded-lg text-xs font-medium border border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/80 transition-all cursor-pointer">
+            <button className="px-4 py-2 rounded-lg text-xs font-medium border border-border text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all cursor-pointer">
               Cancel
             </button>
           </DialogClose>
