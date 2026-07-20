@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { toast } from '@/components/ui/toast';
 
 const NAV_ITEMS = [
   { href: '/books/library', label: 'Library' },
@@ -21,11 +22,14 @@ export default function BooksLayout({ children }: { children: React.ReactNode })
     try {
       if (localStorage.getItem('book-library-indexed')) return;
     } catch {}
+    toast({ title: 'Indexing library books...' });
     fetch('/api/books/index-library', { method: 'POST' })
-      .then(() => {
+      .then(async (res) => {
+        const data = await res.json();
+        toast({ title: `Indexed ${data.indexed} library books` });
         try { localStorage.setItem('book-library-indexed', '1'); } catch {}
       })
-      .catch(() => {});
+      .catch(() => toast({ variant: 'destructive', title: 'Failed to index library' }));
   }, []);
 
   return (
