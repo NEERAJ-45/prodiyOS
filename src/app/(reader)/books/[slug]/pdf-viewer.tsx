@@ -120,12 +120,15 @@ export default function PdfViewer({
   );
 
   React.useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
+    function onPointerUp(e: PointerEvent) {
+      const pageEl = pageRef.current;
+      if (!pageEl) return;
 
-    function onMouseUp() {
-      const container = containerRef.current;
-      if (!container) return;
+      const target = e.target as HTMLElement;
+      if (!pageEl.contains(target) && !target.closest('.highlight-toolbar')) {
+        setToolbar((prev) => ({ ...prev, visible: false }));
+        return;
+      }
 
       const sel = window.getSelection();
       if (!sel || sel.isCollapsed || !sel.toString().trim()) {
@@ -141,27 +144,27 @@ export default function PdfViewer({
         return;
       }
 
-      const cRect = container.getBoundingClientRect();
+      const pageRect = pageEl.getBoundingClientRect();
       setToolbar({
         visible: true,
-        x: rect.left + rect.width / 2 - cRect.left,
-        y: rect.top - cRect.top - 40,
+        x: rect.left + rect.width / 2 - pageRect.left,
+        y: rect.top - pageRect.top - 40,
         selectedText: sel.toString().trim(),
       });
     }
 
-    function onMouseDown(e: MouseEvent) {
+    function onPointerDown(e: PointerEvent) {
       const target = e.target as HTMLElement;
       if (!target.closest('.highlight-toolbar')) {
         setToolbar((prev) => ({ ...prev, visible: false }));
       }
     }
 
-    el.addEventListener('mouseup', onMouseUp);
-    document.addEventListener('mousedown', onMouseDown);
+    document.addEventListener('pointerup', onPointerUp);
+    document.addEventListener('pointerdown', onPointerDown);
     return () => {
-      el.removeEventListener('mouseup', onMouseUp);
-      document.removeEventListener('mousedown', onMouseDown);
+      document.removeEventListener('pointerup', onPointerUp);
+      document.removeEventListener('pointerdown', onPointerDown);
     };
   }, []);
 
