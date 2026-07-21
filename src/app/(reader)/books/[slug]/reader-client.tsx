@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { ChevronLeft, ChevronRight, Loader2, ZoomIn, ZoomOut, RotateCw, Maximize2, Minimize2, BookOpen, ArrowLeft, Search, X, ChevronUp, ChevronDown, Bookmark, BookmarkCheck } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2, ZoomIn, ZoomOut, RotateCw, Maximize2, Minimize2, BookOpen, ArrowLeft, Search, X, ChevronUp, ChevronDown, Bookmark, BookmarkCheck, Highlighter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useProfile } from '@/components/providers/ProfileProvider';
 import { useBookmarksQuery, useAddBookmark, useDeleteBookmark } from '@/hooks/use-bookmarks';
@@ -41,6 +41,7 @@ export function BookReaderClient({ book, title: propTitle, pdfUrl: propPdfUrl, b
   const [currentMatch, setCurrentMatch] = React.useState(0);
   const [searchOpen, setSearchOpen] = React.useState(false);
   const [bookmarkOpen, setBookmarkOpen] = React.useState(false);
+  const [highlightKey, setHighlightKey] = React.useState(0);
   const containerRef = React.useRef<HTMLDivElement>(null);
   const viewerRef = React.useRef<HTMLDivElement>(null);
   const searchInputRef = React.useRef<HTMLInputElement>(null);
@@ -161,6 +162,10 @@ export function BookReaderClient({ book, title: propTitle, pdfUrl: propPdfUrl, b
     setBookmarkOpen(false);
   }
 
+  function handleHighlightClick() {
+    setHighlightKey((k) => k + 1);
+  }
+
   function toggleSearch() {
     setSearchOpen(!searchOpen);
     setTimeout(() => searchInputRef.current?.focus(), 100);
@@ -223,6 +228,10 @@ export function BookReaderClient({ book, title: propTitle, pdfUrl: propPdfUrl, b
                 <div className="px-1" />
               )}
             </div>
+            <div className="w-px h-5 bg-zinc-800 shrink-0" />
+            <Button variant="outline" size="icon" onClick={handleHighlightClick} title="Highlight selected text">
+              <Highlighter className="h-4 w-4" />
+            </Button>
             <div className="w-px h-5 bg-zinc-800 shrink-0" />
             <Button variant="outline" size="icon" onClick={toggleSearch}>
               <Search className="h-4 w-4" />
@@ -342,6 +351,7 @@ export function BookReaderClient({ book, title: propTitle, pdfUrl: propPdfUrl, b
             searchQuery={searchQuery}
             onSearchResults={setSearchMatches}
             currentMatch={currentMatch}
+            highlightKey={highlightKey}
           />
         </div>
       </div>

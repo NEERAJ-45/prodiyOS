@@ -26,6 +26,8 @@ interface PdfViewerProps {
   searchQuery?: string;
   onSearchResults?: (matches: { page: number; index: number }[]) => void;
   currentMatch?: number;
+  highlightKey?: number;
+  highlightColor?: string;
 }
 
 interface ToolbarState {
@@ -94,6 +96,8 @@ export default function PdfViewer({
   searchQuery = '',
   onSearchResults,
   currentMatch = 0,
+  highlightKey,
+  highlightColor,
 }: PdfViewerProps) {
   const options = React.useMemo(
     () => ({
@@ -285,6 +289,31 @@ export default function PdfViewer({
     el.addEventListener('click', handleClick);
     return () => el.removeEventListener('click', handleClick);
   }, [onTextClick]);
+
+  React.useEffect(() => {
+    if (!highlightKey) return;
+    if (!pageRef.current || !bookId) return;
+
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed || !sel.toString().trim()) return;
+
+    const range = sel.getRangeAt(0);
+    const rawRects = range.getClientRects();
+    if (rawRects.length === 0) return;
+
+    const rects = normalizeRects(Array.from(rawRects) as DOMRect[], pageRef.current, scale);
+    const text = sel.toString().trim();
+
+    addHighlight.mutate({
+      bookId,
+      pageNumber,
+      text,
+      color: highlightColor || HIGHLIGHT_COLORS[0],
+      rects,
+    });
+
+    sel.removeAllRanges();
+  }, [highlightKey, highlightColor, bookId, pageNumber, scale, addHighlight]);
 
   function handleHighlight() {
     if (!toolbar.selectedText || !pageRef.current || !bookId) return;
