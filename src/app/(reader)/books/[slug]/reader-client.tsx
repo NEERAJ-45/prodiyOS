@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { ChevronLeft, ChevronRight, Loader2, ZoomIn, ZoomOut, RotateCw, Maximize2, Minimize2, BookOpen, ArrowLeft, Search, X, ChevronUp, ChevronDown, Bookmark, BookmarkCheck, List } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2, ZoomIn, ZoomOut, RotateCw, Maximize2, Minimize2, BookOpen, ArrowLeft, Search, X, ChevronUp, ChevronDown, Bookmark, BookmarkCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useProfile } from '@/components/providers/ProfileProvider';
 import { useBookmarksQuery, useAddBookmark, useDeleteBookmark } from '@/hooks/use-bookmarks';
@@ -195,23 +195,32 @@ export function BookReaderClient({ book, title: propTitle, pdfUrl: propPdfUrl, b
               <RotateCw className="h-4 w-4" />
             </Button>
             <div className="w-px h-5 bg-zinc-800 shrink-0" />
-            <div className="relative">
+            <div className="flex items-center gap-0">
               <Button
                 variant="outline"
                 size="icon"
                 onClick={toggleBookmark}
-                className={isBookmarked ? 'text-amber-400 border-amber-700/50 hover:text-amber-300' : ''}
+                className={cn(isBookmarked ? 'text-amber-400 border-amber-700/50 hover:text-amber-300 rounded-r-none' : 'rounded-r-none')}
                 title={isBookmarked ? 'Remove bookmark' : 'Bookmark this page'}
               >
                 {isBookmarked ? <BookmarkCheck className="h-4 w-4" /> : <Bookmark className="h-4 w-4" />}
               </Button>
-              {bookmarks.length > 0 && (
+              {bookmarks.length > 0 ? (
                 <button
                   onClick={() => setBookmarkOpen(!bookmarkOpen)}
-                  className="absolute -top-1 -right-1 flex items-center justify-center w-3.5 h-3.5 rounded-full bg-amber-500 text-[8px] font-bold text-zinc-900"
+                  className={cn(
+                    'flex items-center gap-1 px-1.5 h-9 border border-l-0 rounded-r-lg text-[11px] font-medium transition-colors',
+                    isBookmarked
+                      ? 'text-amber-400 border-amber-700/50 bg-zinc-800/50 hover:bg-zinc-700/50'
+                      : 'text-zinc-400 border-zinc-700 bg-transparent hover:bg-zinc-800'
+                  )}
+                  title="View bookmarks"
                 >
-                  {bookmarks.length}
+                  <span>{bookmarks.length}</span>
+                  <ChevronDown className="h-3 w-3" />
                 </button>
+              ) : (
+                <div className="px-1" />
               )}
             </div>
             <div className="w-px h-5 bg-zinc-800 shrink-0" />
@@ -296,7 +305,7 @@ export function BookReaderClient({ book, title: propTitle, pdfUrl: propPdfUrl, b
         {bookmarkOpen && bookmarks.length > 0 && (
           <div className="border-t border-zinc-800 bg-zinc-900/80 px-4 py-2">
             <div className="flex items-center gap-2 mb-1.5">
-              <List className="h-3 w-3 text-zinc-500" />
+              <BookmarkCheck className="h-3 w-3 text-zinc-500" />
               <span className="text-[11px] font-medium text-zinc-400 uppercase tracking-wider">Bookmarks</span>
               <span className="text-[10px] text-zinc-600">({bookmarks.length})</span>
             </div>
