@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { readFile, readdir } from 'fs/promises';
+import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { connectToDatabase } from '@/lib/db';
 import BookContent from '@/lib/models/BookContent';
@@ -24,7 +24,7 @@ export async function POST() {
 
     let indexed = 0;
     let skipped = 0;
-    let errors: { slug: string; reason: string }[] = [];
+    const errors: { slug: string; reason: string }[] = [];
 
     for (const book of books) {
       if (existingSet.has(book.slug)) {
