@@ -3,9 +3,11 @@
 import * as React from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { ChevronLeft, ChevronRight, Loader2, ZoomIn, ZoomOut, RotateCw, Maximize2, Minimize2, BookOpen, ArrowLeft, Search, X, ChevronUp, ChevronDown } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2, ZoomIn, ZoomOut, RotateCw, Maximize2, Minimize2, BookOpen, ArrowLeft, Search, X, ChevronUp, ChevronDown, Bookmark, BookmarkCheck, List } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useProfile } from '@/components/providers/ProfileProvider';
+import { useBookmarksQuery, useAddBookmark, useDeleteBookmark } from '@/hooks/use-bookmarks';
+import { cn } from '@/lib/utils';
 import type { BookEntry } from '@/data/books';
 
 const PdfViewer = dynamic(() => import('./pdf-viewer'), {
@@ -38,6 +40,7 @@ export function BookReaderClient({ book, title: propTitle, pdfUrl: propPdfUrl, b
   const [searchMatches, setSearchMatches] = React.useState<{ page: number; index: number }[]>([]);
   const [currentMatch, setCurrentMatch] = React.useState(0);
   const [searchOpen, setSearchOpen] = React.useState(false);
+  const [bookmarkOpen, setBookmarkOpen] = React.useState(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
   const viewerRef = React.useRef<HTMLDivElement>(null);
   const searchInputRef = React.useRef<HTMLInputElement>(null);
@@ -45,6 +48,12 @@ export function BookReaderClient({ book, title: propTitle, pdfUrl: propPdfUrl, b
   const displayTitle = book?.title || propTitle || 'Reader';
   const pdfUrl = propPdfUrl || (book ? `/api/books/${book.slug}` : '');
   const bookId = propBookId || book?.slug || '';
+
+  const { data: bookmarks = [] } = useBookmarksQuery(bookId);
+  const addBookmark = useAddBookmark();
+  const deleteBookmark = useDeleteBookmark();
+  const isBookmarked = bookmarks.some((b) => b.pageNumber === pageNumber);
+  const currentBookmarkId = bookmarks.find((b) => b.pageNumber === pageNumber)?.id;
 
   React.useEffect(() => {
     function onFullscreenChange() {
@@ -138,6 +147,20 @@ export function BookReaderClient({ book, title: propTitle, pdfUrl: propPdfUrl, b
     setPageNumber((p) => searchMatches[Math.min(searchMatches.length - 1, currentMatch + 1)]?.page ?? p);
   }
 
+  function toggleBookmark() {
+    if (!bookId) return;
+    if (isBookmarked && currentBookmarkId) {
+      deleteBookmark.mutate({ id: currentBookmarkId, bookId });
+    } else {
+      addBookmark.mutate({ bookId, pageNumber });
+    }
+  }
+
+  function goToBookmarkPage(page: number) {
+    setPageNumber(page);
+    setBookmarkOpen(false);
+  }
+
   function toggleSearch() {
     setSearchOpen(!searchOpen);
     setTimeout(() => searchInputRef.current?.focus(), 100);
@@ -171,6 +194,26 @@ export function BookReaderClient({ book, title: propTitle, pdfUrl: propPdfUrl, b
             <Button variant="outline" size="icon" onClick={rotate}>
               <RotateCw className="h-4 w-4" />
             </Button>
+            <div className="w-px h-5 bg-zinc-800 shrink-0" />
+            <div className="relative">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={toggleBookmark}
+                className={isBookmarked ? 'text-amber-400 border-amber-700/50 hover:text-amber-300' : ''}
+                title={isBookmarked ? 'Remove bookmark' : 'Bookmark this page'}
+              >
+                {isBookmarked ? <BookmarkCheck className="h-4 w-4" /> : <Bookmark className="h-4 w-4" />}
+              </Button>
+              {bookmarks.length > 0 && (
+                <button
+                  onClick={() => setBookmarkOpen(!bookmarkOpen)}
+                  className="absolute -top-1 -right-1 flex items-center justify-center w-3.5 h-3.5 rounded-full bg-amber-500 text-[8px] font-bold text-zinc-900"
+                >
+                  {bookmarks.length}
+                </button>
+              )}
+            </div>
             <div className="w-px h-5 bg-zinc-800 shrink-0" />
             <Button variant="outline" size="icon" onClick={toggleSearch}>
               <Search className="h-4 w-4" />
@@ -248,6 +291,33 @@ export function BookReaderClient({ book, title: propTitle, pdfUrl: propPdfUrl, b
                 </button>
               </div>
             )}
+          </div>
+        )}
+        {bookmarkOpen && bookmarks.length > 0 && (
+          <div className="border-t border-zinc-800 bg-zinc-900/80 px-4 py-2">
+            <div className="flex items-center gap-2 mb-1.5">
+              <List className="h-3 w-3 text-zinc-500" />
+              <span className="text-[11px] font-medium text-zinc-400 uppercase tracking-wider">Bookmarks</span>
+              <span className="text-[10px] text-zinc-600">({bookmarks.length})</span>
+            </div>
+            <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto">
+              {bookmarks.map((bm) => (
+                <button
+                  key={bm.id}
+                  onClick={() => goToBookmarkPage(bm.pageNumber)}
+                  className={cn(
+                    'flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors',
+                    bm.pageNumber === pageNumber
+                      ? 'bg-amber-500/20 text-amber-300 border border-amber-600/40'
+                      : 'bg-zinc-800 text-zinc-400 border border-zinc-700/50 hover:bg-zinc-700 hover:text-zinc-200'
+                  )}
+                >
+                  <BookmarkCheck className="h-3 w-3 shrink-0" />
+                  p.{bm.pageNumber}
+                  {bm.note && <span className="text-zinc-500 truncate max-w-[100px] ml-1">— {bm.note}</span>}
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </div>
