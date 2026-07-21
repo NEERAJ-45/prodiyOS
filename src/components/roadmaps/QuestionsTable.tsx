@@ -25,6 +25,7 @@ import {
   RotateCcw,
   ExternalLink,
   Download,
+  Clipboard,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NotesDialog } from '@/components/shared/NotesDialog';
@@ -47,6 +48,7 @@ import {
   DialogClose,
 } from '@/components/ui/dialog';
 import { useTableSync } from '@/hooks/use-table-sync';
+import { buildCsv, copyToClipboard } from '@/lib/export-utils';
 
 export interface QuestionItem {
   id: number;
@@ -307,6 +309,23 @@ export default function QuestionsTable({
     URL.revokeObjectURL(url);
   };
 
+  const handleCopyCSV = () => {
+    const header = ['#', 'Question/Topic', 'Difficulty', 'Status', 'Notes', 'Link'];
+    const rows = allExportItems.map((q, i) => {
+      const done = !!completedMap[q.id];
+      const note = (notesMap[q.id] ?? '').replace(/\n/g, ' ');
+      return [
+        String(i + 1),
+        escapeCsv(q.title),
+        q.difficulty,
+        done ? 'Done' : 'Pending',
+        escapeCsv(note),
+        escapeCsv(q.link),
+      ];
+    });
+    copyToClipboard(buildCsv(header, rows), 'Roadmap CSV');
+  };
+
   const handleExportText = () => {
     const lines = allExportItems.map((q, i) => {
       const done = !!completedMap[q.id];
@@ -364,9 +383,12 @@ export default function QuestionsTable({
                 Export
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-popover border-border text-popover-foreground min-w-[140px]">
-              <DropdownMenuItem onClick={handleExportCSV} className="text-xs cursor-pointer focus:bg-zinc-800 focus:text-zinc-100">
-                Export as CSV
+            <DropdownMenuContent align="end" className="bg-popover border-border text-popover-foreground min-w-[160px]">
+              <DropdownMenuItem onClick={handleExportCSV} className="text-xs cursor-pointer focus:bg-zinc-800 focus:text-zinc-100 gap-2">
+                <Download size={12} /> Export as CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleCopyCSV} className="text-xs cursor-pointer focus:bg-zinc-800 focus:text-zinc-100 gap-2">
+                <Clipboard size={12} /> Copy CSV to Clipboard
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleExportText} className="text-xs cursor-pointer focus:bg-zinc-800 focus:text-zinc-100">
                 Export as Text

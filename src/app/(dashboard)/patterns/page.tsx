@@ -15,7 +15,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Loader2, Search, ChevronLeft, ChevronRight,
   ChevronsLeft, ChevronsRight, AlertCircle, ListOrdered, Info,
-  BookOpen, GitBranch, Layers, Trash2, Download,
+  BookOpen, GitBranch, Layers, Trash2,   Download,
+  Clipboard,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -31,6 +32,7 @@ import dynamic from "next/dynamic";
 import { useCustomRoadmapsQuery, useDeleteCustomRoadmap } from "@/hooks/use-custom-roadmaps";
 import { AddRoadmapDialog } from "@/components/shared/AddRoadmapDialog";
 import type { QuestionItem } from "@/components/roadmaps/QuestionsTable";
+import { escapeCsv, buildCsv, copyToClipboard } from "@/lib/export-utils";
 
 const QuestionsTable = dynamic(() => import("@/components/roadmaps/QuestionsTable"), { ssr: false });
 
@@ -114,11 +116,6 @@ function PatternsContent() {
     setPagination((p) => ({ ...p, pageIndex: 0 }));
   }, [debouncedSearch]);
 
-  const escapeCsv = (val: string) => {
-    if (/[",\n\r]/.test(val)) return `"${val.replace(/"/g, '""')}"`;
-    return val;
-  };
-
   const handleExportCSV = useCallback(async () => {
     try {
       const res = await fetch('/api/patterns?page=1&pageSize=100');
@@ -137,6 +134,25 @@ function PatternsContent() {
       a.click();
       URL.revokeObjectURL(url);
     } catch { toast({ variant: 'destructive', title: 'Export failed' }); }
+  }, []);
+
+  const handleCopyCSV = useCallback(async () => {
+    try {
+      const res = await fetch('/api/patterns?page=1&pageSize=100');
+      const all = await res.json();
+      if (!all.patterns) return;
+      const header = ['#', 'Pattern', 'Description', 'Easy', 'Medium', 'Hard', 'Total'];
+      const rows = all.patterns.map((p: PatternRow, i: number) => [
+        String(i + 1),
+        escapeCsv(p.name),
+        escapeCsv(p.description || ''),
+        String(p.easy),
+        String(p.medium),
+        String(p.hard),
+        String(p.total),
+      ]);
+      copyToClipboard(buildCsv(header, rows), 'Patterns CSV');
+    } catch { toast({ variant: 'destructive', title: 'Copy failed' }); }
   }, []);
 
   const handleExportText = useCallback(async () => {
@@ -411,9 +427,12 @@ function PatternsContent() {
                   Export
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-popover border-border text-popover-foreground min-w-[140px]">
-                <DropdownMenuItem onClick={handleExportCSV} className="text-xs cursor-pointer focus:bg-zinc-800 focus:text-zinc-100">
-                  Export as CSV
+              <DropdownMenuContent align="end" className="bg-popover border-border text-popover-foreground min-w-[160px]">
+                <DropdownMenuItem onClick={handleExportCSV} className="text-xs cursor-pointer focus:bg-zinc-800 focus:text-zinc-100 gap-2">
+                  <Download size={12} /> Export as CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleCopyCSV} className="text-xs cursor-pointer focus:bg-zinc-800 focus:text-zinc-100 gap-2">
+                  <Clipboard size={12} /> Copy CSV to Clipboard
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleExportText} className="text-xs cursor-pointer focus:bg-zinc-800 focus:text-zinc-100">
                   Export as Text

@@ -1,6 +1,6 @@
 'use client';
 
-import { Download } from 'lucide-react';
+import { Download, Clipboard } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,6 +13,7 @@ import {
   DropdownMenuSubTrigger,
 } from '@/components/ui/dropdown-menu';
 import type { PillarRowData } from './RoadmapCardRow';
+import { copyToClipboard } from '@/lib/export-utils';
 
 interface HubExportButtonProps {
   pillars: PillarRowData[];
@@ -63,6 +64,10 @@ export function HubExportButton({ pillars, hubName }: HubExportButtonProps) {
     );
   };
 
+  const copyPillarsAsCSV = (items: PillarRowData[], labelSuffix: string) => {
+    copyToClipboard(buildCsv(items), `${hubName} ${labelSuffix} CSV`);
+  };
+
   const exportPillarsAsText = (items: PillarRowData[], filenameSuffix: string) => {
     downloadBlob(
       `${toFilenameBase(hubName)}-${filenameSuffix}.txt`,
@@ -82,7 +87,10 @@ export function HubExportButton({ pillars, hubName }: HubExportButtonProps) {
       <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-800 text-zinc-300 min-w-[240px] max-h-[70vh] overflow-y-auto">
         <DropdownMenuLabel className="text-[11px] uppercase tracking-[0.14em] text-zinc-500">Export Overview</DropdownMenuLabel>
         <DropdownMenuItem onClick={() => exportPillarsAsCSV(pillars, 'overview')} className="text-xs cursor-pointer focus:bg-zinc-800 focus:text-zinc-100">
-          Overview as CSV
+          <Download size={12} /> Overview as CSV
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => copyPillarsAsCSV(pillars, 'Overview')} className="text-xs cursor-pointer focus:bg-zinc-800 focus:text-zinc-100">
+          <Clipboard size={12} /> Copy CSV to Clipboard
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => exportPillarsAsText(pillars, 'overview')} className="text-xs cursor-pointer focus:bg-zinc-800 focus:text-zinc-100">
           Overview as Text
@@ -98,7 +106,10 @@ export function HubExportButton({ pillars, hubName }: HubExportButtonProps) {
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent className="bg-zinc-950 border-zinc-800 text-zinc-300">
               <DropdownMenuItem onClick={() => exportPillarsAsCSV([pillar], pillar.slug)} className="text-xs cursor-pointer focus:bg-zinc-800 focus:text-zinc-100">
-                Export as CSV
+                <Download size={12} /> Export as CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => copyPillarsAsCSV([pillar], pillar.name)} className="text-xs cursor-pointer focus:bg-zinc-800 focus:text-zinc-100">
+                <Clipboard size={12} /> Copy CSV to Clipboard
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => exportPillarsAsText([pillar], pillar.slug)} className="text-xs cursor-pointer focus:bg-zinc-800 focus:text-zinc-100">
                 Export as Text
