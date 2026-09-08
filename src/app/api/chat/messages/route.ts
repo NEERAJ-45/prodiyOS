@@ -2,6 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db';
 import { ChatMessage } from '@/lib/models/ChatMessage';
 
+export async function DELETE() {
+  try {
+    await connectToDatabase();
+    await ChatMessage.deleteMany({});
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error('DELETE /api/chat/messages error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();

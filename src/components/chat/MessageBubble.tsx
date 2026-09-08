@@ -59,12 +59,12 @@ export function MessageBubble({ from, text, ts, isOwn, showName = true }: Props)
         )}
         <div
           className={cn(
-            'rounded-2xl px-3 py-2 sm:px-3.5 sm:py-2.5 text-[13px] sm:text-[13.5px] leading-[1.45] break-words',
-            'transition-shadow duration-150',
+            'rounded-2xl px-3.5 py-2.5 sm:px-4 sm:py-3 text-[17px] leading-[1.35] break-words',
+            'transition-all duration-150',
             isOwn
               ? 'bg-primary text-primary-foreground rounded-br-md shadow-sm'
-              : 'bg-muted rounded-bl-md',
-            'hover:shadow-md active:scale-[0.98]'
+              : 'bg-muted/80 rounded-bl-md',
+            'hover:shadow-md'
           )}
         >
           <span className="whitespace-pre-wrap break-words">
@@ -74,7 +74,7 @@ export function MessageBubble({ from, text, ts, isOwn, showName = true }: Props)
         <span
           className={cn(
             'text-[10px] text-muted-foreground/60 mt-0.5 mx-1 tabular-nums',
-            'opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity duration-200'
+            'opacity-0 group-hover:opacity-100 transition-opacity duration-200'
           )}
           aria-label={`Sent at ${new Date(ts).toLocaleTimeString()}`}
         >

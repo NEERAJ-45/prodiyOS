@@ -82,3 +82,14 @@
 [data-state="complete"] {
   @apply translate-x-0 transition-transform duration-300 ease-linear;
 }
+
+/* emoji-mart dark theme overrides */
+em-emoji-picker {
+  --rgb-background: 30, 30, 36;
+  --rgb-input: 40, 40, 50;
+  --rgb-color: 255, 255, 255;
+  --color-border: rgba(255, 255, 255, 0.06);
+  --color-border-over: rgba(255, 255, 255, 0.15);
+  height: auto !important;
+  max-height: 100% !important;
+}

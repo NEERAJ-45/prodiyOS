@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect, useRef, memo } from 'react';
-import twemoji from 'twemoji';
+import { memo } from 'react';
 
 interface Props {
   text: string;
@@ -9,24 +8,9 @@ interface Props {
 }
 
 export const EmojiText = memo(function EmojiText({ text, className }: Props) {
-  const ref = useRef<HTMLSpanElement>(null);
-
-  useEffect(() => {
-    if (ref.current) {
-      ref.current.innerHTML = twemoji.parse(text, {
-        folder: 'svg',
-        ext: '.svg',
-        base: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/',
-      });
-    }
-  }, [text]);
-
   return (
-    <span
-      ref={ref}
-      className={className}
-      style={{ lineHeight: '1.4' }}
-      aria-label={text}
-    />
+    <span className={className} style={{ lineHeight: '1.35', fontFamily: 'var(--font-geist-sans), Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, sans-serif' }}>
+      {text}
+    </span>
   );
 });

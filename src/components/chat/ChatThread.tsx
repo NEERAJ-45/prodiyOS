@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { MessageBubble } from './MessageBubble';
 import { MessageInput } from './MessageInput';
-import { Users, MessageCircle } from 'lucide-react';
+import { Users, MessageCircle, Trash2 } from 'lucide-react';
 
 interface ChatMsg {
   id: string;
@@ -117,6 +117,13 @@ export function ChatThread({ username }: Props) {
     }
   };
 
+  const flushMessages = async () => {
+    if (!confirm('Delete all messages?')) return;
+    await fetch('/api/chat/messages', { method: 'DELETE' });
+    setMessages([]);
+    lastFetchRef.current = '';
+  };
+
   const shouldShowName = (msgs: ChatMsg[], idx: number) => {
     if (idx === 0) return true;
     return msgs[idx].from !== msgs[idx - 1].from;
@@ -132,18 +139,25 @@ export function ChatThread({ username }: Props) {
   return (
     <div className="flex flex-col h-full min-h-0" role="main" aria-label="Group chat">
       {/* Header */}
-      <header className="shrink-0 border-b bg-background/90 backdrop-blur-sm px-3 sm:px-4 py-2.5 flex items-center gap-3 pt-[env(safe-area-inset-top)]">
+      <header className="shrink-0 border-b bg-background/95 backdrop-blur-md px-3 sm:px-4 py-3 flex items-center gap-3 pt-[env(safe-area-inset-top)]">
         <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center" aria-hidden="true">
           <Users className="h-4 w-4 text-primary" />
         </div>
         <div className="flex-1 min-w-0">
-          <h1 className="font-semibold text-sm leading-tight truncate">Group Chat</h1>
-          <p className="text-[11px] text-muted-foreground/70 leading-tight">Everyone can see messages</p>
+          <h1 className="font-semibold text-[15px] leading-tight truncate">Group Chat</h1>
+          <p className="text-[11px] text-muted-foreground/60 leading-tight">End-to-end encrypted</p>
         </div>
         <div className="flex items-center gap-1.5" aria-label="Online">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" aria-hidden="true" />
+          <span className="w-2 h-2 rounded-full bg-emerald-500" aria-hidden="true" />
           <span className="text-[11px] text-muted-foreground/60 font-medium">Live</span>
         </div>
+        <button
+          onClick={flushMessages}
+          className="ml-1 p-1.5 rounded-full text-muted-foreground/50 hover:text-red-400 hover:bg-red-400/10 transition-colors cursor-pointer"
+          aria-label="Delete all messages"
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
       </header>
 
       {/* Messages */}
@@ -154,34 +168,33 @@ export function ChatThread({ username }: Props) {
         aria-label="Messages"
         aria-live="polite"
       >
-        <div className="py-3 sm:py-4">
-          {messages.length === 0 && (
-            <div className="flex flex-col items-center justify-center h-56 sm:h-64 text-center px-4">
-              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-muted/60 flex items-center justify-center mb-3 sm:mb-4" aria-hidden="true">
-                <MessageCircle className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground/50" />
+        {messages.length === 0 ? (
+          <div className="h-full flex flex-col items-center justify-center text-center px-4">
+            <div className="w-16 h-16 rounded-full bg-muted/40 flex items-center justify-center mb-4" aria-hidden="true">
+              <MessageCircle className="h-7 w-7 text-muted-foreground/30" />
+            </div>
+            <p className="text-[15px] font-medium text-foreground/70 mb-1">No messages yet</p>
+            <p className="text-[13px] text-muted-foreground/40">Send a message to start chatting.</p>
+          </div>
+        ) : (
+          <div className="py-3 sm:py-4">
+            {messages.map((msg, idx) => (
+              <div key={msg.id}>
+                {shouldShowDate(messages, idx) && (
+                  <DateSeparator date={msg.createdAt} />
+                )}
+                <MessageBubble
+                  from={msg.from}
+                  text={msg.text}
+                  ts={new Date(msg.createdAt).getTime()}
+                  isOwn={msg.from === username}
+                  showName={shouldShowName(messages, idx)}
+                />
               </div>
-              <p className="text-sm font-medium text-foreground/80 mb-1">No messages yet</p>
-              <p className="text-[13px] text-muted-foreground/60 max-w-[240px]">
-                Start the conversation by sending a message below.
-              </p>
-            </div>
-          )}
-          {messages.map((msg, idx) => (
-            <div key={msg.id}>
-              {shouldShowDate(messages, idx) && (
-                <DateSeparator date={msg.createdAt} />
-              )}
-              <MessageBubble
-                from={msg.from}
-                text={msg.text}
-                ts={new Date(msg.createdAt).getTime()}
-                isOwn={msg.from === username}
-                showName={shouldShowName(messages, idx)}
-              />
-            </div>
-          ))}
-          <div ref={bottomRef} />
-        </div>
+            ))}
+            <div ref={bottomRef} />
+          </div>
+        )}
       </div>
 
       {/* Input */}
