@@ -13,8 +13,15 @@ export interface AnalysisScores {
   contactInfo: number;
 }
 
+export interface HumanizePattern {
+  section: string;
+  pattern: string;
+  before: string;
+  after: string;
+}
+
 export interface AtsResult {
-  action: 'analyze' | 'optimize';
+  action: 'analyze' | 'optimize' | 'humanize';
   scores: AnalysisScores;
   missingKeywords: string[];
   presentKeywords: string[];
@@ -22,13 +29,14 @@ export interface AtsResult {
   weaknesses: string[];
   recommendations: string[];
   optimizedSource?: string | null;
+  patternsFound?: HumanizePattern[];
 }
 
 export interface ResumeAnalysisRow {
   _id: string;
   userEmail: string;
   resumeId: string | null;
-  action: 'analyze' | 'optimize';
+  action: 'analyze' | 'optimize' | 'humanize';
   jd: string;
   roleTitle: string | null;
   resumeSnapshot: string;
@@ -51,7 +59,7 @@ export interface AtsRunParams {
   resume: string;
   jobDescription: string;
   roleTitle?: string | null;
-  action: 'analyze' | 'optimize';
+  action: 'analyze' | 'optimize' | 'humanize';
   resumeId?: string | null;
 }
 

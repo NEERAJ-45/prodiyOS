@@ -1,6 +1,7 @@
 import { GoogleGenAI } from '@google/genai';
 import type { IResumeScores } from '@/lib/models/ResumeAnalysis';
 import { SCORE_KEYS } from '@/lib/models/ResumeAnalysis';
+import type { HumanizePattern } from './types';
 
 // ponytail: only GA/current models — older 2.x-era models 404 for new-account keys.
 const MODELS = ['gemini-3.1-flash-lite', 'gemini-3.5-flash-lite'];
@@ -13,6 +14,7 @@ export interface LlmAnalysis extends IResumeScores {
   recommendations: string[];
   optimizedSource?: string | null;
   contentPreserved?: boolean;
+  patternsFound?: HumanizePattern[];
 }
 
 function clamp(n: number, min: number, max: number): number {
@@ -36,6 +38,19 @@ function cleanJson(text: string): { start: number; end: number } {
   return { start, end };
 }
 
+function normalizePatterns(v: unknown): HumanizePattern[] {
+  if (!Array.isArray(v)) return [];
+  return v
+    .filter((p): p is Record<string, unknown> => !!p && typeof p === 'object')
+    .map((p) => ({
+      section: typeof p.section === 'string' ? p.section : '',
+      pattern: typeof p.pattern === 'string' ? p.pattern : '',
+      before: typeof p.before === 'string' ? p.before : '',
+      after: typeof p.after === 'string' ? p.after : '',
+    }))
+    .filter((p) => p.pattern || p.after);
+}
+
 function normalize(raw: Record<string, unknown>): LlmAnalysis {
   const scores = {} as IResumeScores;
   for (const key of SCORE_KEYS) {
@@ -50,6 +65,7 @@ function normalize(raw: Record<string, unknown>): LlmAnalysis {
     recommendations: asArray(raw.recommendations),
     optimizedSource: typeof raw.optimizedSource === 'string' ? raw.optimizedSource : null,
     contentPreserved: raw.contentPreserved === true,
+    patternsFound: normalizePatterns(raw.patternsFound),
   };
 }
 

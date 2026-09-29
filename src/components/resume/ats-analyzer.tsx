@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Loader2, X, ScanSearch, Wand2, Check, AlertTriangle, History, Trash2 } from 'lucide-react';
+import { Loader2, X, ScanSearch, Wand2, Check, AlertTriangle, History, Trash2, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/toast';
 import {
@@ -353,7 +353,9 @@ export default function AtsAnalyzer({ source, resumeId, onApply, onClose }: Prop
                       <div className="flex items-center gap-2 min-w-0">
                         {h.action === 'optimize'
                           ? <Wand2 className="h-3.5 w-3.5 text-purple-400 shrink-0" />
-                          : <ScanSearch className="h-3.5 w-3.5 text-blue-400 shrink-0" />}
+                          : h.action === 'humanize'
+                            ? <Sparkles className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                            : <ScanSearch className="h-3.5 w-3.5 text-blue-400 shrink-0" />}
                         <span className="text-xs text-zinc-400 truncate">{h.jd.slice(0, 60) || 'Resume analysis'}</span>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">

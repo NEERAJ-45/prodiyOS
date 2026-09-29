@@ -14,7 +14,7 @@ export interface IResumeScores {
 export interface IResumeAnalysis extends Document {
   userEmail: string;
   resumeId: mongoose.Types.ObjectId | null;
-  action: 'analyze' | 'optimize';
+  action: 'analyze' | 'optimize' | 'humanize';
   jd: string;
   roleTitle: string | null;
   resumeSnapshot: string;
@@ -43,7 +43,7 @@ const ResumeAnalysisSchema: Schema = new Schema(
   {
     userEmail: { type: String, required: true, index: true },
     resumeId: { type: Schema.Types.ObjectId, ref: 'Resume', index: true, default: null },
-    action: { type: String, enum: ['analyze', 'optimize'], required: true },
+    action: { type: String, enum: ['analyze', 'optimize', 'humanize'], required: true },
     jd: { type: String, required: true },
     roleTitle: { type: String, default: null },
     resumeSnapshot: { type: String, required: true },

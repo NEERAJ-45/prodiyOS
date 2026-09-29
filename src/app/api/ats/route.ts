@@ -27,12 +27,13 @@ export async function POST(request: Request) {
     const resume = typeof body.resume === 'string' ? body.resume.trim() : '';
     const jobDescription = typeof body.jobDescription === 'string' ? body.jobDescription.trim() : '';
     const roleTitle = typeof body.roleTitle === 'string' && body.roleTitle.trim() ? body.roleTitle.trim() : null;
-    const action = body.action === 'optimize' ? 'optimize' : 'analyze';
+    const action =
+      body.action === 'optimize' || body.action === 'humanize' ? body.action : 'analyze';
 
     if (!resume) {
       return NextResponse.json({ error: 'Resume source is required' }, { status: 400 });
     }
-    if (!jobDescription) {
+    if (action !== 'humanize' && !jobDescription) {
       return NextResponse.json({ error: 'Job description is required' }, { status: 400 });
     }
 
@@ -62,7 +63,7 @@ export async function POST(request: Request) {
         userEmail,
         resumeId,
         action,
-        jd: jobDescription,
+        jd: jobDescription || 'Humanizer (no JD)',
         roleTitle,
         resumeSnapshot: resume,
         scores: result.scores,

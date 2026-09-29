@@ -1,17 +1,18 @@
 import { generateJson, type LlmAnalysis } from './engine';
-import { analyzePrompt, optimizePrompt } from './prompts';
+import { analyzePrompt, optimizePrompt, humanizePrompt } from './prompts';
 import { keywordCheck, toPlainText } from './keywords';
 import type { AtsResult, AtsRunInput } from './types';
 
 function toResult(action: AtsRunInput['action'], llm: LlmAnalysis, jd: string, resumeText: string): AtsResult {
   // Honest, reproducible JD match: % of JD keywords actually present in the resume text.
-  const measured = keywordCheck(jd, resumeText);
+  // Without a JD (humanize) there is nothing to measure — keep the model's self-rating.
+  const measured = jd.trim() ? keywordCheck(jd, resumeText) : null;
 
   const result: AtsResult = {
     action,
     scores: {
       atsScore: llm.atsScore,
-      matchScore: measured.coverage,
+      matchScore: measured ? measured.coverage : llm.matchScore,
       structure: llm.structure,
       keywords: llm.keywords,
       actionVerbs: llm.actionVerbs,
@@ -25,12 +26,15 @@ function toResult(action: AtsRunInput['action'], llm: LlmAnalysis, jd: string, r
     weaknesses: llm.weaknesses,
     recommendations: llm.recommendations,
     optimizedSource: llm.optimizedSource,
+    patternsFound: llm.patternsFound,
   };
 
   // Merge locally-detected JD terms so missingKeywords isn't purely model-hallucinated.
-  const jdNormalized = jd.toLowerCase();
-  const merged = new Set(result.missingKeywords);
-  result.missingKeywords = [...merged].filter((k) => jdNormalized.includes(k.toLowerCase()) && !measured.present.includes(k));
+  if (measured) {
+    const jdNormalized = jd.toLowerCase();
+    const merged = new Set(result.missingKeywords);
+    result.missingKeywords = [...merged].filter((k) => jdNormalized.includes(k.toLowerCase()) && !measured.present.includes(k));
+  }
   return result;
 }
 
@@ -97,6 +101,21 @@ export async function runAts(input: AtsRunInput): Promise<AtsResult> {
     }
     const analyzeLlm = await generateJson(analyzePrompt(input), false);
     return toResult('optimize', analyzeLlm, input.jobDescription, input.resume);
+  }
+
+  if (input.action === 'humanize') {
+    // Same content-preservation guard as optimize — a humanizer that drops facts is worse than none.
+    let llm = await generateJson(humanizePrompt(input), true);
+    let valid = !!llm.optimizedSource && isValidOptimize(input.resume, llm.optimizedSource, llm.contentPreserved === true);
+    if (!valid) {
+      llm = await generateJson(humanizePrompt(input), true);
+      valid = !!llm.optimizedSource && isValidOptimize(input.resume, llm.optimizedSource, llm.contentPreserved === true);
+    }
+    if (valid) {
+      const source = mergePreamble(input.resume, llm.optimizedSource!);
+      return toResult('humanize', { ...llm, optimizedSource: source }, '', source);
+    }
+    throw new Error('Humanization failed the content-preservation check. Please try again.');
   }
 
   const llm = await generateJson(analyzePrompt(input), false);
