@@ -52,8 +52,8 @@ function Tail({ own }: { own: boolean }) {
       className={cn(
         'absolute bottom-0 h-5 w-[11px]',
         own
-          ? '-right-[8px] scale-x-[-1] text-[#EFFDDE] dark:text-[#2B5278]'
-          : '-left-[8px] text-white dark:text-[#182533]'
+          ? '-right-[8px] scale-x-[-1] text-primary'
+          : '-left-[8px] text-muted'
       )}
     >
       <path d="M0.5 20V0c0 8 2.5 14 10.5 20H0.5z" fill="currentColor" />
@@ -103,8 +103,8 @@ export function MessageBubble({ from, text, ts, isOwn, isGroupStart, isGroupEnd 
           'relative max-w-[min(78%,480px)] px-2.5 py-[5px] text-[15px]',
           'rounded-[12px]',
           isOwn
-            ? 'bg-[#EFFDDE] text-black dark:bg-[#2B5278] dark:text-white'
-            : 'bg-white text-black shadow-[0_1px_2px_rgba(16,35,47,.15)] dark:bg-[#182533] dark:text-white dark:shadow-none',
+            ? 'bg-primary text-primary-foreground'
+            : 'bg-muted text-foreground',
           hasTail && isOwn && 'rounded-br-[3px]',
           hasTail && !isOwn && 'rounded-bl-[3px]'
         )}
@@ -141,8 +141,8 @@ export function MessageBubble({ from, text, ts, isOwn, isGroupStart, isGroupEnd 
             'absolute bottom-[4px] right-[9px] flex items-center gap-[1px]',
             'text-[11px] tabular-nums select-none leading-none',
             isOwn
-              ? 'text-black/40 dark:text-white/50'
-              : 'text-black/35 dark:text-white/40'
+              ? 'text-primary-foreground/60'
+              : 'text-muted-foreground/70'
           )}
           title={exact}
           aria-label={`Sent ${exact}`}

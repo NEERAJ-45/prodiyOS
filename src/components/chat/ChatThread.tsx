@@ -33,7 +33,7 @@ function DateSeparator({ date }: { date: string }) {
 
   return (
     <div className="flex justify-center my-3 px-4" role="separator" aria-label={label}>
-      <span className="rounded-full bg-black/[.07] dark:bg-black/40 px-2.5 py-[3px] text-[13px] font-medium text-[#7D8B99] dark:text-white/80 select-none backdrop-blur-sm">
+      <span className="rounded-full bg-muted px-2.5 py-[3px] text-[13px] font-medium text-muted-foreground select-none">
         {label}
       </span>
     </div>
@@ -169,29 +169,29 @@ export function ChatThread({ username }: Props) {
 
   return (
     <div
-      className="flex flex-col h-full min-h-0 relative bg-white dark:bg-[#17212B]"
+      className="flex flex-col h-full min-h-0 relative bg-background"
       role="main"
       aria-label="Group chat"
     >
       {/* Header — flat, Telegram-style */}
-      <header className="shrink-0 px-3 sm:px-4 py-2.5 flex items-center gap-3 pt-[env(safe-area-inset-top)] border-b border-black/[.08] dark:border-white/[.06]">
+      <header className="shrink-0 px-3 sm:px-4 py-2.5 flex items-center gap-3 pt-[env(safe-area-inset-top)] border-b border-border">
         <div
-          className="w-10 h-10 rounded-full bg-[#5288C1] dark:bg-[#5288C1] flex items-center justify-center shrink-0"
+          className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shrink-0"
           aria-hidden="true"
         >
-          <Users className="h-5 w-5 text-white" />
+          <Users className="h-5 w-5 text-primary-foreground" />
         </div>
         <div className="flex-1 min-w-0">
           <h1 className="font-semibold text-[15px] leading-tight truncate text-black dark:text-white">
             Group Chat
           </h1>
-          <p className="text-[13px] text-[#7D8B99] leading-tight">
+          <p className="text-[13px] text-muted-foreground leading-tight">
             {messages.length} message{messages.length === 1 ? '' : 's'} · online
           </p>
         </div>
         <button
           onClick={flushMessages}
-          className="p-2 rounded-full text-[#7D8B99] hover:text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer"
+          className="p-2 rounded-full text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer"
           aria-label="Delete all messages"
         >
           <Trash2 className="h-4.5 w-4.5" />
@@ -244,7 +244,7 @@ export function ChatThread({ username }: Props) {
             setNewCount(0);
             scrollToBottom();
           }}
-          className="absolute bottom-20 right-4 z-20 flex items-center gap-1.5 rounded-full bg-[#5288C1] px-3 py-1.5 text-[13px] font-medium text-white shadow-lg hover:bg-[#5288C1]/90 transition-colors cursor-pointer"
+          className="absolute bottom-20 right-4 z-20 flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-[13px] font-medium text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors cursor-pointer"
           aria-label="Scroll to latest messages"
         >
           <ArrowDown className="h-4 w-4" />
