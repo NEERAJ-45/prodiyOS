@@ -225,22 +225,26 @@ export function ProblemsTable({
   }, [apiData]);
 
   const allProblems = useMemo(() => {
-    if (isServerPaginated) return apiProblems;
+    const custom: ProblemWithDifficulty[] = customItems.map((p) => ({
+      id: p.id,
+      title: p.title,
+      link: p.link || '',
+      difficulty: p.difficulty || "MEDIUM",
+      _difficultyOrder: p.difficulty === "EASY" ? 0 : p.difficulty === "HARD" ? 2 : 1,
+      isCustom: true,
+    }));
+    if (isServerPaginated) {
+      const lastPage = Math.max((apiData?.totalPages ?? 1) - 1, 0);
+      return pagination.pageIndex === lastPage ? [...apiProblems, ...custom] : apiProblems;
+    }
     const labeled: ProblemWithDifficulty[] = [
       ...(propEasy ?? []).map((p) => ({ ...p, difficulty: "EASY", _difficultyOrder: 0 })),
       ...(propMedium ?? []).map((p) => ({ ...p, difficulty: "MEDIUM", _difficultyOrder: 1 })),
       ...(propHard ?? []).map((p) => ({ ...p, difficulty: "HARD", _difficultyOrder: 2 })),
-      ...customItems.map((p) => ({
-        id: p.id,
-        title: p.title,
-        link: p.link || '',
-        difficulty: p.difficulty || "MEDIUM",
-        _difficultyOrder: p.difficulty === "EASY" ? 0 : p.difficulty === "HARD" ? 2 : 1,
-        isCustom: true,
-      })),
+      ...custom,
     ];
     return labeled;
-  }, [propEasy, propMedium, propHard, customItems, isServerPaginated, apiProblems]);
+  }, [propEasy, propMedium, propHard, customItems, isServerPaginated, apiProblems, apiData?.totalPages, pagination.pageIndex]);
 
   const diffOrder = useMemo<Record<string, number>>(() => ({ EASY: 0, MEDIUM: 1, HARD: 2 }), []);
   const displayName = apiData?.name ?? propPatternName ?? patternKey ?? "Problems";
@@ -466,7 +470,7 @@ export function ProblemsTable({
     [allProblems, completedMap]
   );
 
-  const displayTotal = isServerPaginated ? (apiData?.total ?? 0) : allProblems.length;
+  const displayTotal = isServerPaginated ? (apiData?.total ?? 0) + customItems.length : allProblems.length;
   const isLoading = isServerPaginated && apiLoading;
   const isFetching = isServerPaginated && apiFetching;
   const hasError = isServerPaginated && apiError;
@@ -485,7 +489,18 @@ export function ProblemsTable({
           {solvedCount}/{displayTotal} solved
           {isFetching && <Loader2 className="inline ml-1 h-3 w-3 animate-spin" />}
         </span>
-        {!isServerPaginated && <AddItemDialog onAdd={handleAddItem} itemLabel="Problem" titlePlaceholder="e.g. Merge K Sorted Lists" linkPlaceholder="e.g. https://leetcode.com/problems/..." />}
+        <AddItemDialog
+          onAdd={(title, difficulty, link) => {
+            handleAddItem(title, difficulty, link);
+            if (isServerPaginated) {
+              const lastPage = Math.max((apiData?.totalPages ?? 1) - 1, 0);
+              setPagination((p) => (p.pageIndex === lastPage ? p : { ...p, pageIndex: lastPage }));
+            }
+          }}
+          itemLabel="Problem"
+          titlePlaceholder="e.g. Merge K Sorted Lists"
+          linkPlaceholder="e.g. https://leetcode.com/problems/..."
+        />
         
         {/* Bookmarked filter */}
         <button onClick={() => setBookmarkedOnly((v) => !v)}
