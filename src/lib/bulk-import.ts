@@ -1,4 +1,6 @@
-export type ImportMode = 'text' | 'xml' | 'csv';
+import * as XLSX from 'xlsx';
+
+export type ImportMode = 'text' | 'excel' | 'csv';
 
 export interface BulkQuestion {
   title: string;
@@ -17,6 +19,7 @@ function normalizeDifficulty(raw: string): string {
 
 function cleanTitle(raw: string): string {
   return raw
+    .trim()
     .replace(/^\s*(?:[-*•]|\d+[.)])\s+/, '')
     .replace(/\s*[\[(]\s*(?:easy|medium|hard)\s*[\])]$/i, '')
     .trim();
@@ -80,7 +83,7 @@ function parseTextMode(text: string): BulkQuestion[] {
     let title = line.replace(/https?:\/\/\S+/g, (m) => {
       if (!link) link = m.replace(/[.,;]+$/, '');
       return '';
-    });
+    }).trim();
     let diff = '';
     const diffMatch = title.match(/\s*[\[(]\s*(easy|medium|hard)\s*[\])]$/i);
     if (diffMatch) diff = diffMatch[1];
@@ -90,15 +93,10 @@ function parseTextMode(text: string): BulkQuestion[] {
   return out;
 }
 
-function parseCsvMode(text: string): BulkQuestion[] {
-  const lines = text
-    .split(/\r?\n/)
-    .map((l) => l.trim())
-    .filter(Boolean);
-  if (!lines.length) throw new Error('CSV is empty.');
+function mapRowsToQuestions(rows: string[][]): BulkQuestion[] {
+  if (!rows.length) throw new Error('No rows found.');
 
-  const delim = lines[0].includes('\t') ? '\t' : lines[0].includes(';') ? ';' : ',';
-  const firstCells = splitLine(lines[0], delim);
+  const firstCells = rows[0].map((c) => (c ?? '').trim());
   const hasHeader = firstCells.some((h) =>
     /title|name|question|problem|topic|difficulty|level|link|url/i.test(h)
   );
@@ -119,8 +117,9 @@ function parseCsvMode(text: string): BulkQuestion[] {
   }
 
   const out: BulkQuestion[] = [];
-  for (let li = start; li < lines.length; li++) {
-    const cells = splitLine(lines[li], delim);
+  for (let li = start; li < rows.length; li++) {
+    const cells = rows[li].map((c) => (c ?? '').toString().trim());
+    if (cells.every((c) => !c)) continue;
     const title = cleanTitle(cells[titleI] || '');
     if (!title) continue;
     let diff = diffI !== -1 ? cells[diffI] || '' : '';
@@ -139,79 +138,58 @@ function parseCsvMode(text: string): BulkQuestion[] {
   return out;
 }
 
-function pickField(node: Element, names: string[]): string {
-  for (const name of names) {
-    const child = Array.from(node.children).find(
-      (c) => c.localName.toLowerCase() === name
-    );
-    if (child?.textContent?.trim()) return child.textContent.trim();
-    const attr = Array.from(node.attributes || []).find(
-      (a) => a.name.toLowerCase() === name
-    );
-    if (attr?.value?.trim()) return attr.value.trim();
-  }
-  return '';
+function parseCsvMode(text: string): BulkQuestion[] {
+  const lines = text
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+  if (!lines.length) throw new Error('CSV is empty.');
+
+  const delim = lines[0].includes('\t') ? '\t' : lines[0].includes(';') ? ';' : ',';
+  const rows = lines.map((line) => splitLine(line, delim));
+  return mapRowsToQuestions(rows);
 }
 
-function parseXmlMode(text: string): BulkQuestion[] {
-  const doc = new DOMParser().parseFromString(text, 'text/xml');
-  if (doc.getElementsByTagName('parsererror').length > 0) {
-    throw new Error('Invalid XML document.');
-  }
-
-  const semanticNames = new Set([
-    'item', 'question', 'problem', 'row', 'entry', 'topic', 'task', 'q', 'listitem',
-  ]);
-  let nodes = Array.from(doc.getElementsByTagName('*')).filter((el) =>
-    semanticNames.has(el.localName.toLowerCase())
-  );
-
-  const root = doc.documentElement;
-  if (!nodes.length && root) {
-    nodes = Array.from(root.children);
-    if (!nodes.length) nodes = [root];
-  }
-
-  const out: BulkQuestion[] = [];
-  for (const node of nodes) {
-    let title = pickField(node, ['title', 'name', 'question', 'problem', 'topic', 'label', 'text']);
-    if (!title) {
-      const hasElementKids = node.children.length > 0;
-      if (!hasElementKids) title = (node.textContent || '').trim();
-    }
-    if (!title) continue;
-    const difficulty = pickField(node, ['difficulty', 'level', 'diff', 'complexity', 'rating']);
-    const link = pickField(node, ['link', 'url', 'href', 'reference']);
-    out.push({
-      title: cleanTitle(title),
-      difficulty: normalizeDifficulty(difficulty),
-      link,
-    });
-  }
-  return out.filter((q) => q.title);
+function parseExcelMode(buffer: ArrayBuffer): BulkQuestion[] {
+  const wb = XLSX.read(buffer, { type: 'array' });
+  const sheetName = wb.SheetNames[0];
+  if (!sheetName) throw new Error('Workbook has no sheets.');
+  const sheet = wb.Sheets[sheetName];
+  const rows = XLSX.utils.sheet_to_json<unknown[]>(sheet, {
+    header: 1,
+    defval: '',
+    blankrows: false,
+  });
+  const strRows = rows.map((r) => r.map((c) => (c == null ? '' : String(c))));
+  return mapRowsToQuestions(strRows);
 }
 
 export function detectImportMode(filename: string, text: string): ImportMode {
   const ext = (filename.split('.').pop() || '').toLowerCase();
   if (ext === 'csv' || ext === 'tsv') return 'csv';
-  if (ext === 'xml') return 'xml';
+  if (ext === 'xlsx' || ext === 'xlsm' || ext === 'xls') return 'excel';
   if (ext === 'txt' || ext === 'text' || ext === 'md') return 'text';
 
   const t = text.trimStart();
-  if (t.startsWith('<?xml') || t.startsWith('<')) return 'xml';
   const firstLine = t.split(/\r?\n/)[0] || '';
   if (firstLine.includes(',') || firstLine.includes('\t') || firstLine.includes(';')) return 'csv';
   return 'text';
 }
 
-export function parseBulkQuestions(text: string, mode: ImportMode): BulkQuestion[] {
-  const trimmed = text.trim();
-  if (!trimmed) throw new Error('Nothing to import — the content is empty.');
+export function parseBulkQuestions(content: string | ArrayBuffer, mode: ImportMode): BulkQuestion[] {
+  let rows: BulkQuestion[];
 
-  const rows =
-    mode === 'csv' ? parseCsvMode(trimmed)
-    : mode === 'xml' ? parseXmlMode(trimmed)
-    : parseTextMode(trimmed);
+  if (mode === 'excel') {
+    if (!(content instanceof ArrayBuffer)) {
+      throw new Error('Excel mode expects an .xlsx file upload.');
+    }
+    rows = parseExcelMode(content);
+  } else {
+    if (typeof content !== 'string' || !content.trim()) {
+      throw new Error('Nothing to import — the content is empty.');
+    }
+    rows = mode === 'csv' ? parseCsvMode(content.trim()) : parseTextMode(content.trim());
+  }
 
   const seen = new Set<string>();
   const out: BulkQuestion[] = [];

@@ -14,7 +14,7 @@ import {
 import {
   UploadCloud,
   FileText,
-  Code2,
+  FileSpreadsheet,
   Table2,
   AlertCircle,
   CheckCircle,
@@ -34,11 +34,12 @@ import { cn } from '@/lib/utils';
 
 const MODES: { id: ImportMode; label: string; icon: typeof FileText }[] = [
   { id: 'text', label: 'Text', icon: FileText },
-  { id: 'xml', label: 'XML', icon: Code2 },
+  { id: 'excel', label: 'Excel', icon: FileSpreadsheet },
   { id: 'csv', label: 'CSV', icon: Table2 },
 ];
 
-const ACCEPT = '.csv,.tsv,.xml,.txt,.text,.md';
+const ACCEPT = '.csv,.tsv,.xlsx,.xlsm,.xls,.txt,.text,.md';
+const EXCEL_RE = /\.(xlsx|xlsm|xls)$/i;
 
 function difficultyClass(d: string): string {
   if (d === 'EASY') return 'text-emerald-400';
@@ -53,7 +54,7 @@ function titleFromFilename(name: string): string {
 export function ImportDialog() {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<ImportMode>('csv');
-  const [raw, setRaw] = useState('');
+  const [content, setContent] = useState<string | ArrayBuffer>('');
   const [filename, setFilename] = useState('');
   const [rows, setRows] = useState<BulkQuestion[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -63,10 +64,11 @@ export function ImportDialog() {
 
   const inputRef = useRef<HTMLInputElement>(null);
   const addRoadmap = useAddCustomRoadmap();
+  const isSpreadsheet = content instanceof ArrayBuffer;
 
-  const runParse = useCallback((content: string, nextMode: ImportMode) => {
+  const runParse = useCallback((value: string | ArrayBuffer, nextMode: ImportMode) => {
     try {
-      setRows(parseBulkQuestions(content, nextMode));
+      setRows(parseBulkQuestions(value, nextMode));
       setError(null);
     } catch (err) {
       setRows([]);
@@ -75,13 +77,13 @@ export function ImportDialog() {
   }, []);
 
   const loadContent = useCallback(
-    (name: string, content: string) => {
-      const detected = detectImportMode(name, content);
+    (name: string, value: string | ArrayBuffer) => {
+      const detected = detectImportMode(name, typeof value === 'string' ? value : '');
       setFilename(name);
-      setRaw(content);
+      setContent(value);
       setMode(detected);
       setTitle((prev) => prev || titleFromFilename(name));
-      runParse(content, detected);
+      runParse(value, detected);
     },
     [runParse]
   );
@@ -89,16 +91,26 @@ export function ImportDialog() {
   const handleFile = useCallback(
     (file: File) => {
       const reader = new FileReader();
-      reader.onload = () => loadContent(file.name, String(reader.result || ''));
+      reader.onload = () => loadContent(file.name, reader.result ?? '');
       reader.onerror = () => setError('Could not read the file.');
-      reader.readAsText(file);
+      if (EXCEL_RE.test(file.name)) reader.readAsArrayBuffer(file);
+      else reader.readAsText(file);
     },
     [loadContent]
   );
 
   const handleModeChange = (next: ImportMode) => {
     setMode(next);
-    if (raw) runParse(raw, next);
+    if (next === 'excel') {
+      if (content instanceof ArrayBuffer) runParse(content, next);
+      else setError('Excel mode expects an .xlsx file upload.');
+      return;
+    }
+    if (typeof content === 'string' && content.trim()) runParse(content, next);
+    else if (content instanceof ArrayBuffer) {
+      setRows([]);
+      setError('This file was loaded as Excel. Re-upload it as CSV or Text.');
+    }
   };
 
   const handlePaste = (e: React.ClipboardEvent) => {
@@ -110,7 +122,7 @@ export function ImportDialog() {
 
   const reset = () => {
     setMode('csv');
-    setRaw('');
+    setContent('');
     setFilename('');
     setRows([]);
     setError(null);
@@ -202,7 +214,7 @@ export function ImportDialog() {
               Drop your file here, or <span className="text-primary">browse</span>
             </p>
             <p className="text-[11px] text-muted-foreground">
-              Supports .csv, .xml, .txt — you can also paste content
+              Supports .xlsx, .csv, .txt — you can also paste content
             </p>
             <input
               ref={inputRef}
@@ -223,16 +235,22 @@ export function ImportDialog() {
               {MODES.map((m) => {
                 const Icon = m.icon;
                 const active = mode === m.id;
+                const disabled = m.id === 'excel' && !isSpreadsheet;
                 return (
                   <button
                     key={m.id}
                     type="button"
+                    disabled={disabled}
+                    title={disabled ? 'Upload an .xlsx file to use Excel mode' : undefined}
                     onClick={() => handleModeChange(m.id)}
                     className={cn(
-                      'flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-medium transition-all cursor-pointer',
+                      'flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-medium transition-all',
+                      disabled
+                        ? 'text-muted-foreground/40 cursor-not-allowed'
+                        : 'cursor-pointer',
                       active
                         ? 'bg-background text-foreground shadow-sm'
-                        : 'text-muted-foreground hover:text-foreground'
+                        : !disabled && 'text-muted-foreground hover:text-foreground'
                     )}
                   >
                     <Icon size={12} />
@@ -278,7 +296,7 @@ export function ImportDialog() {
                   type="button"
                   onClick={() => {
                     setRows([]);
-                    setRaw('');
+                    setContent('');
                     setFilename('');
                     setError(null);
                   }}
