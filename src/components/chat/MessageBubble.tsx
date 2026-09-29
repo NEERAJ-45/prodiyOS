@@ -1,5 +1,6 @@
 'use client';
 
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { EmojiText } from './EmojiText';
 
@@ -27,9 +28,27 @@ function getInitials(name: string) {
   return name.slice(0, 2).toUpperCase();
 }
 
+function formatRelativeTime(ts: number): string {
+  const diff = Date.now() - ts;
+  if (diff < 60_000) return 'just now';
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 60) return `${mins}m`;
+  const hrs = Math.floor(mins / 60);
+  const sameDay = new Date(ts).toDateString() === new Date().toDateString();
+  if (sameDay && hrs < 24) return `${hrs}h`;
+  return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
 export function MessageBubble({ from, text, ts, isOwn, showName = true }: Props) {
+  const exact = new Date(ts).toLocaleString([], {
+    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
+  });
+
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.18, ease: 'easeOut' }}
       className={cn(
         'flex gap-2 my-0.5 px-3 sm:px-4 group',
         isOwn ? 'flex-row-reverse' : 'flex-row'
@@ -37,17 +56,19 @@ export function MessageBubble({ from, text, ts, isOwn, showName = true }: Props)
       role="article"
       aria-label={`Message from ${from}`}
     >
-      {/* Avatar */}
-      {!isOwn && (
+      {/* Avatar — shown once per group, bottom-aligned; spacer keeps alignment */}
+      {isOwn ? null : showName ? (
         <div
           className={cn(
-            'w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-white text-[10px] sm:text-[11px] font-semibold shrink-0 mt-auto',
+            'w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-white text-[10px] sm:text-[11px] font-semibold shrink-0 mt-auto ring-1 ring-background',
             getAvatarColor(from)
           )}
           aria-hidden="true"
         >
           {getInitials(from)}
         </div>
+      ) : (
+        <div className="w-7 sm:w-8 shrink-0" aria-hidden="true" />
       )}
 
       {/* Bubble */}
@@ -60,10 +81,10 @@ export function MessageBubble({ from, text, ts, isOwn, showName = true }: Props)
         <div
           className={cn(
             'rounded-2xl px-3.5 py-2.5 sm:px-4 sm:py-3 text-[17px] leading-[1.35] break-words',
-            'transition-all duration-150',
+            'transition-shadow duration-150',
             isOwn
               ? 'bg-primary text-primary-foreground rounded-br-md shadow-sm'
-              : 'bg-muted/80 rounded-bl-md',
+              : 'bg-muted/80 border border-border/40 rounded-bl-md',
             'hover:shadow-md'
           )}
         >
@@ -73,14 +94,15 @@ export function MessageBubble({ from, text, ts, isOwn, showName = true }: Props)
         </div>
         <span
           className={cn(
-            'text-[10px] text-muted-foreground/60 mt-0.5 mx-1 tabular-nums',
+            'text-[10px] text-muted-foreground/50 mt-0.5 mx-1 tabular-nums select-none',
             'opacity-0 group-hover:opacity-100 transition-opacity duration-200'
           )}
-          aria-label={`Sent at ${new Date(ts).toLocaleTimeString()}`}
+          title={exact}
+          aria-label={`Sent ${exact}`}
         >
-          {new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          {formatRelativeTime(ts)}
         </span>
       </div>
-    </div>
+    </motion.div>
   );
 }

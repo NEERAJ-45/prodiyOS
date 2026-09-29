@@ -129,9 +129,9 @@ export function MessageInput({ onSend, disabled }: Props) {
           disabled={!text.trim() || disabled}
           size="icon"
           className={cn(
-            'shrink-0 h-11 w-11 sm:h-10 sm:w-10 rounded-full cursor-pointer transition-all duration-200',
+            'shrink-0 h-11 w-11 sm:h-10 sm:w-10 rounded-full cursor-pointer transition-all duration-200 active:scale-95',
             text.trim()
-              ? 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm'
+              ? 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm shadow-primary/25'
               : 'bg-muted text-muted-foreground/50'
           )}
           aria-label="Send message"

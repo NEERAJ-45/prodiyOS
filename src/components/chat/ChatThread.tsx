@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { MessageBubble } from './MessageBubble';
 import { MessageInput } from './MessageInput';
-import { Users, MessageCircle, Trash2 } from 'lucide-react';
+import { Users, MessageCircle, Trash2, ArrowDown } from 'lucide-react';
 
 interface ChatMsg {
   id: string;
@@ -48,10 +48,19 @@ function isNearBottom(el: HTMLElement) {
 export function ChatThread({ username }: Props) {
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [sending, setSending] = useState(false);
+  const [atBottom, setAtBottom] = useState(true);
+  const [newCount, setNewCount] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const lastFetchRef = useRef<string>('');
   const bottomRef = useRef<HTMLDivElement>(null);
   const pausedRef = useRef(false);
+  const messagesRef = useRef<ChatMsg[]>([]);
+
+  const scrollToBottom = useCallback((smooth = true) => {
+    requestAnimationFrame(() => {
+      bottomRef.current?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' });
+    });
+  }, []);
 
   const loadMessages = useCallback(async () => {
     if (pausedRef.current) return;
@@ -66,23 +75,29 @@ export function ChatThread({ username }: Props) {
         const scrollEl = scrollRef.current;
         const wasAtBottom = scrollEl ? isNearBottom(scrollEl) : true;
 
-        setMessages((prev) => {
-          const existing = new Set(prev.map((m) => m.id));
-          const newMsgs = msgs.filter((m) => !existing.has(m.id));
-          return newMsgs.length > 0 ? [...prev, ...newMsgs] : prev;
-        });
+        const existing = new Set(messagesRef.current.map((m) => m.id));
+        const newMsgs = msgs.filter((m) => !existing.has(m.id));
+        if (newMsgs.length > 0) {
+          messagesRef.current = [...messagesRef.current, ...newMsgs];
+          setMessages(messagesRef.current);
+          if (!wasAtBottom) setNewCount((c) => c + newMsgs.length);
+        }
         lastFetchRef.current = msgs[msgs.length - 1].createdAt;
 
-        if (wasAtBottom) {
-          requestAnimationFrame(() => {
-            bottomRef.current?.scrollIntoView();
-          });
-        }
+        if (wasAtBottom) scrollToBottom();
       }
     } catch {
       // silent
     }
-  }, []);
+  }, [scrollToBottom]);
+
+  const handleScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const bottom = isNearBottom(el);
+    setAtBottom(bottom);
+    if (bottom && newCount > 0) setNewCount(0);
+  };
 
   // Poll — pause when tab hidden
   useEffect(() => {
@@ -120,7 +135,9 @@ export function ChatThread({ username }: Props) {
   const flushMessages = async () => {
     if (!confirm('Delete all messages?')) return;
     await fetch('/api/chat/messages', { method: 'DELETE' });
+    messagesRef.current = [];
     setMessages([]);
+    setNewCount(0);
     lastFetchRef.current = '';
   };
 
@@ -137,19 +154,21 @@ export function ChatThread({ username }: Props) {
   };
 
   return (
-    <div className="flex flex-col h-full min-h-0" role="main" aria-label="Group chat">
+    <div className="flex flex-col h-full min-h-0 relative" role="main" aria-label="Group chat">
       {/* Header */}
       <header className="shrink-0 border-b bg-background/95 backdrop-blur-md px-3 sm:px-4 py-3 flex items-center gap-3 pt-[env(safe-area-inset-top)]">
-        <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center" aria-hidden="true">
-          <Users className="h-4 w-4 text-primary" />
+        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-sm" aria-hidden="true">
+          <Users className="h-4 w-4 text-primary-foreground" />
         </div>
         <div className="flex-1 min-w-0">
           <h1 className="font-semibold text-[15px] leading-tight truncate">Group Chat</h1>
-          <p className="text-[11px] text-muted-foreground/60 leading-tight">End-to-end encrypted</p>
+          <p className="text-[11px] text-muted-foreground/60 leading-tight">
+            {messages.length} message{messages.length === 1 ? '' : 's'} · Encrypted
+          </p>
         </div>
-        <div className="flex items-center gap-1.5" aria-label="Online">
-          <span className="w-2 h-2 rounded-full bg-emerald-500" aria-hidden="true" />
-          <span className="text-[11px] text-muted-foreground/60 font-medium">Live</span>
+        <div className="flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2 py-1" aria-label="Online">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" aria-hidden="true" />
+          <span className="text-[11px] text-emerald-400 font-medium">Live</span>
         </div>
         <button
           onClick={flushMessages}
@@ -163,6 +182,7 @@ export function ChatThread({ username }: Props) {
       {/* Messages */}
       <div
         ref={scrollRef}
+        onScroll={handleScroll}
         className="flex-1 min-h-0 overflow-y-auto overscroll-contain"
         role="log"
         aria-label="Messages"
@@ -196,6 +216,21 @@ export function ChatThread({ username }: Props) {
           </div>
         )}
       </div>
+
+      {/* Jump to bottom */}
+      {!atBottom && messages.length > 0 && (
+        <button
+          onClick={() => {
+            setNewCount(0);
+            scrollToBottom();
+          }}
+          className="absolute bottom-20 right-4 z-20 flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground shadow-lg hover:bg-muted transition-colors cursor-pointer"
+          aria-label="Scroll to latest messages"
+        >
+          <ArrowDown className="h-3.5 w-3.5" />
+          {newCount > 0 ? `${newCount} new` : 'Latest'}
+        </button>
+      )}
 
       {/* Input */}
       <div className="shrink-0 border-t pb-[env(safe-area-inset-bottom)]">
