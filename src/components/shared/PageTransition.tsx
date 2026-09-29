@@ -9,6 +9,7 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
       initial="hidden"
       animate="visible"
       variants={fadeUp(0)}
+      className="h-full"
     >
       {children}
     </motion.div>

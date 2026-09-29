@@ -32,12 +32,10 @@ function DateSeparator({ date }: { date: string }) {
       : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
   return (
-    <div className="flex items-center gap-3 my-4 px-3 sm:px-4" role="separator" aria-label={label}>
-      <div className="flex-1 h-px bg-border/60" />
-      <span className="text-[11px] font-medium text-muted-foreground/70 select-none tracking-wide uppercase">
+    <div className="flex justify-center my-3 px-4" role="separator" aria-label={label}>
+      <span className="rounded-full bg-black/[.07] dark:bg-black/40 px-2.5 py-[3px] text-[13px] font-medium text-[#7D8B99] dark:text-white/80 select-none backdrop-blur-sm">
         {label}
       </span>
-      <div className="flex-1 h-px bg-border/60" />
     </div>
   );
 }
@@ -154,11 +152,6 @@ export function ChatThread({ username }: Props) {
     lastFetchRef.current = '';
   };
 
-  const shouldShowName = (msgs: ChatMsg[], idx: number) => {
-    if (idx === 0) return true;
-    return msgs[idx].from !== msgs[idx - 1].from;
-  };
-
   const shouldShowDate = (msgs: ChatMsg[], idx: number) => {
     if (idx === 0) return true;
     const prev = new Date(msgs[idx - 1].createdAt);
@@ -166,29 +159,42 @@ export function ChatThread({ username }: Props) {
     return prev.toDateString() !== curr.toDateString();
   };
 
+  // Telegram groups: name on the first message, avatar+tail on the last
+  const sameDay = (a: string, b: string) =>
+    new Date(a).toDateString() === new Date(b).toDateString();
+  const isGroupStart = (msgs: ChatMsg[], idx: number) =>
+    idx === 0 || msgs[idx].from !== msgs[idx - 1].from || !sameDay(msgs[idx].createdAt, msgs[idx - 1].createdAt);
+  const isGroupEnd = (msgs: ChatMsg[], idx: number) =>
+    idx === msgs.length - 1 || msgs[idx].from !== msgs[idx + 1].from || !sameDay(msgs[idx].createdAt, msgs[idx + 1].createdAt);
+
   return (
-    <div className="flex flex-col h-full min-h-0 relative" role="main" aria-label="Group chat">
-      {/* Header */}
-      <header className="shrink-0 border-b bg-background/95 backdrop-blur-md px-3 sm:px-4 py-3 flex items-center gap-3 pt-[env(safe-area-inset-top)]">
-        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-sm" aria-hidden="true">
-          <Users className="h-4 w-4 text-primary-foreground" />
+    <div
+      className="flex flex-col h-full min-h-0 relative bg-white dark:bg-[#17212B]"
+      role="main"
+      aria-label="Group chat"
+    >
+      {/* Header — flat, Telegram-style */}
+      <header className="shrink-0 px-3 sm:px-4 py-2.5 flex items-center gap-3 pt-[env(safe-area-inset-top)] border-b border-black/[.08] dark:border-white/[.06]">
+        <div
+          className="w-10 h-10 rounded-full bg-[#5288C1] dark:bg-[#5288C1] flex items-center justify-center shrink-0"
+          aria-hidden="true"
+        >
+          <Users className="h-5 w-5 text-white" />
         </div>
         <div className="flex-1 min-w-0">
-          <h1 className="font-semibold text-[15px] leading-tight truncate">Group Chat</h1>
-          <p className="text-[11px] text-muted-foreground/60 leading-tight">
-            {messages.length} message{messages.length === 1 ? '' : 's'} · Encrypted
+          <h1 className="font-semibold text-[15px] leading-tight truncate text-black dark:text-white">
+            Group Chat
+          </h1>
+          <p className="text-[13px] text-[#7D8B99] leading-tight">
+            {messages.length} message{messages.length === 1 ? '' : 's'} · online
           </p>
-        </div>
-        <div className="flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2 py-1" aria-label="Online">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" aria-hidden="true" />
-          <span className="text-[11px] text-emerald-400 font-medium">Live</span>
         </div>
         <button
           onClick={flushMessages}
-          className="ml-1 p-1.5 rounded-full text-muted-foreground/50 hover:text-red-400 hover:bg-red-400/10 transition-colors cursor-pointer"
+          className="p-2 rounded-full text-[#7D8B99] hover:text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer"
           aria-label="Delete all messages"
         >
-          <Trash2 className="h-4 w-4" />
+          <Trash2 className="h-4.5 w-4.5" />
         </button>
       </header>
 
@@ -221,7 +227,8 @@ export function ChatThread({ username }: Props) {
                   text={msg.text}
                   ts={new Date(msg.createdAt).getTime()}
                   isOwn={msg.from === username}
-                  showName={shouldShowName(messages, idx)}
+                  isGroupStart={isGroupStart(messages, idx)}
+                  isGroupEnd={isGroupEnd(messages, idx)}
                 />
               </div>
             ))}
@@ -237,16 +244,16 @@ export function ChatThread({ username }: Props) {
             setNewCount(0);
             scrollToBottom();
           }}
-          className="absolute bottom-20 right-4 z-20 flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground shadow-lg hover:bg-muted transition-colors cursor-pointer"
+          className="absolute bottom-20 right-4 z-20 flex items-center gap-1.5 rounded-full bg-[#5288C1] px-3 py-1.5 text-[13px] font-medium text-white shadow-lg hover:bg-[#5288C1]/90 transition-colors cursor-pointer"
           aria-label="Scroll to latest messages"
         >
-          <ArrowDown className="h-3.5 w-3.5" />
+          <ArrowDown className="h-4 w-4" />
           {newCount > 0 ? `${newCount} new` : 'Latest'}
         </button>
       )}
 
       {/* Input */}
-      <div className="shrink-0 border-t pb-[env(safe-area-inset-bottom)]">
+      <div className="shrink-0 pb-[env(safe-area-inset-bottom)]">
         <MessageInput onSend={handleSend} disabled={sending} />
       </div>
     </div>

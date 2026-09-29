@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Send, Smile, X } from 'lucide-react';
+import { ArrowUp, Smile, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Picker from '@emoji-mart/react';
 import data from '@emoji-mart/data';
@@ -39,24 +39,24 @@ export function MessageInput({ onSend, disabled }: Props) {
   };
 
   return (
-    <div className="relative bg-background/95 backdrop-blur-md px-2.5 py-2 sm:px-4 sm:py-3">
+    <div className="relative px-3 sm:px-4 py-2.5 bg-white dark:bg-[#17212B]">
       {/* Emoji Picker */}
       {showEmoji && (
         <div
           ref={emojiRef}
-          className="absolute bottom-full left-0 right-0 mb-2 mx-2.5 sm:mx-4 rounded-xl border border-border/50 overflow-y-auto overscroll-contain max-h-[40vh] sm:max-h-56 z-50"
-          style={{ background: 'hsl(240 5% 16%)' }}
+          className="absolute bottom-full left-3 right-3 sm:left-4 sm:right-4 mb-2 rounded-xl border border-black/10 dark:border-white/10 overflow-y-auto overscroll-contain max-h-[40vh] sm:max-h-64 z-50 shadow-xl"
+          style={{ background: '#242F3D' }}
           role="dialog"
           aria-label="Emoji picker"
         >
-          <div className="flex items-center justify-between px-3 py-2 border-b border-border/30">
-            <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+          <div className="flex items-center justify-between px-3 py-2 border-b border-white/10">
+            <span className="text-[11px] font-medium text-[#6D7F8F] uppercase tracking-wider">
               Emoji
             </span>
             <Button
               variant="ghost"
               size="icon"
-              className="h-6 w-6 rounded-full cursor-pointer"
+              className="h-6 w-6 rounded-full cursor-pointer text-[#6D7F8F] hover:text-white"
               onClick={closeEmoji}
               aria-label="Close emoji picker"
             >
@@ -66,7 +66,7 @@ export function MessageInput({ onSend, disabled }: Props) {
           <div className="[&_em-emoji-picker]:!bg-transparent [&_em-emoji-picker]:!shadow-none">
             <Picker
               data={data}
-              onEmojiSelect={(emoji: any) => {
+              onEmojiSelect={(emoji: { native?: string }) => {
                 if (emoji.native) {
                   setText(prev => prev + emoji.native);
                   inputRef.current?.focus();
@@ -81,23 +81,22 @@ export function MessageInput({ onSend, disabled }: Props) {
         </div>
       )}
 
-      {/* Input Row */}
-      <div className="flex items-end gap-1.5 sm:gap-2">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setShowEmoji(!showEmoji)}
-          className={cn(
-            'shrink-0 h-11 w-11 sm:h-10 sm:w-10 rounded-full cursor-pointer transition-colors duration-150',
-            showEmoji ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'
-          )}
-          aria-label={showEmoji ? 'Close emoji picker' : 'Open emoji picker'}
-          aria-expanded={showEmoji}
-        >
-          <Smile className="h-5 w-5" />
-        </Button>
+      {/* Input row — pill + send fused like Telegram desktop */}
+      <div className="flex items-center gap-2">
+        <div className="flex flex-1 items-center gap-2 h-11 rounded-full pl-3 pr-4 min-w-0 bg-[#F1F1F1] dark:bg-[#242F3D] transition-all duration-150 focus-within:ring-2 focus-within:ring-[#3390EC]/30 dark:focus-within:ring-[#5288C1]/40">
+          <button
+            type="button"
+            onClick={() => setShowEmoji(!showEmoji)}
+            className={cn(
+              'shrink-0 -ml-1 p-1 rounded-full cursor-pointer transition-colors duration-150',
+              showEmoji ? 'text-[#3390EC] dark:text-[#5288C1]' : 'text-[#7D8B99] hover:text-[#3390EC] dark:hover:text-[#5288C1]'
+            )}
+            aria-label={showEmoji ? 'Close emoji picker' : 'Open emoji picker'}
+            aria-expanded={showEmoji}
+          >
+            <Smile className="h-5 w-5" />
+          </button>
 
-        <div className="flex-1 relative min-w-0">
           <label htmlFor="chat-input" className="sr-only">
             Type a message
           </label>
@@ -108,17 +107,14 @@ export function MessageInput({ onSend, disabled }: Props) {
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSubmit()}
-            placeholder="Type a message..."
+            placeholder="Message"
             disabled={disabled}
             autoComplete="off"
             autoCorrect="on"
             autoCapitalize="sentences"
             className={cn(
-              'w-full h-11 sm:h-10 rounded-full px-4 text-[15px] sm:text-[14.5px]',
-              'bg-muted/40 border border-border/50',
-              'placeholder:text-muted-foreground/40',
-              'focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40',
-              'transition-all duration-150',
+              'flex-1 min-w-0 h-full bg-transparent text-[15px] text-black dark:text-white',
+              'placeholder:text-[#7D8B99] outline-none',
               'disabled:opacity-50 disabled:cursor-not-allowed'
             )}
           />
@@ -129,14 +125,14 @@ export function MessageInput({ onSend, disabled }: Props) {
           disabled={!text.trim() || disabled}
           size="icon"
           className={cn(
-            'shrink-0 h-11 w-11 sm:h-10 sm:w-10 rounded-full cursor-pointer transition-all duration-200 active:scale-95',
+            'shrink-0 h-11 w-11 rounded-full cursor-pointer transition-all duration-200 active:scale-95 border-0',
             text.trim()
-              ? 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm shadow-primary/25'
-              : 'bg-muted text-muted-foreground/50'
+              ? 'bg-[#3390EC] text-white hover:bg-[#3390EC]/90 dark:bg-[#5288C1] dark:hover:bg-[#5288C1]/90 shadow-sm'
+              : 'bg-[#E4E4E7] text-[#A1AAB4] dark:bg-[#242F3D] dark:text-[#6D7F8F]'
           )}
           aria-label="Send message"
         >
-          <Send className="h-4 w-4" />
+          <ArrowUp className="h-5 w-5" strokeWidth={2.5} />
         </Button>
       </div>
     </div>
