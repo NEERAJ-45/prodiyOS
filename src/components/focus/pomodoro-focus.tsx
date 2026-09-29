@@ -19,6 +19,7 @@ import {
   SkipBack,
   SkipForward,
 } from "lucide-react";
+import { notify } from "@/lib/notifications";
 type AmbientSoundKey = "rain" | "ocean" | "wind" | "fire";
 
 type AmbientSoundState = Record<AmbientSoundKey, { on: boolean; vol: number }>;
@@ -335,9 +336,17 @@ export default function PomodoroFocus() {
       const nextMode: "short" | "long" = nextRound % 4 === 0 ? "long" : "short";
       setMode(nextMode);
       setTimeLeft(durationsRef.current[nextMode] * 60);
+      notify("pomodoro", "Focus session complete", {
+        body: nextMode === "long" ? "Long break started." : "Short break started.",
+        tag: "pomodoro",
+      });
     } else {
       setMode("focus");
       setTimeLeft(durationsRef.current.focus * 60);
+      notify("pomodoro", "Break over", {
+        body: "Back to focus.",
+        tag: "pomodoro",
+      });
     }
     setIsRunning(autoStartRef.current);
   }

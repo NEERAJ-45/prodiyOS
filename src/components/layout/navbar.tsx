@@ -8,6 +8,7 @@ import { toast } from '@/components/ui/toast';
 import { quotes } from '../../../quotes';
 import { GlobalSearch } from '@/components/shared/GlobalSearch';
 import { ModeToggle } from '@/components/layout/mode-toggle';
+import { NotificationsBell } from '@/components/layout/notifications-bell';
 import { useModeStore } from '@/lib/stores/mode-store';
 
 export function Navbar({ global = false }: { global?: boolean }) {
@@ -71,6 +72,9 @@ export function Navbar({ global = false }: { global?: boolean }) {
               <span className="h-1.5 w-1.5 rounded-full bg-current animate-pulse" />
               <span>{isOffice ? "Office" : "Home"}</span>
             </div>
+
+            {/* Notifications */}
+            <NotificationsBell />
 
             {/* Quote Button */}
             <button

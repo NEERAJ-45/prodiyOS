@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { notify } from '@/lib/notifications';
 
 export function usePomodoro(initialWorkMinutes = 25, initialBreakMinutes = 5) {
   const [timerMode, setTimerMode] = useState<'work' | 'break'>('work');
@@ -102,6 +103,28 @@ export function usePomodoro(initialWorkMinutes = 25, initialBreakMinutes = 5) {
       if (audioCtxRef.current) audioCtxRef.current.close();
     };
   }, []);
+
+  const wasRunningRef = useRef(false);
+  useEffect(() => {
+    if (timerRunning) {
+      wasRunningRef.current = true;
+      return;
+    }
+    if (wasRunningRef.current && timerSeconds === 0) {
+      wasRunningRef.current = false;
+      if (timerMode === 'work') {
+        notify('pomodoro', 'Focus session complete', {
+          body: 'Time for a break.',
+          tag: 'pomodoro',
+        });
+      } else {
+        notify('pomodoro', 'Break over', {
+          body: 'Back to focus.',
+          tag: 'pomodoro',
+        });
+      }
+    }
+  }, [timerRunning, timerSeconds, timerMode]);
 
   const startEditingTimer = useCallback(() => {
     setEditTimerValue(String(timerMinutes));

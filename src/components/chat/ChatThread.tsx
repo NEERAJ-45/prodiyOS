@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { MessageBubble } from './MessageBubble';
 import { MessageInput } from './MessageInput';
 import { Users, MessageCircle, Trash2, ArrowDown } from 'lucide-react';
+import { notify } from '@/lib/notifications';
 
 interface ChatMsg {
   id: string;
@@ -81,6 +82,18 @@ export function ChatThread({ username }: Props) {
           messagesRef.current = [...messagesRef.current, ...newMsgs];
           setMessages(messagesRef.current);
           if (!wasAtBottom) setNewCount((c) => c + newMsgs.length);
+
+          const viewingChat =
+            !document.hidden &&
+            document.hasFocus() &&
+            window.location.pathname.startsWith('/chat');
+          if (!viewingChat) {
+            const last = newMsgs[newMsgs.length - 1];
+            notify('chat', last.from === username ? 'New chat message' : `Message from ${last.from}`, {
+              body: last.text.slice(0, 140),
+              tag: 'chat',
+            });
+          }
         }
         lastFetchRef.current = msgs[msgs.length - 1].createdAt;
 
@@ -89,7 +102,7 @@ export function ChatThread({ username }: Props) {
     } catch {
       // silent
     }
-  }, [scrollToBottom]);
+  }, [scrollToBottom, username]);
 
   const handleScroll = () => {
     const el = scrollRef.current;
