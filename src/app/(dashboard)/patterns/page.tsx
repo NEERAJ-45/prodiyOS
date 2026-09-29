@@ -16,7 +16,7 @@ import {
   Loader2, Search, ChevronLeft, ChevronRight,
   ChevronsLeft, ChevronsRight, AlertCircle, ListOrdered, Info,
   BookOpen, GitBranch, Layers, Trash2,   Download,
-  Clipboard,
+  Clipboard, ListChecks,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -31,6 +31,7 @@ import { cn } from "@/lib/utils";
 import dynamic from "next/dynamic";
 import { useCustomRoadmapsQuery, useDeleteCustomRoadmap } from "@/hooks/use-custom-roadmaps";
 import { AddRoadmapDialog } from "@/components/shared/AddRoadmapDialog";
+import { ImportDialog } from "@/components/patterns/ImportDialog";
 import type { QuestionItem } from "@/components/roadmaps/QuestionsTable";
 import { escapeCsv, buildCsv, copyToClipboard } from "@/lib/export-utils";
 
@@ -316,11 +317,11 @@ function PatternsContent() {
   // ---- Toggle + Search bar (shared) ----
   const toggleBar = (
     <div className="flex items-center gap-2 mb-4">
-      <div className="flex rounded-lg border border-border bg-muted/40 p-0.5">
+      <div className="flex max-w-full overflow-x-auto rounded-lg border border-border bg-muted/40 p-0.5">
         <button
-          onClick={() => { setView("patterns"); setSelectedKey(null); setSelectedDay(null); }}
+          onClick={() => { setView("patterns"); setSelectedKey(null); setSelectedDay(null); setSelectedCustomSlug(null); }}
           className={cn(
-            "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all",
+            "flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap",
             view === "patterns" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
           )}
         >
@@ -328,9 +329,9 @@ function PatternsContent() {
           Patterns
         </button>
         <button
-          onClick={() => { setView("striver"); setSelectedKey(null); setSelectedDay(null); setSearch(""); }}
+          onClick={() => { setView("striver"); setSelectedKey(null); setSelectedDay(null); setSelectedCustomSlug(null); setSearch(""); }}
           className={cn(
-            "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all",
+            "flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap",
             view === "striver" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
           )}
         >
@@ -340,13 +341,27 @@ function PatternsContent() {
         <button
           onClick={() => { setView("custom"); setSelectedKey(null); setSelectedDay(null); setSelectedCustomSlug(null); setSearch(""); }}
           className={cn(
-            "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all",
-            view === "custom" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+            "flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap",
+            view === "custom" && !selectedCustomSlug ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
           )}
         >
           <Layers className="h-3.5 w-3.5" />
           Custom
         </button>
+        {customRoadmaps.map((r) => (
+          <button
+            key={r.slug}
+            title={r.title}
+            onClick={() => { setView("custom"); setSelectedKey(null); setSelectedDay(null); setSelectedCustomSlug(r.slug); setSearch(""); }}
+            className={cn(
+              "flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap",
+              selectedCustomSlug === r.slug ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <ListChecks className="h-3.5 w-3.5" />
+            <span className="max-w-[120px] truncate">{r.title}</span>
+          </button>
+        ))}
       </div>
 
       <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 transition-all duration-200 focus-within:border-primary/50 focus-within:bg-background focus-within:ring-2 focus-within:ring-primary/20 flex-1 max-w-xs">
@@ -424,6 +439,7 @@ function PatternsContent() {
               </TooltipContent>
             </Tooltip>
             <div className="flex-1" />
+            <ImportDialog />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border border-border text-muted-foreground bg-muted/30 hover:bg-muted/60 hover:text-foreground transition-colors shrink-0">
@@ -743,7 +759,10 @@ function PatternsContent() {
               {customRoadmaps.length} custom roadmap{customRoadmaps.length !== 1 ? 's' : ''}
             </p>
           </div>
-          <AddRoadmapDialog />
+          <div className="flex items-center gap-2">
+            <ImportDialog />
+            <AddRoadmapDialog />
+          </div>
         </div>
       </div>
 
