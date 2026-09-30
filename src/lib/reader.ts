@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { logReaderEvent } from '@/lib/reader-log';
 import { JSDOM } from 'jsdom';
 import { Readability } from '@mozilla/readability';
 import TurndownService from 'turndown';
@@ -68,12 +69,20 @@ export function renderMarkdown(markdown: string): string {
 
     const img = line.match(IMAGE_LINE_RE);
     if (img) {
-      // Disallowed host → silently dropped (spec); never fetched server-side.
-      // Logging of drops is wired up in Task 4 (logger).
+      // Disallowed host → dropped from output, never fetched server-side,
+      // but logged at debug so missing images are diagnosable.
       if (isAllowedImageUrl(img[2])) {
         out.push(
           `<figure><img src="${escapeHtml(img[2])}" alt="${escapeHtml(img[1])}" loading="lazy" referrerpolicy="no-referrer"></figure>`
         );
+      } else {
+        let host = '';
+        try {
+          host = new URL(img[2]).hostname;
+        } catch {
+          host = 'invalid-url';
+        }
+        logReaderEvent('debug', 'render', 'image dropped', { host });
       }
       continue;
     }

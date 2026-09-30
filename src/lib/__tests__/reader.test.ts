@@ -114,6 +114,14 @@ describe('renderMarkdown()', () => {
     const html = renderMarkdown('line one\n\n<img src=x onerror=alert(1)>');
     expect(html).toBe('<p>line one</p>\n<p>&lt;img src=x onerror=alert(1)&gt;</p>');
   });
+
+  it('logs a debug line when an image host is dropped', () => {
+    const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    renderMarkdown('![x](https://evil.com/x.png)');
+    expect(spy.mock.calls.flat().join('\n')).toContain('render: image dropped');
+    expect(spy.mock.calls.flat().join('\n')).toContain('host=evil.com');
+    spy.mockRestore();
+  });
 });
 
 afterEach(() => {
