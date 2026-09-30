@@ -44,19 +44,18 @@ export function MessageInput({ onSend, disabled }: Props) {
       {showEmoji && (
         <div
           ref={emojiRef}
-          className="absolute bottom-full left-3 right-3 sm:left-4 sm:right-4 mb-2 rounded-xl border border-border overflow-y-auto overscroll-contain max-h-[40vh] sm:max-h-64 z-50 shadow-xl"
-          style={{ background: 'hsl(240 5% 16%)' }}
+          className="absolute bottom-full left-3 right-3 sm:left-4 sm:right-4 mb-2 rounded-xl border border-border overflow-y-auto overscroll-contain max-h-[40vh] sm:max-h-64 z-50 shadow-xl bg-muted"
           role="dialog"
           aria-label="Emoji picker"
         >
-          <div className="flex items-center justify-between px-3 py-2 border-b border-white/10">
-            <span className="text-[11px] font-medium text-[#6D7F8F] uppercase tracking-wider">
+          <div className="flex items-center justify-between px-3 py-2 border-b border-border">
+            <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
               Emoji
             </span>
             <Button
               variant="ghost"
               size="icon"
-              className="h-6 w-6 rounded-full cursor-pointer text-[#6D7F8F] hover:text-white"
+              className="h-6 w-6 rounded-full cursor-pointer text-muted-foreground hover:text-foreground"
               onClick={closeEmoji}
               aria-label="Close emoji picker"
             >

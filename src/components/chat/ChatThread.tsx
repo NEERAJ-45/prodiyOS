@@ -182,7 +182,7 @@ export function ChatThread({ username }: Props) {
           <Users className="h-5 w-5 text-primary-foreground" />
         </div>
         <div className="flex-1 min-w-0">
-          <h1 className="font-semibold text-[15px] leading-tight truncate text-black dark:text-white">
+          <h1 className="font-semibold text-[15px] leading-tight truncate text-foreground">
             Group Chat
           </h1>
           <p className="text-[13px] text-muted-foreground leading-tight">
@@ -191,7 +191,7 @@ export function ChatThread({ username }: Props) {
         </div>
         <button
           onClick={flushMessages}
-          className="p-2 rounded-full text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer"
+          className="p-2 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
           aria-label="Delete all messages"
         >
           <Trash2 className="h-4.5 w-4.5" />

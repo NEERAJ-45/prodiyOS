@@ -57,7 +57,7 @@ export default function ChatPage() {
             Join
           </button>
         </form>
-        {error && <p className="text-[13px] text-red-500 mt-2">Wrong code.</p>}
+        {error && <p className="text-[13px] text-destructive mt-2">Wrong code.</p>}
       </div>
     );
   }
