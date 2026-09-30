@@ -17,7 +17,7 @@ export default defineConfig({
     include: ['src/**/*.test.{ts,tsx}'],
     server: {
       deps: {
-        inline: ['@excalidraw/excalidraw'],
+        inline: ['@excalidraw/excalidraw', 'next-auth'],
       },
     },
   },
