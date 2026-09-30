@@ -1,11 +1,11 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { afterEach, describe, it, expect, beforeAll, vi } from 'vitest';
 
 // Env must be set before reader.ts functions are called; do it up front.
 beforeAll(() => {
   process.env.READER_KEY = 'correct-horse-battery';
 });
 
-import { checkKey, assertReaderKeyConfigured, isAllowedMediumUrl } from '@/lib/reader';
+import { checkKey, assertReaderKeyConfigured, isAllowedMediumUrl, fetchArticle, extractToMarkdown } from '@/lib/reader';
 
 describe('checkKey()', () => {
   it('accepts the exact key', () => {
@@ -113,5 +113,51 @@ describe('renderMarkdown()', () => {
   it('skips empty lines and escapes a raw <img> in a paragraph line', () => {
     const html = renderMarkdown('line one\n\n<img src=x onerror=alert(1)>');
     expect(html).toBe('<p>line one</p>\n<p>&lt;img src=x onerror=alert(1)&gt;</p>');
+  });
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+
+describe('fetchArticle()', () => {
+  it('returns html on 200', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('<html>hi</html>', { status: 200 })));
+    const r = await fetchArticle('https://medium.com/x');
+    expect(r).toEqual({ ok: true, html: '<html>hi</html>' });
+  });
+
+  it('maps non-2xx to http_<status> reason', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('', { status: 403 })));
+    const r = await fetchArticle('https://medium.com/x');
+    expect(r).toEqual({ ok: false, reason: 'http_403' });
+  });
+
+  it('maps timeout to timeout reason instead of throwing', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new DOMException('timed out', 'TimeoutError')));
+    const r = await fetchArticle('https://medium.com/x');
+    expect(r).toEqual({ ok: false, reason: 'timeout' });
+  });
+});
+
+describe('extractToMarkdown()', () => {
+  it('extracts title and markdown from a real-shaped article', () => {
+    const html = `<html><head><title>ignored</title></head><body>
+      <article><h1>My Great Post</h1><p>${'This is article text. '.repeat(20)}</p></article>
+    </body></html>`;
+    const r = extractToMarkdown(html);
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.title).toBe('My Great Post');
+      expect(r.markdown).toContain('This is article text.');
+      expect(r.searchText).toContain('This is article text.');
+      expect(r.searchText).not.toContain('#');
+    }
+  });
+
+  it('fails friendly on a nearly-empty (paywalled) page', () => {
+    const r = extractToMarkdown('<html><body><p>Members only.</p></body></html>');
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.reason).toBe('empty_or_paywalled');
   });
 });
