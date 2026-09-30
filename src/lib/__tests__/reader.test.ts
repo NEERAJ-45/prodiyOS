@@ -55,3 +55,63 @@ describe('isAllowedMediumUrl()', () => {
     expect(isAllowedMediumUrl('https://medium.com@evil.com/post')).toBe(false);
   });
 });
+
+import { escapeHtml, renderMarkdown, isAllowedImageUrl } from '@/lib/reader';
+
+describe('escapeHtml()', () => {
+  it('escapes all HTML-significant characters', () => {
+    expect(escapeHtml(`<script>alert("x")&'`)).toBe(
+      '&lt;script&gt;alert(&quot;x&quot;)&amp;&#39;'
+    );
+  });
+});
+
+describe('isAllowedImageUrl()', () => {
+  it('accepts https on the two allowlisted hosts', () => {
+    expect(isAllowedImageUrl('https://miro.medium.com/v2/resize:fit:800/x')).toBe(true);
+    expect(isAllowedImageUrl('https://cdn-images-1.medium.com/v2/abc')).toBe(true);
+  });
+
+  it('rejects other hosts and non-https', () => {
+    expect(isAllowedImageUrl('https://evil.com/x.png')).toBe(false);
+    expect(isAllowedImageUrl('http://miro.medium.com/x')).toBe(false);
+    expect(isAllowedImageUrl('https://sub.miro.medium.com/x')).toBe(false);
+    expect(isAllowedImageUrl('javascript:alert(1)')).toBe(false);
+    expect(isAllowedImageUrl('not-a-url')).toBe(false);
+  });
+});
+
+describe('renderMarkdown()', () => {
+  it('renders headings as h2 with escaped text', () => {
+    const html = renderMarkdown('# Hello <script>alert(1)</script>');
+    expect(html).toBe('<h2>Hello &lt;script&gt;alert(1)&lt;/script&gt;</h2>');
+  });
+
+  it('renders plain lines as escaped paragraphs', () => {
+    const html = renderMarkdown('Buy <b>now</b> & more');
+    expect(html).toBe('<p>Buy &lt;b&gt;now&lt;/b&gt; &amp; more</p>');
+  });
+
+  it('renders allowlisted images with lazy/no-referrer in a figure', () => {
+    const html = renderMarkdown('![a "quoted" alt](https://miro.medium.com/v2/x)');
+    expect(html).toBe(
+      '<figure><img src="https://miro.medium.com/v2/x" alt="a &quot;quoted&quot; alt" loading="lazy" referrerpolicy="no-referrer"></figure>'
+    );
+  });
+
+  it('drops images from non-allowlisted hosts entirely', () => {
+    expect(renderMarkdown('![x](https://evil.com/x.png)')).toBe('');
+    expect(renderMarkdown('![x](http://miro.medium.com/x)')).toBe('');
+  });
+
+  it('neutralizes attribute injection via image URL/alt', () => {
+    const html = renderMarkdown('![x" onerror="alert(1)](https://miro.medium.com/x)');
+    expect(html).not.toContain('onerror="alert');
+    expect(html).toContain('alt="x&quot; onerror=&quot;alert(1)"');
+  });
+
+  it('skips empty lines and escapes a raw <img> in a paragraph line', () => {
+    const html = renderMarkdown('line one\n\n<img src=x onerror=alert(1)>');
+    expect(html).toBe('<p>line one</p>\n<p>&lt;img src=x onerror=alert(1)&gt;</p>');
+  });
+});

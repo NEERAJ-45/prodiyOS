@@ -30,3 +30,52 @@ export function isAllowedMediumUrl(raw: string): boolean {
   // resolves to evil.com and "medium.com.evil.com" fails both checks.
   return host === 'medium.com' || host.endsWith('.medium.com');
 }
+
+export function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+export function isAllowedImageUrl(raw: string): boolean {
+  let u: URL;
+  try {
+    u = new URL(raw);
+  } catch {
+    return false;
+  }
+  return u.protocol === 'https:' && IMAGE_HOSTS.has(u.hostname.toLowerCase());
+}
+
+const IMAGE_LINE_RE = /^!\[([^\]]*)\]\(([^)\s]+)\)$/;
+
+export function renderMarkdown(markdown: string): string {
+  const out: string[] = [];
+  for (const rawLine of markdown.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line) continue;
+
+    if (line.startsWith('#')) {
+      out.push(`<h2>${escapeHtml(line.replace(/^#+\s*/, ''))}</h2>`);
+      continue;
+    }
+
+    const img = line.match(IMAGE_LINE_RE);
+    if (img) {
+      // Disallowed host → silently dropped (spec); never fetched server-side.
+      // Logging of drops is wired up in Task 4 (logger).
+      if (isAllowedImageUrl(img[2])) {
+        out.push(
+          `<figure><img src="${escapeHtml(img[2])}" alt="${escapeHtml(img[1])}" loading="lazy" referrerpolicy="no-referrer"></figure>`
+        );
+      }
+      continue;
+    }
+
+    out.push(`<p>${escapeHtml(line)}</p>`);
+  }
+  return out.join('\n');
+}
