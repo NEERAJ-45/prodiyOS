@@ -87,6 +87,7 @@ function trackSrc(index: number) {
   return `/audio/ambient/${PLAYLIST[index].toLowerCase()}.m4a`;
 }
 
+/** Returns null on success, otherwise the playback failure reason. */
 async function playSrc(audio: HTMLAudioElement, src: string) {
   if (audio.getAttribute("src") !== src || audio.error) {
     audio.src = src;
@@ -94,9 +95,10 @@ async function playSrc(audio: HTMLAudioElement, src: string) {
   }
   try {
     await audio.play();
-    return true;
-  } catch {
-    return false;
+    return null;
+  } catch (e) {
+    console.error("[music] play failed", src, "state:", audio.readyState, audio.error, e);
+    return e instanceof DOMException ? `${e.name}: ${e.message}` : String(e);
   }
 }
 
@@ -328,11 +330,12 @@ export default function PomodoroFocus() {
     a.addEventListener("loadedmetadata", () => setPlayerDuration(a.duration));
     a.addEventListener("ended", async () => {
       const next = (idxRef.current + 1) % PLAYLIST.length;
-      if (await playSrc(a, trackSrc(next))) {
+      const why = await playSrc(a, trackSrc(next));
+      if (why) {
+        toast.error("Music player", `${PLAYLIST[next]} could not be played — ${why}`);
+      } else {
         setCurrentIdx(next);
         setNowPlaying(PLAYLIST[next]);
-      } else {
-        toast.error("Music player", `${PLAYLIST[next]} could not be played.`);
       }
     });
     audioRef.current = a;
@@ -345,8 +348,9 @@ export default function PomodoroFocus() {
   async function startTrack(i: number) {
     const a = audioRef.current;
     if (!a) return;
-    if (!(await playSrc(a, trackSrc(i)))) {
-      toast.error("Music player", `${PLAYLIST[i]} could not be played.`);
+    const why = await playSrc(a, trackSrc(i));
+    if (why) {
+      toast.error("Music player", `${PLAYLIST[i]} could not be played — ${why}`);
       return;
     }
     setCurrentIdx(i);
