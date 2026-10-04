@@ -97,8 +97,13 @@ async function playSrc(audio: HTMLAudioElement, src: string) {
     await audio.play();
     return null;
   } catch (e) {
-    console.error("[music] play failed", src, "state:", audio.readyState, audio.error, e);
-    return e instanceof DOMException ? `${e.name}: ${e.message}` : String(e);
+    // Why did the element get no decodable bytes? Report what the URL actually serves.
+    const srcState = await fetch(src, { headers: { Range: "bytes=0-1" } })
+      .then((r) => `${r.status}${r.redirected ? ` → ${new URL(r.url).pathname}` : ""} ${r.headers.get("content-type")}`)
+      .catch((x) => `fetch failed: ${x instanceof Error ? x.message : String(x)}`);
+    console.error("[music] play failed", src, { readyState: audio.readyState, mediaError: audio.error, srcState }, e);
+    const reason = e instanceof DOMException ? `${e.name}: ${e.message}` : String(e);
+    return `${reason} [src: ${srcState}]`;
   }
 }
 
