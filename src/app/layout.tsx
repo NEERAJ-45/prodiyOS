@@ -4,10 +4,8 @@ import { ProfileProvider } from '@/components/providers/ProfileProvider';
 import { QueryProvider } from '@/components/providers/QueryProvider';
 import { Toaster } from '@/components/ui/toast';
 import { GeistSans, GeistMono } from 'geist/font';
-import { Caveat, Kalam, Fraunces, IBM_Plex_Mono, Plus_Jakarta_Sans } from 'next/font/google';
+import { Caveat, Kalam, Fraunces, IBM_Plex_Mono } from 'next/font/google';
 import './globals.css';
-
-const bodyFont = Plus_Jakarta_Sans({ subsets: ['latin'], variable: '--font-body', display: 'swap' });
 
 const caveat = Caveat({ subsets: ['latin'], variable: '--font-caveat', display: 'swap' });
 const kalam = Kalam({ subsets: ['latin'], weight: ['300', '400', '700'], variable: '--font-kalam', display: 'swap' });
@@ -22,7 +20,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`dark ${bodyFont.variable} ${GeistSans.variable} ${GeistMono.variable} ${ibmPlexMono.variable} ${caveat.variable} ${kalam.variable} ${fraunces.variable}`}>
+    <html lang="en" className={`dark ${GeistSans.variable} ${GeistMono.variable} ${ibmPlexMono.variable} ${caveat.variable} ${kalam.variable} ${fraunces.variable}`}>
       <body className="antialiased">
         <SessionProvider>
           <QueryProvider>

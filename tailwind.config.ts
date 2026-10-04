@@ -34,7 +34,7 @@ const config: Config = {
         lg: 'var(--radius)',
       },
       fontFamily: {
-        sans: ['var(--font-body)', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-geist-sans)', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
         emoji: ['Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'],
         mono: ['var(--font-geist-mono)', 'monospace'],
         handwritten: ['var(--font-caveat)', 'var(--font-kalam)', 'cursive'],

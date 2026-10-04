@@ -59,7 +59,6 @@ export interface QuestionItem {
   difficulty: string;
   link: string;
   isCustom?: boolean;
-  category?: string;
 }
 
 interface QuestionsTableProps {
@@ -67,6 +66,11 @@ interface QuestionsTableProps {
   storagePrefix: string;
   searchPlaceholder?: string;
   defaultCompletedIds?: number[];
+  sourceName?: string;
+}
+
+export function useDefaultCompletedIds(ids?: number[]) {
+  return ids ?? [];
 }
 
 const diffOrder: Record<string, number> = { EASY: 0, MEDIUM: 1, HARD: 2 };
@@ -232,8 +236,6 @@ export default function QuestionsTable({
             return (
               <a
                 href={link}
-                target="_blank"
-                rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-blue-400 bg-blue-950/40 border border-blue-800/40 rounded hover:bg-blue-950/60 transition-colors"
               >
                 Open <ExternalLink className="h-3 w-3" />
@@ -300,20 +302,6 @@ export default function QuestionsTable({
           minSize: 110,
         }),
       );
-      if (questions.some((q) => q.category)) {
-        const titleIdx = cols.findIndex((c) => (c as { id?: string }).id === 'title');
-        cols.splice(titleIdx + 1, 0, columnHelper.accessor('category', {
-          header: 'Category',
-          sortingFn: 'basic',
-          cell: (info) => (
-            <span className="inline-block rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-              {info.getValue()}
-            </span>
-          ),
-          size: 150,
-          minSize: 110,
-        }));
-      }
       return cols;
     },
     [columnHelper, srnoById, completedMap, toggleCompleted, notesMap, updateNote, handleDeleteItem, pagination.pageIndex, pagination.pageSize, updateCompletionDate, bookmarkMap, toggleBookmark]
