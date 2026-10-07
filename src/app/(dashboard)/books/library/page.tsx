@@ -114,6 +114,15 @@ const emptyFormState: BookFormState = {
   pdfFile: null,
 };
 
+type LibrarySearchHit = {
+  key: string;
+  title: string;
+  author?: string;
+  categoryLabel: string;
+  status?: { label: string; className: string };
+  href: string;
+};
+
 function groupBooksByCategory(): Record<string, BookEntry[]> {
   const grouped: Record<string, BookEntry[]> = {};
   for (const book of books) {
@@ -143,7 +152,7 @@ export default function LibraryPage() {
   const addBook = useAddBook();
 
   const grouped = React.useMemo(() => groupBooksByCategory(), []);
-  const uploadedBooks = booksData?.books ?? [];
+  const uploadedBooks = React.useMemo(() => booksData?.books ?? [], [booksData]);
   const q = searchQuery.toLowerCase().trim();
 
   const uploadedGrouped = React.useMemo(
@@ -151,36 +160,37 @@ export default function LibraryPage() {
     [uploadedBooks],
   );
 
-  const filteredGrouped = React.useMemo(() => {
-    if (!q) return grouped;
-    const result: Record<string, BookEntry[]> = {};
-    for (const [cat, catBooks] of Object.entries(grouped)) {
-      const filtered = catBooks.filter((b) =>
-        b.title.toLowerCase().includes(q),
-      );
-      if (filtered.length > 0) result[cat] = filtered;
-    }
-    return result;
-  }, [grouped, q]);
+  const searchResults = React.useMemo<LibrarySearchHit[]>(() => {    if (!q) return [];
 
-  const filteredUploadedGrouped = React.useMemo(() => {
-    if (!q) return uploadedGrouped;
-
-    const result: Record<string, BookData[]> = {};
-    for (const [category, categoryBooks] of Object.entries(uploadedGrouped)) {
-      const filtered = categoryBooks.filter((book) => {
+    const uploadedHits: LibrarySearchHit[] = uploadedBooks
+      .filter((book) => {
         const title = book.title.toLowerCase();
         const author = (book.author || "").toLowerCase();
         return title.includes(q) || author.includes(q);
-      });
+      })
+      .map((book) => ({
+        key: `uploaded-${book._id || book.id}`,
+        title: book.title,
+        author: book.author || undefined,
+        categoryLabel: getCategoryLabel(book.category || "other"),
+        status: bookStatusConfig[book.status],
+        href:
+          book.hasPdf || book.pdfPath
+            ? `/books/read/${book.id}`
+            : `/books/reading/${book.id}`,
+      }));
 
-      if (filtered.length > 0) {
-        result[category] = filtered;
-      }
-    }
+    const staticHits: LibrarySearchHit[] = books
+      .filter((book) => book.title.toLowerCase().includes(q))
+      .map((book) => ({
+        key: `static-${book.slug}`,
+        title: book.title,
+        categoryLabel: categoryLabels[book.category] || book.category,
+        href: `/books/${book.slug}`,
+      }));
 
-    return result;
-  }, [uploadedGrouped, q]);
+    return [...uploadedHits, ...staticHits];
+  }, [q, uploadedBooks]);
 
   function openAddDialog() {
     setForm(emptyFormState);
@@ -235,32 +245,78 @@ export default function LibraryPage() {
         </Button>
       </div>
 
-      <Card className="border-zinc-800 bg-zinc-900/30">
-        <CardContent className="p-5 flex items-center justify-between gap-4">
-          <div>
-            <p className="text-sm font-medium text-zinc-100">Uploaded books</p>
-            <p className="text-xs text-zinc-500 mt-1">
-              Books added from the upload form are grouped here by their
-              selected category.
-            </p>
-          </div>
-          <div className="text-right">
-            <p className="text-lg font-semibold text-zinc-100">
-              {uploadedBooks.length}
-            </p>
-            <p className="text-xs text-zinc-500">total uploaded</p>
-          </div>
-        </CardContent>
-      </Card>
-
       {isLoading ? (
         <div className="flex items-center justify-center py-10">
           <Loader2 className="h-6 w-6 animate-spin text-zinc-500" />
         </div>
-      ) : Object.keys(filteredUploadedGrouped).length > 0 ? (
+      ) : q ? (
+        searchResults.length > 0 ? (
+          <div className="space-y-4">
+            <p className="text-xs text-zinc-500">
+              {searchResults.length}{" "}
+              {searchResults.length === 1 ? "result" : "results"} for &quot;
+              {searchQuery.trim()}&quot;
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {searchResults.map((hit) => (
+                <Link key={hit.key} href={hit.href} className="block group">
+                  <Card className="border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900 transition-colors h-full">
+                    <CardHeader className="p-5 pb-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <CardTitle className="text-sm font-medium text-zinc-100 truncate">
+                            {hit.title}
+                          </CardTitle>
+                          {hit.author && (
+                            <CardDescription className="text-xs text-zinc-500 mt-0.5">
+                              {hit.author}
+                            </CardDescription>
+                          )}
+                        </div>
+                        {hit.status && (
+                          <Badge
+                            variant="outline"
+                            className={cn(
+                              "text-[10px] font-medium shrink-0",
+                              hit.status.className,
+                            )}
+                          >
+                            {hit.status.label}
+                          </Badge>
+                        )}
+                      </div>
+                    </CardHeader>
+                    <CardContent className="p-5 pt-0">
+                      <div className="text-[10px] text-zinc-600 uppercase tracking-wider">
+                        {hit.categoryLabel}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <Card className="border-zinc-800 bg-zinc-900/30">
+            <CardContent className="p-12 flex flex-col items-center justify-center text-center">
+              <BookOpen className="h-10 w-10 text-zinc-700 mb-3" />
+              <p className="text-sm font-medium text-zinc-400">
+                No books match your search
+              </p>
+              <p className="text-xs text-zinc-600 mt-1">
+                Try a different title or author
+              </p>
+            </CardContent>
+          </Card>
+        )
+      ) : (
+        <>
+          
+
+          {Object.keys(uploadedGrouped).length > 0 ? (
         <div className="space-y-6">
           {BOOK_CATEGORIES.map((category) => {
-            const booksInCategory = filteredUploadedGrouped[category.value];
+            const booksInCategory = uploadedGrouped[category.value];
             if (!booksInCategory?.length) return null;
 
             return (
@@ -344,9 +400,7 @@ export default function LibraryPage() {
           <CardContent className="p-12 flex flex-col items-center justify-center text-center">
             <BookOpen className="h-10 w-10 text-zinc-700 mb-3" />
             <p className="text-sm font-medium text-zinc-400">
-              {q
-                ? "No uploaded books match your search"
-                : "No uploaded books yet"}
+              No uploaded books yet
             </p>
             <p className="text-xs text-zinc-600 mt-1">
               Use Add Book to upload a PDF into the matching category
@@ -402,7 +456,7 @@ export default function LibraryPage() {
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           {categoryOrder.map((cat) => {
-            const catBooks = filteredGrouped[cat];
+            const catBooks = grouped[cat];
             if (!catBooks) return null;
             const colors = categoryColors[cat] || categoryColors["07-Others"];
             return (
@@ -447,6 +501,8 @@ export default function LibraryPage() {
             );
           })}
         </div>
+      )}
+        </>
       )}
 
       <BookFormDialog
