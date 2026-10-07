@@ -16,7 +16,7 @@ export async function DELETE() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { from, text } = body;
+    const { from, text, replyTo } = body;
 
     if (!from || !text) {
       return NextResponse.json(
@@ -25,8 +25,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    let reply: { id: string; from: string; text: string } | undefined;
+    if (replyTo && typeof replyTo === 'object') {
+      const { id, from: rFrom, text: rText } = replyTo as Record<string, unknown>;
+      if (
+        typeof id === 'string' &&
+        typeof rFrom === 'string' &&
+        typeof rText === 'string' &&
+        id &&
+        rFrom
+      ) {
+        reply = { id, from: rFrom, text: rText.slice(0, 200) };
+      }
+    }
+
     await connectToDatabase();
-    const message = await ChatMessage.create({ from, text });
+    const message = await ChatMessage.create({ from, text, replyTo: reply ?? null });
 
     return NextResponse.json({ ok: true, id: message._id.toString() });
   } catch (error) {
@@ -58,6 +72,8 @@ export async function GET(request: NextRequest) {
         from: m.from,
         text: m.text,
         createdAt: m.createdAt,
+        reactions: m.reactions ?? [],
+        replyTo: m.replyTo ?? null,
       })),
     });
   } catch (error) {
