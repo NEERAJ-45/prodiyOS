@@ -185,9 +185,6 @@ export function ChatThread({ username }: Props) {
           <h1 className="font-semibold text-[15px] leading-tight truncate text-foreground">
             Group Chat
           </h1>
-          <p className="text-[13px] text-muted-foreground leading-tight">
-            {messages.length} message{messages.length === 1 ? '' : 's'} · online
-          </p>
         </div>
         <button
           onClick={flushMessages}
