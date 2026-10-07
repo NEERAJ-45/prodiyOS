@@ -41,3 +41,6 @@ yarn-error.log*
 next-env.d.ts
 lint_output.txt
 AUDIT_REPORT.md
+
+# Reader's Corner local logs
+logs/

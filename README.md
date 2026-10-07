@@ -100,3 +100,31 @@ Configure secrets in GitHub repo → Settings → Secrets → Actions.
 ## License
 
 MIT
+
+## Reader's Corner
+
+Personal reader mode for Medium articles at `/reader`.
+
+- Paste your access key + a `medium.com` article URL; the server extracts the
+  article and renders a clean, escaped reading view.
+- Saved articles are searchable from the **Library** tab; each article has a
+  find-in-page box.
+- Set the access key env var before running:
+
+```bash
+export READER_KEY='choose-a-long-random-secret'   # PowerShell: $env:READER_KEY="..."
+npm run dev                                        # open http://localhost:3000/reader
+```
+
+On Vercel: add `READER_KEY` in Project → Settings → Environment Variables, then redeploy.
+
+**Logs (failure diagnosis):** structured lines go to stdout (Vercel → Project → Logs)
+and best-effort to `logs/reader.log` locally (`/tmp/reader.log` on Vercel,
+override with `READER_LOG_DIR`). Each API response has an `X-Request-Id` header
+matched to its log line. The access key is never logged.
+
+**Known limitations:** paywalled/member-only articles extract little or nothing
+(by design — no paywall bypass); some images are missing (only `miro.medium.com`
+and `cdn-images-1.medium.com` are allowlisted); Medium may rate-limit datacenter
+IPs; local runs need `medium.com` reachable from your machine (on a blocked
+network, deploy instead — the server fetches, not your browser).
