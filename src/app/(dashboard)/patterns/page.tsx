@@ -16,7 +16,7 @@ import {
   Loader2, Search, ChevronLeft, ChevronRight,
   ChevronsLeft, ChevronsRight, AlertCircle, ListOrdered, Info,
   BookOpen, GitBranch, Layers, Trash2,   Download,
-  Clipboard, ListChecks,
+  Clipboard, ListChecks, Building2,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -27,6 +27,7 @@ import {
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { toast } from "@/components/ui/toast";
 import { striverSheet, striverTotalProblems } from "@/data/striver-sheet";
+import { companies, companyQuestions } from "@/data/company-dsa";
 import { cn } from "@/lib/utils";
 import dynamic from "next/dynamic";
 import { useCustomRoadmapsQuery, useDeleteCustomRoadmap } from "@/hooks/use-custom-roadmaps";
@@ -36,6 +37,13 @@ import type { QuestionItem } from "@/components/roadmaps/QuestionsTable";
 import { escapeCsv, buildCsv, copyToClipboard } from "@/lib/export-utils";
 
 const QuestionsTable = dynamic(() => import("@/components/roadmaps/QuestionsTable"), { ssr: false });
+
+const companyQuestionItems = companyQuestions.map((q) => ({
+  id: q.id,
+  title: q.title,
+  difficulty: q.platform,
+  link: q.link,
+}));
 
 interface PatternRow {
   key: string;
@@ -66,10 +74,11 @@ function useDebounce<T>(value: T, delay: number): T {
 
 function PatternsContent() {
   const searchParams = useSearchParams();
-  const [view, setView] = useState<"patterns" | "striver" | "custom">("patterns");
+  const [view, setView] = useState<"patterns" | "striver" | "custom" | "companies">("patterns");
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [selectedCustomSlug, setSelectedCustomSlug] = useState<string | null>(null);
+  const [selectedCompanySlug, setSelectedCompanySlug] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 15 });
 
@@ -254,6 +263,10 @@ function PatternsContent() {
     ? customRoadmaps.find((r) => r.slug === selectedCustomSlug) ?? null
     : null;
 
+  const selectedCompany = view === "companies" && selectedCompanySlug
+    ? companies.find((c) => c.slug === selectedCompanySlug) ?? null
+    : null;
+
   // ---- Early returns for drill-downs ----
   if (striverDay) {
     return (
@@ -314,6 +327,43 @@ function PatternsContent() {
     );
   }
 
+  if (selectedCompany) {
+    return (
+      <div className="flex h-full flex-col p-4 md:p-6">
+        <div className="mb-4">
+          <button
+            onClick={() => setSelectedCompanySlug(null)}
+            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-2"
+          >
+            <ChevronLeft size={14} />
+            Back to Companies
+          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+              {selectedCompany.name}
+            </h1>
+            <a
+              href={selectedCompany.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold border border-border text-blue-400 bg-blue-950/40 hover:bg-blue-950/70 transition-colors"
+            >
+              DSA Drive <Download size={12} />
+            </a>
+          </div>
+          {selectedCompany.tricks && (
+            <p className="mt-1 text-sm text-muted-foreground">{selectedCompany.tricks}</p>
+          )}
+        </div>
+        <QuestionsTable
+          questions={companyQuestionItems}
+          storagePrefix={`company-${selectedCompany.slug}`}
+          searchPlaceholder="Search questions..."
+        />
+      </div>
+    );
+  }
+
   // ---- Toggle + Search bar (shared) ----
   const toggleBar = (
     <div className="flex items-center gap-2 mb-4">
@@ -338,20 +388,26 @@ function PatternsContent() {
           <BookOpen className="h-3.5 w-3.5" />
           Striver Sheet
         </button>
-        {customRoadmaps.map((r) => (
-          <button
-            key={r.slug}
-            title={r.title}
-            onClick={() => { setView("custom"); setSelectedKey(null); setSelectedDay(null); setSelectedCustomSlug(r.slug); setSearch(""); }}
-            className={cn(
-              "flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap",
-              selectedCustomSlug === r.slug ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <ListChecks className="h-3.5 w-3.5" />
-            <span className="max-w-[120px] truncate">{r.title}</span>
-          </button>
-        ))}
+        <button
+          onClick={() => { setView("custom"); setSelectedKey(null); setSelectedDay(null); setSelectedCustomSlug(null); setSearch(""); }}
+          className={cn(
+            "flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap",
+            view === "custom" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <ListChecks className="h-3.5 w-3.5" />
+          Custom
+        </button>
+        <button
+          onClick={() => { setView("companies"); setSelectedKey(null); setSelectedDay(null); setSelectedCustomSlug(null); setSelectedCompanySlug(null); setSearch(""); }}
+          className={cn(
+            "flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap",
+            view === "companies" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <Building2 className="h-3.5 w-3.5" />
+          Companies
+        </button>
       </div>
 
       <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 transition-all duration-200 focus-within:border-primary/50 focus-within:bg-background focus-within:ring-2 focus-within:ring-primary/20 flex-1 max-w-xs">
@@ -359,7 +415,7 @@ function PatternsContent() {
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder={view === "patterns" ? "Search patterns..." : view === "striver" ? "Search topics..." : "Search roadmaps..."}
+          placeholder={view === "patterns" ? "Search patterns..." : view === "striver" ? "Search topics..." : view === "companies" ? "Search companies..." : "Search roadmaps..."}
           className="w-full bg-transparent py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
         />
         {isFetching && (
@@ -718,6 +774,81 @@ function PatternsContent() {
                       </motion.tr>
                     );
                   })
+                )}
+              </AnimatePresence>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  }
+
+  // ============================
+  // COMPANIES VIEW
+  // ============================
+  if (view === "companies") {
+    const filteredCompanies = companies.filter((c) =>
+      c.name.toLowerCase().includes(search.toLowerCase()) ||
+      c.tricks.toLowerCase().includes(search.toLowerCase())
+    );
+
+    return (
+      <div className="flex h-full mt10 flex-col p-4 md:p-6">
+        <div className="mb-4">
+          <div className="flex items-center gap-2">
+            <Building2 className="h-5 w-5 text-foreground" />
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+              Company-wise DSA
+            </h1>
+          </div>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {companies.length} companies &middot; {companyQuestions.length} questions each
+          </p>
+        </div>
+
+        {toggleBar}
+
+        <div className="overflow-x-auto rounded-lg border border-border relative">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border bg-muted/50">
+                <th className="px-4 py-2.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground text-center" style={{ width: 44 }}>#</th>
+                <th className="px-4 py-2.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground text-left">Company</th>
+                <th className="px-4 py-2.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground text-left">Focus Areas</th>
+                <th className="px-4 py-2.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground text-center">Questions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <AnimatePresence>
+                {filteredCompanies.length === 0 ? (
+                  <motion.tr key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                    <td colSpan={4} className="px-4 py-16">
+                      <div className="flex flex-col items-center justify-center gap-3 text-muted-foreground">
+                        <ListOrdered className="h-8 w-8" />
+                        <p className="text-sm">No companies match your search</p>
+                      </div>
+                    </td>
+                  </motion.tr>
+                ) : (
+                  filteredCompanies.map((company, i) => (
+                    <motion.tr
+                      key={company.slug}
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: i * 0.03, ease: "easeOut" }}
+                      className="border-b border-border transition-colors hover:bg-muted/30 cursor-pointer last:border-0"
+                      onClick={() => setSelectedCompanySlug(company.slug)}
+                    >
+                      <td className="px-4 py-2.5 text-center text-xs text-muted-foreground tabular-nums">{i + 1}</td>
+                      <td className="px-4 py-2.5 text-left">
+                        <span className="font-medium text-foreground text-sm">{company.name}</span>
+                      </td>
+                      <td className="px-4 py-2.5 text-left text-xs text-muted-foreground max-w-[420px] truncate">
+                        {company.tricks}
+                      </td>
+                      <td className="px-4 py-2.5 text-center text-xs font-semibold text-foreground">{companyQuestions.length}</td>
+                    </motion.tr>
+                  ))
                 )}
               </AnimatePresence>
             </tbody>

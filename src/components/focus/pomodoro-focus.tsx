@@ -20,6 +20,7 @@ import {
   SkipForward,
 } from "lucide-react";
 import { notify } from "@/lib/notifications";
+import { toast } from "@/components/ui/toast";
 type AmbientSoundKey = "rain" | "ocean" | "wind" | "fire";
 
 type AmbientSoundState = Record<AmbientSoundKey, { on: boolean; vol: number }>;
@@ -82,27 +83,141 @@ type SceneKey = keyof typeof SCENES;
 
 const PLAYLIST = ["Lofi", "Jazz", "Rain"];
 
-const AUDIO_EXTENSIONS = ["m4a", "mp4"] as const;
-
-function getTrackSrc(index: number, extension = "m4a") {
-  return `/audio/ambient/${PLAYLIST[index].toLowerCase()}.${extension}`;
+function trackSrc(index: number) {
+  return `/audio/ambient/${PLAYLIST[index].toLowerCase()}.m4a`;
 }
 
-async function playWithFallback(
-  audio: HTMLAudioElement,
-  srcBase: string,
-  extensions: readonly string[] = AUDIO_EXTENSIONS,
-) {
-  for (const extension of extensions) {
-    audio.src = `${srcBase}.${extension}`;
+/** Returns null on success, otherwise the playback failure reason. */
+async function playSrc(audio: HTMLAudioElement, src: string) {
+  if (audio.getAttribute("src") !== src || audio.error) {
+    audio.src = src;
     audio.load();
-    try {
-      await audio.play();
-      return;
-    } catch {
-      continue;
+  }
+  try {
+    await audio.play();
+    return null;
+  } catch (e) {
+    // Why did the element get no decodable bytes? Report what the URL actually serves.
+    const srcState = await fetch(src, { headers: { Range: "bytes=0-1" } })
+      .then((r) => `${r.status}${r.redirected ? ` → ${new URL(r.url).pathname}` : ""} ${r.headers.get("content-type")}`)
+      .catch((x) => `fetch failed: ${x instanceof Error ? x.message : String(x)}`);
+    console.error("[music] play failed", src, { readyState: audio.readyState, mediaError: audio.error, srcState }, e);
+    const reason = e instanceof DOMException ? `${e.name}: ${e.message}` : String(e);
+    return `${reason} [src: ${srcState}]`;
+  }
+}
+
+/* Synthesized ambience — no audio files involved. */
+const AMBIENT_SHAPE: Record<
+  AmbientSoundKey,
+  {
+    brown: boolean;
+    type: BiquadFilterType;
+    freq: number;
+    q?: number;
+    lfo?: { rate: number; depth: number; on: "gain" | "freq" };
+  }
+> = {
+  rain: {
+    brown: false,
+    type: "highpass",
+    freq: 900,
+    lfo: { rate: 0.2, depth: 0.1, on: "gain" },
+  },
+  ocean: {
+    brown: true,
+    type: "lowpass",
+    freq: 480,
+    lfo: { rate: 0.08, depth: 0.4, on: "gain" },
+  },
+  wind: {
+    brown: true,
+    type: "bandpass",
+    freq: 420,
+    q: 1.2,
+    lfo: { rate: 0.15, depth: 240, on: "freq" },
+  },
+  fire: { brown: true, type: "lowpass", freq: 1100 },
+};
+
+function noiseBuffer(ctx: AudioContext, seconds: number, brown: boolean, crackle = false) {
+  const len = Math.floor(ctx.sampleRate * seconds);
+  const buffer = ctx.createBuffer(1, len, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  let last = 0;
+  for (let i = 0; i < len; i++) {
+    const white = Math.random() * 2 - 1;
+    if (brown) {
+      last = (last + 0.02 * white) / 1.02;
+      data[i] = last * 3.5;
+    } else {
+      data[i] = white;
     }
   }
+  if (crackle) {
+    let i = 0;
+    while (i < len) {
+      i += Math.floor((0.05 + Math.random() * 0.3) * ctx.sampleRate);
+      const span = Math.floor((0.003 + Math.random() * 0.012) * ctx.sampleRate);
+      const amp = 0.3 + Math.random() * 0.5;
+      for (let j = 0; j < span && i + j < len; j++) {
+        data[i + j] += amp * Math.exp((-3 * j) / span) * Math.cos(j * 0.35);
+      }
+      i += span;
+    }
+  }
+  return buffer;
+}
+
+type AmbientVoice = { gain: GainNode; stop: () => void };
+
+function startAmbient(ctx: AudioContext, key: AmbientSoundKey): AmbientVoice {
+  const shape = AMBIENT_SHAPE[key];
+  const source = ctx.createBufferSource();
+  source.buffer = noiseBuffer(ctx, key === "fire" ? 11.3 : 4, shape.brown, key === "fire");
+  source.loop = true;
+
+  const filter = ctx.createBiquadFilter();
+  filter.type = shape.type;
+  filter.frequency.value = shape.freq;
+  if (shape.q) filter.Q.value = shape.q;
+
+  const swell = ctx.createGain();
+  swell.gain.value = 1;
+
+  const out = ctx.createGain();
+  out.gain.value = 0;
+
+  let lfo: OscillatorNode | null = null;
+  if (shape.lfo) {
+    lfo = ctx.createOscillator();
+    const depth = ctx.createGain();
+    lfo.frequency.value = shape.lfo.rate;
+    depth.gain.value = shape.lfo.depth;
+    lfo.connect(depth);
+    if (shape.lfo.on === "freq") depth.connect(filter.frequency);
+    else depth.connect(swell.gain);
+    lfo.start();
+  }
+
+  source.connect(filter);
+  filter.connect(swell);
+  swell.connect(out);
+  out.connect(ctx.destination);
+  source.start();
+
+  return {
+    gain: out,
+    stop() {
+      out.gain.value = 0;
+      try {
+        source.stop();
+        lfo?.stop();
+      } catch {}
+      source.disconnect();
+      out.disconnect();
+    },
+  };
 }
 
 export default function PomodoroFocus() {
@@ -152,21 +267,81 @@ export default function PomodoroFocus() {
     idxRef.current = currentIdx;
   });
 
+  // ---- dragging the music player ----
+  const playerRef = useRef<HTMLDivElement>(null);
+  const [playerPos, setPlayerPos] = useState<{ left: number; top: number } | null>(null);
+  const dragRef = useRef<{
+    startX: number;
+    startY: number;
+    dx: number;
+    dy: number;
+    moved: boolean;
+  } | null>(null);
+
+  function onPlayerDragStart(e: React.PointerEvent<HTMLDivElement>) {
+    const el = playerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    dragRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      dx: e.clientX - rect.left,
+      dy: e.clientY - rect.top,
+      moved: false,
+    };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  }
+
+  function onPlayerDragMove(e: React.PointerEvent<HTMLDivElement>) {
+    const drag = dragRef.current;
+    const el = playerRef.current;
+    const root = emberRef.current;
+    if (!drag || !el || !root) return;
+    if (
+      !drag.moved &&
+      Math.abs(e.clientX - drag.startX) + Math.abs(e.clientY - drag.startY) <= 4
+    ) {
+      return;
+    }
+    drag.moved = true;
+    const bounds = root.getBoundingClientRect();
+    setPlayerPos({
+      left: Math.min(
+        Math.max(0, e.clientX - bounds.left - drag.dx),
+        bounds.width - el.offsetWidth,
+      ),
+      top: Math.min(
+        Math.max(0, e.clientY - bounds.top - drag.dy),
+        bounds.height - el.offsetHeight,
+      ),
+    });
+  }
+
+  function onPlayerHeadClick() {
+    const drag = dragRef.current;
+    if (drag?.moved) {
+      drag.moved = false;
+      return;
+    }
+    setPlayerOpen((o) => !o);
+  }
+
   useEffect(() => {
     const a = new Audio();
     a.preload = "auto";
-    a.src = getTrackSrc(idxRef.current);
+    a.src = trackSrc(idxRef.current);
     a.load();
     a.addEventListener("timeupdate", () => setPlayerProgress(a.currentTime));
     a.addEventListener("loadedmetadata", () => setPlayerDuration(a.duration));
-    a.addEventListener("ended", () => {
+    a.addEventListener("ended", async () => {
       const next = (idxRef.current + 1) % PLAYLIST.length;
-      setCurrentIdx(next);
-      setNowPlaying(PLAYLIST[next]);
-      playWithFallback(
-        a,
-        `/audio/ambient/${PLAYLIST[next].toLowerCase()}`,
-      ).catch(console.error);
+      const why = await playSrc(a, trackSrc(next));
+      if (why) {
+        toast.error("Music player", `${PLAYLIST[next]} could not be played — ${why}`);
+      } else {
+        setCurrentIdx(next);
+        setNowPlaying(PLAYLIST[next]);
+      }
     });
     audioRef.current = a;
     return () => {
@@ -175,15 +350,23 @@ export default function PomodoroFocus() {
     };
   }, []);
 
+  async function startTrack(i: number) {
+    const a = audioRef.current;
+    if (!a) return;
+    const why = await playSrc(a, trackSrc(i));
+    if (why) {
+      toast.error("Music player", `${PLAYLIST[i]} could not be played — ${why}`);
+      return;
+    }
+    setCurrentIdx(i);
+    setNowPlaying(PLAYLIST[i]);
+  }
+
   function togglePlayer() {
     const a = audioRef.current;
     if (!a) return;
     if (a.paused) {
-      playWithFallback(
-        a,
-        `/audio/ambient/${PLAYLIST[idxRef.current].toLowerCase()}`,
-      ).catch(console.error);
-      setNowPlaying(PLAYLIST[idxRef.current]);
+      void startTrack(idxRef.current);
     } else {
       a.pause();
       setNowPlaying(null);
@@ -197,12 +380,7 @@ export default function PomodoroFocus() {
       setNowPlaying(null);
       return;
     }
-    setCurrentIdx(i);
-    setNowPlaying(PLAYLIST[i]);
-    a.currentTime = 0;
-    playWithFallback(a, `/audio/ambient/${PLAYLIST[i].toLowerCase()}`).catch(
-      (e) => console.error("play failed:", e),
-    );
+    void startTrack(i);
   }
   function nextTrack() {
     playTrack((currentIdx + 1) % PLAYLIST.length);
@@ -227,15 +405,7 @@ export default function PomodoroFocus() {
     sceneColorRef.current = SCENES[scene].soft;
   });
 
-  const soundNodesRef = useRef<
-    | Record<AmbientSoundKey, { audio: HTMLAudioElement; key: AmbientSoundKey }>
-    | Partial<
-        Record<
-          AmbientSoundKey,
-          { audio: HTMLAudioElement; key: AmbientSoundKey }
-        >
-      >
-  >({});
+  const soundNodesRef = useRef<Partial<Record<AmbientSoundKey, AmbientVoice>>>({});
   const audioCtxRef = useRef<AudioContext | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const emberRef = useRef<HTMLDivElement>(null);
@@ -265,49 +435,38 @@ export default function PomodoroFocus() {
     } catch {}
   }
 
-  async function createAmbientNode(key: AmbientSoundKey) {
-    const audio = new Audio(`/audio/ambient/${key}.m4a`);
-    audio.loop = true;
-    audio.volume = 0;
-    const node = { audio, key };
-    soundNodesRef.current[key] = node;
-    await playWithFallback(audio, `/audio/ambient/${key}`);
-    return node;
-  }
-
-  async function toggleSound(key: AmbientSoundKey) {
+  function toggleSound(key: AmbientSoundKey) {
     const willBeOn = !soundsRef.current[key].on;
     if (willBeOn) {
-      const node = await createAmbientNode(key);
-      node.audio.volume = soundsRef.current[key].vol;
+      const ctx = getAudioCtx();
+      try {
+        ctx.resume();
+      } catch {}
+      const voice = startAmbient(ctx, key);
+      voice.gain.gain.value = soundsRef.current[key].vol;
+      soundNodesRef.current[key] = voice;
     } else {
-      const node = soundNodesRef.current[key];
-      if (node) {
-        node.audio.volume = 0;
-        node.audio.pause();
-      }
+      soundNodesRef.current[key]?.stop();
+      delete soundNodesRef.current[key];
     }
     setSounds((s) => ({ ...s, [key]: { ...s[key], on: willBeOn } }));
   }
 
   function setVolume(key: AmbientSoundKey, vol: number) {
     setSounds((s) => ({ ...s, [key]: { ...s[key], vol } }));
-    const node = soundNodesRef.current[key];
-    if (node && soundsRef.current[key].on) {
-      node.audio.volume = vol;
+    if (soundsRef.current[key].on) {
+      const voice = soundNodesRef.current[key];
+      if (voice) voice.gain.gain.value = vol;
     }
   }
 
   useEffect(() => {
     const nodes = soundNodesRef.current;
     return () => {
-      Object.values(nodes).forEach((n) => {
-        try {
-          n.audio.pause();
-          n.audio.src = "";
-        } catch {}
-      });
-      if (audioCtxRef.current) audioCtxRef.current.close();
+      Object.values(nodes).forEach((n) => n?.stop());
+      try {
+        audioCtxRef.current?.close();
+      } catch {}
     };
   }, []);
 
@@ -693,6 +852,8 @@ export default function PomodoroFocus() {
           display: flex; align-items: center; gap: 6px;
         }
         .immersive-exit:hover { color: rgba(239,234,224,0.8); }
+        .ember-root:not(:fullscreen) .immersive-exit { display: none; }
+        .ember-root:fullscreen .ember-brand { display: none; }
 
         /* music player — glassmorphed */
         .music-player {
@@ -706,10 +867,12 @@ export default function PomodoroFocus() {
         }
         .mp-head {
           display: flex; align-items: center; gap: 8px;
-          padding: 10px 14px; cursor: pointer;
+          padding: 10px 14px; cursor: grab;
           color: rgba(239,234,224,0.7); font-size: 12px;
           transition: background 160ms ease;
+          touch-action: none; user-select: none;
         }
+        .mp-head:active { cursor: grabbing; }
         .mp-head:hover { background: rgba(255,255,255,0.05); }
         .mp-now { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .mp-toggle { font-size: 10px; opacity: 0.5; }
@@ -1054,8 +1217,21 @@ export default function PomodoroFocus() {
       </div>
 
       {/* MUSIC PLAYER */}
-      <div className="music-player">
-        <div className="mp-head" onClick={() => setPlayerOpen((o) => !o)}>
+      <div
+        ref={playerRef}
+        className="music-player"
+        style={
+          playerPos
+            ? { left: playerPos.left, top: playerPos.top, right: "auto" }
+            : undefined
+        }
+      >
+        <div
+          className="mp-head"
+          onClick={onPlayerHeadClick}
+          onPointerDown={onPlayerDragStart}
+          onPointerMove={onPlayerDragMove}
+        >
           <Music size={13} />
           <span className="mp-now">{nowPlaying ?? "Music"}</span>
           <span className="mp-toggle">{playerOpen ? "▾" : "▸"}</span>

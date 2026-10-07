@@ -27,6 +27,6 @@ export const proxy = auth((req) => {
 });
 
 export const config = {
-  // Protect everything except API routes, static assets, and favicon
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
+  // Protect everything except API routes, public assets, and favicon
+  matcher: ['/((?!api|audio|_next/static|_next/image|favicon.ico).*)'],
 };
