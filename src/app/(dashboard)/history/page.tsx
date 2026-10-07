@@ -6,7 +6,6 @@ import { useDailyHistoryQuery, useActivityLogQuery, useClearActivityLog } from '
 import {
   CalendarDays,
   CheckCircle2,
-  Circle,
   ChevronLeft,
   ChevronRight,
   FileText,
@@ -21,7 +20,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { cn, formatRelativeTime } from '@/lib/utils';
+import { formatRelativeTime } from '@/lib/utils';
 import { useProfile } from '@/components/providers/ProfileProvider';
 import Link from 'next/link';
 import { toast } from '@/components/ui/toast';
@@ -33,26 +32,6 @@ interface DailyRecord {
 }
 
 const ITEMS_PER_PAGE = 10;
-
-const categoryMap: Record<string, string> = {
-  dsa: 'DSA',
-  sd: 'System Design',
-  cs: 'Core CS',
-  proj: 'Project',
-  rev: 'Revision',
-};
-
-function getCategoryLabel(taskId: string): string {
-  const prefix = taskId.split('-')[0];
-  return categoryMap[prefix] || 'Other';
-}
-
-function meetsRequirement(ids: string[]): { dsa: boolean; sd: boolean; other: boolean } {
-  const dsa = ids.some((id) => id.startsWith('dsa-'));
-  const sd = ids.some((id) => id.startsWith('sd-'));
-  const other = ids.some((id) => id.startsWith('cs-') || id.startsWith('proj-') || id.startsWith('rev-'));
-  return { dsa, sd, other };
-}
 
 interface ActivityItem {
   text: string;
@@ -170,8 +149,6 @@ export default function HistoryPage() {
                 <>
                   <div className="space-y-3">
                     {pageRecords.map((record) => {
-                      const req = meetsRequirement(record.completedTaskIds);
-                      const allMet = req.dsa && req.sd && req.other;
                       const expanded = expandedDate === record.date;
                       const d = new Date(record.date + 'T00:00:00');
                       const dayLabel = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
@@ -179,49 +156,19 @@ export default function HistoryPage() {
                       return (
                         <Card
                           key={record.date}
-                          className={cn(
-                            'bg-card/50 border-zinc-800 transition-all cursor-pointer',
-                            allMet ? 'border-emerald-800/40' : 'border-red-800/20',
-                          )}
+                          className="bg-card/50 border-zinc-800 transition-all cursor-pointer"
                           onClick={() => setExpandedDate(expanded ? null : record.date)}
                         >
                           <CardContent className="p-4">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-3">
-                                <div className={cn(
-                                  'flex h-9 w-9 items-center justify-center rounded-full',
-                                  allMet ? 'bg-emerald-500/10' : 'bg-red-500/10',
-                                )}>
-                                  {allMet ? (
-                                    <CheckCircle2 className="h-5 w-5 text-emerald-400" />
-                                  ) : (
-                                    <Circle className="h-5 w-5 text-red-400" />
-                                  )}
+                                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-muted">
+                                  <CheckCircle2 className="h-5 w-5 text-zinc-400" />
                                 </div>
                                 <div>
                                   <p className="text-sm font-medium text-zinc-200">{dayLabel}</p>
                                   <p className="text-xs text-zinc-500">{record.completedTaskIds.length} task{record.completedTaskIds.length !== 1 ? 's' : ''} completed</p>
                                 </div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Badge variant="outline" className={cn(
-                                  'text-[10px] px-1.5 py-0',
-                                  req.dsa ? 'bg-blue-950 text-blue-300 border-blue-800' : 'bg-zinc-800 text-zinc-600 border-zinc-700',
-                                )}>
-                                  DSA {req.dsa ? '✓' : '✗'}
-                                </Badge>
-                                <Badge variant="outline" className={cn(
-                                  'text-[10px] px-1.5 py-0',
-                                  req.sd ? 'bg-emerald-950 text-emerald-300 border-emerald-800' : 'bg-zinc-800 text-zinc-600 border-zinc-700',
-                                )}>
-                                  SD {req.sd ? '✓' : '✗'}
-                                </Badge>
-                                <Badge variant="outline" className={cn(
-                                  'text-[10px] px-1.5 py-0',
-                                  req.other ? 'bg-purple-950 text-purple-300 border-purple-800' : 'bg-zinc-800 text-zinc-600 border-zinc-700',
-                                )}>
-                                  Other {req.other ? '✓' : '✗'}
-                                </Badge>
                               </div>
                             </div>
 
@@ -235,7 +182,7 @@ export default function HistoryPage() {
                                     <div className="flex flex-wrap gap-1.5">
                                       {record.completedTaskIds.map((id) => (
                                         <Badge key={id} variant="outline" className="text-[10px] px-1.5 py-0 bg-zinc-800 text-zinc-400 border-zinc-700">
-                                          {getCategoryLabel(id)} — {id}
+                                          {id}
                                         </Badge>
                                       ))}
                                     </div>

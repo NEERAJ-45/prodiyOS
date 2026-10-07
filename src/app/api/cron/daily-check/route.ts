@@ -8,13 +8,6 @@ import { sendEmail } from '@/lib/email';
 
 const CRON_SECRET = process.env.CRON_SECRET || '';
 
-function meetsRequirement(ids: string[]): boolean {
-  const hasDsa = ids.some((id) => id.startsWith('dsa-'));
-  const hasSd = ids.some((id) => id.startsWith('sd-'));
-  const hasOther = ids.some((id) => id.startsWith('cs-') || id.startsWith('proj-') || id.startsWith('rev-'));
-  return hasDsa && hasSd && hasOther;
-}
-
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -33,10 +26,6 @@ export async function GET(request: Request) {
     const Profile = conn.model<IProfile>('Profile');
 
     const todayRecord = await DailyRecord.findOne({ date: today }).lean();
-
-    if (todayRecord && meetsRequirement(todayRecord.completedTaskIds)) {
-      return NextResponse.json({ status: 'ok', message: 'Requirements met — no email sent' });
-    }
 
     const profiles = await Profile.find({}).lean();
     if (profiles.length === 0) {
