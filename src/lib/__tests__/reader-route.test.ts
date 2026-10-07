@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 
-// Must run before the route module is imported: the route calls
-// assertReaderKeyConfigured() at module top level (fail-fast requirement).
+// Must run before the route module is imported: handlers call
+// assertReaderKeyConfigured() per request when READER_KEY is missing.
 vi.hoisted(() => {
   process.env.READER_KEY = 'correct-horse-battery';
 });

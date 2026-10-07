@@ -7,8 +7,6 @@ import { getDbUri } from '../../db/request';
 
 export const runtime = 'nodejs';
 
-assertReaderKeyConfigured();
-
 function respond(body: unknown, status: number, reqId: string): NextResponse {
   return NextResponse.json(body, { status, headers: { 'X-Request-Id': reqId } });
 }
@@ -22,6 +20,8 @@ function safeRegex(q: string): RegExp {
 export async function GET(request: Request): Promise<NextResponse> {
   const reqId = Math.random().toString(36).slice(2, 10);
   try {
+    // Checked per-request so `next build` works without READER_KEY set.
+    assertReaderKeyConfigured();
     const key = request.headers.get('x-reader-key') || '';
     if (!checkKey(key)) {
       logReaderEvent('warn', 'key-check', 'invalid key on list', { reqId });

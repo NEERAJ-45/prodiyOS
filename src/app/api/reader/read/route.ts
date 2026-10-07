@@ -14,9 +14,6 @@ import { getDbUri } from '../../db/request';
 
 export const runtime = 'nodejs';
 
-// Fail fast at boot/build if READER_KEY was never configured.
-assertReaderKeyConfigured();
-
 const FRIENDLY = "Couldn't extract it, likely paywalled or blocked";
 
 function respond(body: unknown, status: number, reqId: string): NextResponse {
@@ -26,6 +23,8 @@ function respond(body: unknown, status: number, reqId: string): NextResponse {
 export async function POST(request: Request): Promise<NextResponse> {
   const reqId = Math.random().toString(36).slice(2, 10);
   try {
+    // Checked per-request so `next build` works without READER_KEY set.
+    assertReaderKeyConfigured();
     const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
     const key = typeof body.key === 'string' ? body.key : '';
     const url = typeof body.url === 'string' ? body.url : '';
