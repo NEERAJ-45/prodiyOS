@@ -1,20 +1,21 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, useCallback } from 'react';
+import gsap from 'gsap';
 import { MessageBubble } from './MessageBubble';
 import { MessageInput } from './MessageInput';
-import { Users, MessageCircle, Trash2, ArrowDown } from 'lucide-react';
+import { Users, MessageCircle, Trash2, ArrowDown, Lock, Reply, SmilePlus, X } from 'lucide-react';
 import { notify } from '@/lib/notifications';
-
-interface ChatMsg {
-  id: string;
-  from: string;
-  text: string;
-  createdAt: string;
-}
+import { toggleReaction as applyToggle } from '@/lib/chat-reactions';
+import { prefersReducedMotion } from '@/lib/anim';
+import { cn } from '@/lib/utils';
+import type { ChatMsg } from './types';
+import Picker from '@emoji-mart/react';
+import data from '@emoji-mart/data';
 
 interface Props {
   username: string;
+  onLock?: () => void;
 }
 
 function DateSeparator({ date }: { date: string }) {
@@ -44,63 +45,107 @@ function isNearBottom(el: HTMLElement) {
   return el.scrollHeight - el.scrollTop - el.clientHeight < 120;
 }
 
-export function ChatThread({ username }: Props) {
+function SheetButton({
+  icon,
+  label,
+  onClick,
+  danger,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  onClick: () => void;
+  danger?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'w-full flex items-center gap-3 px-3 h-12 rounded-xl text-[15px] transition-colors cursor-pointer',
+        'hover:bg-muted',
+        danger ? 'text-destructive' : 'text-foreground'
+      )}
+    >
+      {icon}
+      {label}
+    </button>
+  );
+}
+
+export function ChatThread({ username, onLock }: Props) {
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [sending, setSending] = useState(false);
   const [atBottom, setAtBottom] = useState(true);
   const [newCount, setNewCount] = useState(0);
+  const [replyTo, setReplyTo] = useState<ChatMsg | null>(null);
+  const [sheetFor, setSheetFor] = useState<ChatMsg | null>(null);
+  const [pickerFor, setPickerFor] = useState<ChatMsg | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const lastFetchRef = useRef<string>('');
   const bottomRef = useRef<HTMLDivElement>(null);
   const pausedRef = useRef(false);
   const messagesRef = useRef<ChatMsg[]>([]);
+  const animatedRef = useRef<Set<string>>(new Set());
+  const loadedOnceRef = useRef(false);
 
   const scrollToBottom = useCallback((smooth = true) => {
     requestAnimationFrame(() => {
-      bottomRef.current?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' });
+      bottomRef.current?.scrollIntoView({ behavior: smooth && !prefersReducedMotion() ? 'smooth' : 'auto' });
     });
+  }, []);
+
+  const commit = useCallback((next: ChatMsg[]) => {
+    messagesRef.current = next;
+    setMessages(next);
   }, []);
 
   const loadMessages = useCallback(async () => {
     if (pausedRef.current) return;
     try {
-      const params = new URLSearchParams();
-      if (lastFetchRef.current) params.set('since', lastFetchRef.current);
-      const res = await fetch(`/api/chat/messages?${params}`);
+      const res = await fetch('/api/chat/messages');
       if (!res.ok) return;
       const data = await res.json();
-      const msgs: ChatMsg[] = data.messages ?? [];
-      if (msgs.length > 0) {
-        const scrollEl = scrollRef.current;
-        const wasAtBottom = scrollEl ? isNearBottom(scrollEl) : true;
+      const msgs: ChatMsg[] = (data.messages ?? []).map((m: Partial<ChatMsg>) => ({
+        ...m,
+        reactions: m.reactions ?? [],
+        replyTo: m.replyTo ?? null,
+      }));
 
-        const existing = new Set(messagesRef.current.map((m) => m.id));
-        const newMsgs = msgs.filter((m) => !existing.has(m.id));
-        if (newMsgs.length > 0) {
-          messagesRef.current = [...messagesRef.current, ...newMsgs];
-          setMessages(messagesRef.current);
-          if (!wasAtBottom) setNewCount((c) => c + newMsgs.length);
+      const prev = messagesRef.current;
+      const prevIds = new Set(prev.map((m) => m.id));
+      const unchanged =
+        prev.length === msgs.length &&
+        msgs.every((m, i) => prev[i] && JSON.stringify(prev[i]) === JSON.stringify(m));
+      if (unchanged) return;
 
-          const viewingChat =
-            !document.hidden &&
-            document.hasFocus() &&
-            window.location.pathname.startsWith('/chat');
-          if (!viewingChat) {
-            const last = newMsgs[newMsgs.length - 1];
-            notify('chat', last.from === username ? 'New chat message' : `Message from ${last.from}`, {
-              body: last.text.slice(0, 140),
-              tag: 'chat',
-            });
-          }
-        }
-        lastFetchRef.current = msgs[msgs.length - 1].createdAt;
+      const fresh = msgs.filter((m) => !prevIds.has(m.id));
+      const scrollEl = scrollRef.current;
+      const wasAtBottom = scrollEl ? isNearBottom(scrollEl) : true;
 
+      commit(msgs);
+
+      if (fresh.length > 0) {
         if (wasAtBottom) scrollToBottom();
+        else setNewCount((c) => c + fresh.length);
+
+        const viewingChat =
+          !document.hidden &&
+          document.hasFocus() &&
+          window.location.pathname.startsWith('/chat');
+        if (loadedOnceRef.current && !viewingChat) {
+          const last = fresh[fresh.length - 1];
+          notify('chat', last.from === username ? 'New chat message' : `Message from ${last.from}`, {
+            body: last.text.slice(0, 140),
+            tag: 'chat',
+          });
+        }
+      } else if (!scrollEl || wasAtBottom) {
+        scrollToBottom(false);
       }
+      loadedOnceRef.current = true;
     } catch {
       // silent
     }
-  }, [scrollToBottom, username]);
+  }, [commit, scrollToBottom, username]);
 
   const handleScroll = () => {
     const el = scrollRef.current;
@@ -112,7 +157,7 @@ export function ChatThread({ username }: Props) {
 
   // Poll — pause when tab hidden
   useEffect(() => {
-    loadMessages();
+    const kick = setTimeout(loadMessages, 0);
     const interval = setInterval(loadMessages, 5000);
 
     const onVisibility = () => {
@@ -122,19 +167,48 @@ export function ChatThread({ username }: Props) {
     document.addEventListener('visibilitychange', onVisibility);
 
     return () => {
+      clearTimeout(kick);
       clearInterval(interval);
       document.removeEventListener('visibilitychange', onVisibility);
     };
   }, [loadMessages]);
 
+  // GSAP enter: staggered on first load, per-message for later arrivals
+  useLayoutEffect(() => {
+    const root = scrollRef.current;
+    if (!root) return;
+    const rows = Array.from(root.querySelectorAll<HTMLElement>('[data-msg-id]'));
+    const fresh = rows.filter((r) => !animatedRef.current.has(r.dataset.msgId!));
+    if (fresh.length === 0) return;
+    fresh.forEach((r) => animatedRef.current.add(r.dataset.msgId!));
+    if (prefersReducedMotion()) return;
+    gsap.fromTo(
+      fresh,
+      { opacity: 0, y: 8 },
+      {
+        opacity: 1,
+        y: 0,
+        duration: 0.28,
+        ease: 'power2.out',
+        stagger: Math.min(0.03, 0.6 / fresh.length),
+        clearProps: 'opacity,transform',
+      }
+    );
+  }, [messages]);
+
   const handleSend = async (text: string) => {
     setSending(true);
     try {
-      await fetch('/api/chat/messages', {
+      const payload: Record<string, unknown> = { from: username, text };
+      if (replyTo) {
+        payload.replyTo = { id: replyTo.id, from: replyTo.from, text: replyTo.text.slice(0, 200) };
+      }
+      const res = await fetch('/api/chat/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ from: username, text }),
+        body: JSON.stringify(payload),
       });
+      if (res.ok) setReplyTo(null);
       await loadMessages();
     } catch {
       console.error('Send failed');
@@ -146,10 +220,61 @@ export function ChatThread({ username }: Props) {
   const flushMessages = async () => {
     if (!confirm('Delete all messages?')) return;
     await fetch('/api/chat/messages', { method: 'DELETE' });
-    messagesRef.current = [];
-    setMessages([]);
+    commit([]);
     setNewCount(0);
-    lastFetchRef.current = '';
+    setReplyTo(null);
+    animatedRef.current = new Set();
+  };
+
+  const latest = (m: ChatMsg): ChatMsg => messagesRef.current.find((x) => x.id === m.id) ?? m;
+
+  const deleteMessage = async (m: ChatMsg) => {
+    setSheetFor(null);
+    const before = messagesRef.current;
+    commit(before.filter((x) => x.id !== m.id));
+    if (replyTo?.id === m.id) setReplyTo(null);
+    try {
+      const res = await fetch(`/api/chat/messages/${m.id}`, { method: 'DELETE' });
+      if (!res.ok) commit(before);
+    } catch {
+      commit(before);
+    }
+  };
+
+  const toggleReaction = async (m: ChatMsg, emoji: string) => {
+    const target = latest(m);
+    const before = messagesRef.current;
+    commit(before.map((x) => (x.id === target.id ? { ...x, reactions: applyToggle(x.reactions, username, emoji) } : x)));
+    try {
+      const res = await fetch(`/api/chat/messages/${target.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user: username, emoji }),
+      });
+      if (!res.ok) throw new Error('reaction failed');
+      const data = await res.json();
+      commit(
+        messagesRef.current.map((x) => (x.id === target.id ? { ...x, reactions: data.reactions } : x))
+      );
+    } catch {
+      commit(before);
+    }
+  };
+
+  const jumpTo = (id: string) => {
+    const row = scrollRef.current?.querySelector<HTMLElement>(`[data-msg-id="${id}"]`);
+    if (!row) return;
+    row.scrollIntoView({
+      behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+      block: 'center',
+    });
+    if (!prefersReducedMotion()) {
+      gsap.fromTo(
+        row,
+        { backgroundColor: 'rgba(120, 160, 255, 0.28)' },
+        { backgroundColor: 'rgba(120, 160, 255, 0)', duration: 1.2, ease: 'power1.out' }
+      );
+    }
   };
 
   const shouldShowDate = (msgs: ChatMsg[], idx: number) => {
@@ -174,9 +299,9 @@ export function ChatThread({ username }: Props) {
       aria-label="Group chat"
     >
       {/* Header — flat, Telegram-style */}
-      <header className="shrink-0 px-3 sm:px-4 py-2.5 flex items-center gap-3 pt-[env(safe-area-inset-top)] border-b border-border">
+      <header className="shrink-0 px-2 sm:px-4 py-2 sm:py-2.5 flex items-center gap-2 sm:gap-3 pt-[env(safe-area-inset-top)] border-b border-border">
         <div
-          className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shrink-0"
+          className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shrink-0"
           aria-hidden="true"
         >
           <Users className="h-5 w-5 text-primary-foreground" />
@@ -186,9 +311,19 @@ export function ChatThread({ username }: Props) {
             Group Chat
           </h1>
         </div>
+        {onLock && (
+          <button
+            onClick={onLock}
+            className="h-10 w-10 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+            aria-label="Lock chat"
+            title="Lock chat"
+          >
+            <Lock className="h-4.5 w-4.5" />
+          </button>
+        )}
         <button
           onClick={flushMessages}
-          className="p-2 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
+          className="h-10 w-10 flex items-center justify-center rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
           aria-label="Delete all messages"
         >
           <Trash2 className="h-4.5 w-4.5" />
@@ -220,12 +355,16 @@ export function ChatThread({ username }: Props) {
                   <DateSeparator date={msg.createdAt} />
                 )}
                 <MessageBubble
-                  from={msg.from}
-                  text={msg.text}
-                  ts={new Date(msg.createdAt).getTime()}
-                  isOwn={msg.from === username}
+                  msg={msg}
+                  me={username}
                   isGroupStart={isGroupStart(messages, idx)}
                   isGroupEnd={isGroupEnd(messages, idx)}
+                  onReply={() => setReplyTo(latest(msg))}
+                  onReact={() => setPickerFor(latest(msg))}
+                  onToggle={(emoji) => toggleReaction(msg, emoji)}
+                  onDelete={() => deleteMessage(msg)}
+                  onOpenSheet={() => setSheetFor(latest(msg))}
+                  onJump={jumpTo}
                 />
               </div>
             ))}
@@ -241,7 +380,7 @@ export function ChatThread({ username }: Props) {
             setNewCount(0);
             scrollToBottom();
           }}
-          className="absolute bottom-20 right-4 z-20 flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-[13px] font-medium text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors cursor-pointer"
+          className="absolute bottom-24 right-4 z-20 flex items-center gap-1.5 rounded-full bg-primary px-3.5 py-2 min-h-[40px] text-[13px] font-medium text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors cursor-pointer"
           aria-label="Scroll to latest messages"
         >
           <ArrowDown className="h-4 w-4" />
@@ -251,8 +390,109 @@ export function ChatThread({ username }: Props) {
 
       {/* Input */}
       <div className="shrink-0 pb-[env(safe-area-inset-bottom)]">
-        <MessageInput onSend={handleSend} disabled={sending} />
+        <MessageInput
+          onSend={handleSend}
+          disabled={sending}
+          replyTo={replyTo ? { from: replyTo.from === username ? 'You' : replyTo.from, text: replyTo.text } : null}
+          onCancelReply={() => setReplyTo(null)}
+          onFocus={() => scrollToBottom()}
+        />
       </div>
+
+      {/* Long-press / right-click action sheet */}
+      {sheetFor && (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50"
+          onClick={() => setSheetFor(null)}
+          role="presentation"
+        >
+          <div
+            className="w-full sm:w-80 rounded-t-2xl sm:rounded-2xl bg-background border border-border p-2 pb-[max(8px,env(safe-area-inset-bottom))] shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-label="Message actions"
+          >
+            <div className="flex items-center justify-between px-3 py-2 border-b border-border mb-1">
+              <span className="text-[12px] text-muted-foreground truncate pr-2">
+                {sheetFor.text}
+              </span>
+              <button
+                type="button"
+                onClick={() => setSheetFor(null)}
+                className="h-7 w-7 shrink-0 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground cursor-pointer"
+                aria-label="Close"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <SheetButton
+              icon={<Reply className="h-5 w-5 text-muted-foreground" />}
+              label="Reply"
+              onClick={() => {
+                setReplyTo(latest(sheetFor));
+                setSheetFor(null);
+              }}
+            />
+            <SheetButton
+              icon={<SmilePlus className="h-5 w-5 text-muted-foreground" />}
+              label="React"
+              onClick={() => {
+                setPickerFor(latest(sheetFor));
+                setSheetFor(null);
+              }}
+            />
+            <SheetButton
+              icon={<Trash2 className="h-5 w-5" />}
+              label="Delete"
+              danger
+              onClick={() => deleteMessage(sheetFor)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Reaction picker sheet */}
+      {pickerFor && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/50"
+          onClick={() => setPickerFor(null)}
+          role="presentation"
+        >
+          <div
+            className="w-full max-w-md rounded-t-2xl bg-muted border border-border overflow-hidden pb-[env(safe-area-inset-bottom)]"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-label="Pick a reaction"
+          >
+            <div className="flex items-center justify-between px-4 py-2.5 border-b border-border">
+              <span className="text-[13px] font-medium text-muted-foreground">React</span>
+              <button
+                type="button"
+                onClick={() => setPickerFor(null)}
+                className="h-8 w-8 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground cursor-pointer"
+                aria-label="Close reaction picker"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="max-h-[45vh] overflow-y-auto overscroll-contain [&_em-emoji-picker]:!bg-transparent [&_em-emoji-picker]:!shadow-none">
+              <Picker
+                data={data}
+                theme="dark"
+                previewPosition="none"
+                skinTonePosition="search"
+                maxFrequentRows={2}
+                onEmojiSelect={(emoji: { native?: string }) => {
+                  if (emoji.native) {
+                    toggleReaction(pickerFor, emoji.native);
+                    setPickerFor(null);
+                  }
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

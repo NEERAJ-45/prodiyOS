@@ -34,6 +34,7 @@ export const STORAGE_KEYS = {
   DAILY_SLOT_NOTES: 'daily-slot-notes',
   ONBOARDED: 'samundar-onboarded',
   ONBOARDING_DATA: 'samundar-onboarding-data',
+  CHAT_ACCESS_CODE: 'chat-access-code',
 } as const;
 
 export function completedKey(prefix: string): string {

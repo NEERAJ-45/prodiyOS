@@ -1,22 +1,34 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useLayoutEffect } from 'react';
+import gsap from 'gsap';
 import { Button } from '@/components/ui/button';
-import { ArrowUp, Smile, X } from 'lucide-react';
+import { ArrowUp, Smile, X, Reply } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { prefersReducedMotion } from '@/lib/anim';
 import Picker from '@emoji-mart/react';
 import data from '@emoji-mart/data';
 
 interface Props {
   onSend: (text: string) => void;
   disabled?: boolean;
+  replyTo?: { from: string; text: string } | null;
+  onCancelReply?: () => void;
+  onFocus?: () => void;
 }
 
-export function MessageInput({ onSend, disabled }: Props) {
+export function MessageInput({ onSend, disabled, replyTo, onCancelReply, onFocus }: Props) {
   const [text, setText] = useState('');
   const [showEmoji, setShowEmoji] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const emojiRef = useRef<HTMLDivElement>(null);
+  const replyRef = useRef<HTMLDivElement>(null);
+
+  // Quote bar resolves in with a quick slide when a reply starts
+  useLayoutEffect(() => {
+    if (!replyTo || prefersReducedMotion() || !replyRef.current) return;
+    gsap.from(replyRef.current, { y: -8, opacity: 0, duration: 0.25, ease: 'power2.out' });
+  }, [replyTo]);
 
   const closeEmoji = useCallback(() => setShowEmoji(false), []);
 
@@ -40,6 +52,34 @@ export function MessageInput({ onSend, disabled }: Props) {
 
   return (
     <div className="relative px-3 sm:px-4 py-2.5 bg-background">
+      {/* Replying-to preview */}
+      {replyTo && (
+        <div
+          ref={replyRef}
+          className="flex items-start gap-2 mb-2 rounded-lg border border-border bg-muted/60 px-3 py-2"
+          role="status"
+          aria-label={`Replying to ${replyTo.from}`}
+        >
+          <Reply className="h-4 w-4 mt-0.5 shrink-0 text-primary" aria-hidden="true" />
+          <div className="flex-1 min-w-0">
+            <p className="text-[12px] font-semibold leading-tight text-primary truncate">
+              Replying to {replyTo.from}
+            </p>
+            <p className="text-[13px] leading-snug text-muted-foreground line-clamp-2">
+              {replyTo.text}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onCancelReply}
+            className="shrink-0 h-7 w-7 -mr-1 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            aria-label="Cancel reply"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
       {/* Emoji Picker */}
       {showEmoji && (
         <div
@@ -106,13 +146,14 @@ export function MessageInput({ onSend, disabled }: Props) {
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSubmit()}
+            onFocus={onFocus}
             placeholder="Message"
             disabled={disabled}
             autoComplete="off"
             autoCorrect="on"
             autoCapitalize="sentences"
             className={cn(
-              'flex-1 min-w-0 h-full bg-transparent text-[15px] text-foreground',
+              'flex-1 min-w-0 h-full bg-transparent text-[16px] text-foreground',
               'placeholder:text-muted-foreground/60 outline-none',
               'disabled:opacity-50 disabled:cursor-not-allowed'
             )}
