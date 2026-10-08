@@ -101,6 +101,12 @@ Configure secrets in GitHub repo → Settings → Secrets → Actions.
 
 MIT
 
+## Acknowledgements
+
+- Chat emoji are rendered with **Animated Noto Emoji** served from the official
+  Google Fonts Emoji CDN ([project page](https://googlefonts.github.io/noto-emoji-animation/)).
+  Licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+
 ## Reader's Corner
 
 Personal reader mode for Medium articles at `/reader`.

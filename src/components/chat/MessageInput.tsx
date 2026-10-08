@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { prefersReducedMotion } from '@/lib/anim';
 import Picker from '@emoji-mart/react';
 import data from '@emoji-mart/data';
+import { EmojiPreview } from './EmojiPreview';
 
 interface Props {
   onSend: (text: string) => void;
@@ -20,6 +21,7 @@ interface Props {
 export function MessageInput({ onSend, disabled, replyTo, onCancelReply, onFocus }: Props) {
   const [text, setText] = useState('');
   const [showEmoji, setShowEmoji] = useState(false);
+  const [emojiPreview, setEmojiPreview] = useState<{ native: string; name?: string } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const emojiRef = useRef<HTMLDivElement>(null);
   const replyRef = useRef<HTMLDivElement>(null);
@@ -30,7 +32,10 @@ export function MessageInput({ onSend, disabled, replyTo, onCancelReply, onFocus
     gsap.from(replyRef.current, { y: -8, opacity: 0, duration: 0.25, ease: 'power2.out' });
   }, [replyTo]);
 
-  const closeEmoji = useCallback(() => setShowEmoji(false), []);
+  const closeEmoji = useCallback(() => {
+    setShowEmoji(false);
+    setEmojiPreview(null);
+  }, []);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -102,11 +107,13 @@ export function MessageInput({ onSend, disabled, replyTo, onCancelReply, onFocus
               <X className="h-3.5 w-3.5" />
             </Button>
           </div>
+          <EmojiPreview emoji={emojiPreview} />
           <div className="[&_em-emoji-picker]:!bg-transparent [&_em-emoji-picker]:!shadow-none">
             <Picker
               data={data}
-              onEmojiSelect={(emoji: { native?: string }) => {
+              onEmojiSelect={(emoji: { native?: string; name?: string }) => {
                 if (emoji.native) {
+                  setEmojiPreview({ native: emoji.native, name: emoji.name });
                   setText(prev => prev + emoji.native);
                   inputRef.current?.focus();
                 }
