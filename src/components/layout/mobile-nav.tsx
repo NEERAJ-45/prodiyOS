@@ -17,6 +17,7 @@ const navItems = [
   { label: 'Interview Prep', href: '/interview', icon: Briefcase },
   { label: 'Job Applications', href: '/interviews', icon: FileText },
   { label: 'Research Library', href: '/books', icon: BookOpen },
+  { label: 'Docs', href: '/docs', icon: FileCode },
   { label: 'Daily Planner', href: '/daily', icon: CalendarCheck },
   { label: 'Weekly Overview', href: '/weekly', icon: CalendarDays },
   { label: 'Activity Log', href: '/history', icon: History },

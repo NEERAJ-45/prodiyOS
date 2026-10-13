@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
 
 export default function BooksPage() {
-  redirect('/books/reading');
+  redirect('/books/library');
 }

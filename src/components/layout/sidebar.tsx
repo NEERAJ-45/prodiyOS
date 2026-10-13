@@ -63,6 +63,7 @@ const navGroups: NavGroup[] = [
       { label: "Interview Prep", href: "/interview", icon: Code2 },
       { label: "Job Applications", href: "/interviews", icon: Briefcase },
       { label: "Research Library", href: "/books", icon: BookOpen },
+      { label: "Docs", href: "/docs", icon: FileText },
     ],
   },
   {

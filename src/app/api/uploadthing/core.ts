@@ -5,6 +5,8 @@ const f = createUploadthing();
 export const ourFileRouter = {
   pdfUploader: f({ pdf: { maxFileSize: '32MB' } })
     .onUploadComplete(async ({ file }) => ({ url: file.url, key: file.key })),
+  docUploader: f({ pdf: { maxFileSize: '32MB' }, blob: { maxFileSize: '32MB' } })
+    .onUploadComplete(async ({ file }) => ({ url: file.url, key: file.key })),
 } satisfies FileRouter;
 
 export type OurFileRouter = typeof ourFileRouter;

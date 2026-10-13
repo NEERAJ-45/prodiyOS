@@ -27,9 +27,11 @@ interface BookReaderClientProps {
   title?: string;
   pdfUrl?: string;
   bookId?: string;
+  backHref?: string;
+  onProgressChange?: (progress: number) => void;
 }
 
-export function BookReaderClient({ book, title: propTitle, pdfUrl: propPdfUrl, bookId: propBookId }: BookReaderClientProps) {
+export function BookReaderClient({ book, title: propTitle, pdfUrl: propPdfUrl, bookId: propBookId, backHref = '/books/library', onProgressChange }: BookReaderClientProps) {
   const { userEmail } = useProfile();
   const [numPages, setNumPages] = React.useState(0);
   const [pageNumber, setPageNumber] = React.useState(1);
@@ -94,6 +96,11 @@ export function BookReaderClient({ book, title: propTitle, pdfUrl: propPdfUrl, b
       body: JSON.stringify({ userEmail, text: `Opened book "${displayTitle}"` }),
     }).catch(() => {});
   }, [userEmail, book, displayTitle]);
+
+  React.useEffect(() => {
+    if (!onProgressChange || !numPages) return;
+    onProgressChange(Math.round((pageNumber / numPages) * 100));
+  }, [pageNumber, numPages, onProgressChange]);
 
   function toggleFullscreen() {
     if (!document.fullscreenElement) {
@@ -177,7 +184,7 @@ export function BookReaderClient({ book, title: propTitle, pdfUrl: propPdfUrl, b
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-4 py-2">
           <div className="flex items-center gap-3 min-w-0">
             <Link
-              href="/books"
+              href={backHref}
               className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-300 transition-colors shrink-0"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
