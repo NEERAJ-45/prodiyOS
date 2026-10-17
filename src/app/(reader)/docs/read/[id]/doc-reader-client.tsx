@@ -5,17 +5,21 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import {
   ArrowLeft,
-  BookOpen,
   Bookmark,
   BookmarkCheck,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   ChevronUp,
   FileText,
+  Highlighter,
   Loader2,
   Maximize2,
   Minimize2,
   Search,
   X,
+  ZoomIn,
+  ZoomOut,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -175,20 +179,20 @@ export function DocReaderClient({ doc }: { doc: DocData }) {
             <>
               <div className="flex items-center gap-0">
                 <Button variant="outline" size="icon" onClick={() => setPageNumber((p) => Math.max(1, p - 1))} disabled={pageNumber <= 1}>
-                  <ChevronUp className="h-4 w-4" />
+                  <ChevronLeft className="h-4 w-4" />
                 </Button>
                 <span className="px-2 text-xs text-zinc-400">{pageNumber}/{numPages || '?'}</span>
                 <Button variant="outline" size="icon" onClick={() => setPageNumber((p) => Math.min(numPages, p + 1))} disabled={pageNumber >= numPages}>
-                  <ChevronDown className="h-4 w-4" />
+                  <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
               <div className="w-px h-5 bg-zinc-800 shrink-0" />
               <Button variant="outline" size="icon" onClick={() => setScale((s) => Math.max(0.5, s - 0.25))} disabled={scale <= 0.5}>
-                <span className="text-xs">−</span>
+                <ZoomOut className="h-4 w-4" />
               </Button>
               <span className="text-xs text-zinc-400 w-10 text-center shrink-0">{Math.round(scale * 100)}%</span>
               <Button variant="outline" size="icon" onClick={() => setScale((s) => Math.min(3, s + 0.25))} disabled={scale >= 3}>
-                <span className="text-xs">+</span>
+                <ZoomIn className="h-4 w-4" />
               </Button>
             </>
           }
@@ -344,7 +348,7 @@ function DocReaderToolbar({
           </div>
           <div className="w-px h-5 bg-zinc-800 shrink-0" />
           <Button variant="outline" size="icon" onClick={onHighlight} title="Highlight selected text">
-            <BookOpen className="h-4 w-4" />
+            <Highlighter className="h-4 w-4" />
           </Button>
           <div className="w-px h-5 bg-zinc-800 shrink-0" />
           <Button variant="outline" size="icon" onClick={toggleSearch}>

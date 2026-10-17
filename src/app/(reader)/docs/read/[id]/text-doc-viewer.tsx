@@ -14,6 +14,55 @@ import { cn } from '@/lib/utils';
 
 const HIGHLIGHT_COLORS = ['#fbbf24', '#f97316', '#ef4444', '#a78bfa', '#60a5fa', '#34d399'];
 
+const mdComponents = {
+  h1: (props: React.HTMLAttributes<HTMLHeadingElement>) => (
+    <h1 className="text-2xl font-bold mt-8 mb-4 text-zinc-100 border-b border-zinc-800 pb-2" {...props} />
+  ),
+  h2: (props: React.HTMLAttributes<HTMLHeadingElement>) => (
+    <h2 className="text-xl font-semibold mt-7 mb-3 text-zinc-100 border-b border-zinc-800/60 pb-1.5" {...props} />
+  ),
+  h3: (props: React.HTMLAttributes<HTMLHeadingElement>) => (
+    <h3 className="text-lg font-semibold mt-5 mb-2 text-zinc-100" {...props} />
+  ),
+  h4: (props: React.HTMLAttributes<HTMLHeadingElement>) => (
+    <h4 className="text-base font-semibold mt-4 mb-2 text-zinc-200" {...props} />
+  ),
+  p: (props: React.HTMLAttributes<HTMLParagraphElement>) => (
+    <p className="my-3 leading-7 text-zinc-300" {...props} />
+  ),
+  a: (props: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
+    <a className="text-primary underline underline-offset-2 hover:text-primary/80" target="_blank" rel="noreferrer" {...props} />
+  ),
+  ul: (props: React.HTMLAttributes<HTMLUListElement>) => (
+    <ul className="list-disc pl-6 my-3 space-y-1.5 text-zinc-300" {...props} />
+  ),
+  ol: (props: React.HTMLAttributes<HTMLOListElement>) => (
+    <ol className="list-decimal pl-6 my-3 space-y-1.5 text-zinc-300" {...props} />
+  ),
+  li: (props: React.HTMLAttributes<HTMLLIElement>) => (
+    <li className="leading-7 [&>p]:my-1" {...props} />
+  ),
+  blockquote: (props: React.HTMLAttributes<HTMLQuoteElement>) => (
+    <blockquote className="border-l-2 border-zinc-700 pl-4 my-4 text-zinc-400 italic" {...props} />
+  ),
+  code: (props: React.HTMLAttributes<HTMLElement>) => (
+    <code className="bg-zinc-800/80 text-amber-200 px-1.5 py-0.5 rounded text-[0.85em]" {...props} />
+  ),
+  pre: (props: React.HTMLAttributes<HTMLPreElement>) => (
+    <pre className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 my-4 overflow-x-auto text-[13px] leading-relaxed [&>code]:bg-transparent [&>code]:p-0 [&>code]:text-zinc-200" {...props} />
+  ),
+  table: (props: React.HTMLAttributes<HTMLTableElement>) => (
+    <table className="w-full border-collapse my-4 text-sm" {...props} />
+  ),
+  th: (props: React.HTMLAttributes<HTMLTableCellElement>) => (
+    <th className="border border-zinc-700 bg-zinc-900 px-3 py-2 text-left font-medium text-zinc-200" {...props} />
+  ),
+  td: (props: React.HTMLAttributes<HTMLTableCellElement>) => (
+    <td className="border border-zinc-800 px-3 py-2 text-zinc-300" {...props} />
+  ),
+  hr: () => <hr className="border-zinc-800 my-8" />,
+};
+
 interface MatchRect {
   top: number;
   left: number;
@@ -303,7 +352,9 @@ export default function TextDocViewer({
             dangerouslySetInnerHTML={{ __html: content.html || '' }}
           />
         ) : (
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{content.text || ''}</ReactMarkdown>
+          <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>
+            {content.text || ''}
+          </ReactMarkdown>
         )}
 
         {highlightRects.map((h) =>

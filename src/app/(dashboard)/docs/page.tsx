@@ -1,15 +1,10 @@
 'use client';
 
 import * as React from 'react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
-import { FileText, FolderOpen, Loader2, Plus, Search } from 'lucide-react';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { FileText, FolderOpen, Loader2, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -18,7 +13,9 @@ import { toast } from '@/components/ui/toast';
 import {
   DOC_STATUS_LABELS,
   useAddDoc,
+  useDeleteDoc,
   useDocsQuery,
+  useUpdateDoc,
   type DocData,
 } from '@/hooks/use-docs';
 import { useDocSearchQuery } from '@/hooks/use-doc-search';
@@ -30,11 +27,23 @@ const docStatusConfig: Record<DocData['status'], { label: string; className: str
   REFERENCE: { label: DOC_STATUS_LABELS.REFERENCE, className: 'bg-amber-950 text-amber-300 border-amber-800' },
 };
 
-const fileTypeLabels: Record<DocData['fileType'], string> = {
-  pdf: 'PDF',
-  docx: 'DOCX',
-  md: 'MD',
+const fileTypeConfig: Record<DocData['fileType'], { label: string; className: string }> = {
+  pdf: { label: 'PDF', className: 'bg-red-950/60 text-red-300 border-red-800/50' },
+  docx: { label: 'DOCX', className: 'bg-blue-950/60 text-blue-300 border-blue-800/50' },
+  md: { label: 'MD', className: 'bg-emerald-950/60 text-emerald-300 border-emerald-800/50' },
 };
+
+function formatDate(value?: string) {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  const diffMs = Date.now() - date.getTime();
+  const days = Math.floor(diffMs / 86400000);
+  if (days === 0) return 'today';
+  if (days === 1) return 'yesterday';
+  if (days < 30) return `${days}d ago`;
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
 
 const emptyFormState: DocFormState = {
   title: '',
@@ -43,12 +52,17 @@ const emptyFormState: DocFormState = {
 };
 
 export default function DocsPage() {
+  const router = useRouter();
   const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null);
   const [searchQuery, setSearchQuery] = React.useState('');
   const [dialogOpen, setDialogOpen] = React.useState(false);
+  const [dialogMode, setDialogMode] = React.useState<'add' | 'edit'>('add');
+  const [editingDoc, setEditingDoc] = React.useState<DocData | null>(null);
   const [form, setForm] = React.useState<DocFormState>(emptyFormState);
   const { data: docsData, isLoading } = useDocsQuery();
   const addDoc = useAddDoc();
+  const updateDoc = useUpdateDoc();
+  const deleteDoc = useDeleteDoc();
 
   const docs = docsData?.docs ?? [];
   const q = searchQuery.toLowerCase().trim();
@@ -61,19 +75,17 @@ export default function DocsPage() {
   }, [docs]);
 
   const filteredDocs = React.useMemo(() => {
-    if (!q) return docs;
-    return docs.filter(
-      (d) => d.title.toLowerCase().includes(q) || (d.category || '').toLowerCase().includes(q)
-    );
-  }, [docs, q]);
-
-  const grouped = React.useMemo(() => {
-    const g: Record<string, DocData[]> = {};
-    for (const doc of filteredDocs) {
-      (g[doc.category || 'other'] ??= []).push(doc);
+    let result = docs;
+    if (selectedCategory) {
+      result = result.filter((d) => (d.category || 'other') === selectedCategory);
     }
-    return g;
-  }, [filteredDocs]);
+    if (q) {
+      result = result.filter(
+        (d) => d.title.toLowerCase().includes(q) || (d.category || '').toLowerCase().includes(q)
+      );
+    }
+    return result;
+  }, [docs, q, selectedCategory]);
 
   const searchHits = React.useMemo(() => {
     if (!q || !searchResults?.results) return new Set<string>();
@@ -81,12 +93,50 @@ export default function DocsPage() {
   }, [q, searchResults]);
 
   function openAddDialog() {
+    setDialogMode('add');
+    setEditingDoc(null);
     setForm(emptyFormState);
     setDialogOpen(true);
   }
 
+  function openEditDialog(doc: DocData) {
+    setDialogMode('edit');
+    setEditingDoc(doc);
+    setForm({
+      title: doc.title,
+      category: doc.category || 'other',
+      status: doc.status,
+      fileUrl: doc.fileUrl,
+      fileType: doc.fileType,
+      fileName: doc.fileName,
+    });
+    setDialogOpen(true);
+  }
+
   function handleSave() {
-    if (!form.title.trim() || !form.fileUrl || !form.fileType) return;
+    if (!form.title.trim()) return;
+
+    if (dialogMode === 'edit' && editingDoc) {
+      updateDoc.mutate(
+        {
+          id: editingDoc._id || editingDoc.id,
+          title: form.title.trim(),
+          category: form.category.trim() || 'other',
+          status: form.status,
+        },
+        {
+          onSuccess: () => {
+            toast({ title: 'Doc updated' });
+            setDialogOpen(false);
+            setEditingDoc(null);
+          },
+          onError: () => toast({ variant: 'destructive', title: 'Failed to update doc' }),
+        }
+      );
+      return;
+    }
+
+    if (!form.fileUrl || !form.fileType) return;
 
     addDoc.mutate(
       {
@@ -108,7 +158,12 @@ export default function DocsPage() {
     );
   }
 
-  const categoryList = selectedCategory ? [selectedCategory] : Object.keys(grouped).sort();
+  function handleDelete(id: string) {
+    deleteDoc.mutate(id, {
+      onSuccess: () => toast({ title: 'Doc deleted' }),
+      onError: () => toast({ variant: 'destructive', title: 'Failed to delete doc' }),
+    });
+  }
 
   return (
     <div className="space-y-6">
@@ -129,29 +184,38 @@ export default function DocsPage() {
         </Button>
       </div>
 
-      {!selectedCategory && categories.length > 0 && (
+      {categories.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-800 bg-zinc-900/40 text-xs text-zinc-300 hover:bg-zinc-900 hover:text-zinc-100 transition-colors"
-            >
-              <FolderOpen className="h-3 w-3 text-zinc-500" />
-              {cat}
-              <span className="text-zinc-600">({docs.filter((d) => (d.category || 'other') === cat).length})</span>
-            </button>
-          ))}
+          {categories.map((cat) => {
+            const active = selectedCategory === cat;
+            return (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(active ? null : cat)}
+                className={cn(
+                  'flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs transition-colors cursor-pointer',
+                  active
+                    ? 'border-primary/50 bg-primary/10 text-primary'
+                    : 'border-zinc-800 bg-zinc-900/40 text-zinc-300 hover:bg-zinc-900 hover:text-zinc-100'
+                )}
+              >
+                <FolderOpen className={cn('h-3 w-3', active ? 'text-primary' : 'text-zinc-500')} />
+                {cat}
+                <span className={active ? 'text-primary/60' : 'text-zinc-600'}>
+                  ({docs.filter((d) => (d.category || 'other') === cat).length})
+                </span>
+              </button>
+            );
+          })}
         </div>
       )}
 
-      {selectedCategory && (
-        <button
-          onClick={() => setSelectedCategory(null)}
-          className="text-sm text-zinc-400 hover:text-zinc-200 transition-colors"
-        >
-          ← All categories
-        </button>
+      {q && (isSearching || searchHits.size > 0) && (
+        <p className="text-xs text-zinc-500 -mt-2">
+          {isSearching
+            ? 'Searching doc contents...'
+            : `${searchHits.size} doc${searchHits.size === 1 ? '' : 's'} match in full text`}
+        </p>
       )}
 
       {isLoading ? (
@@ -159,87 +223,106 @@ export default function DocsPage() {
           <Loader2 className="h-6 w-6 animate-spin text-zinc-500" />
         </div>
       ) : filteredDocs.length > 0 ? (
-        <div className="space-y-6">
-          {q && isSearching && (
-            <p className="text-xs text-zinc-500">Searching doc contents...</p>
-          )}
-          {q && searchHits.size > 0 && (
-            <p className="text-xs text-zinc-500">
-              {searchHits.size} doc{searchHits.size === 1 ? '' : 's'} match in full text
-            </p>
-          )}
-          {categoryList.map((cat) => {
-            const docsInCategory = grouped[cat];
-            if (!docsInCategory?.length) return null;
-
-            return (
-              <section key={cat} className="space-y-3">
-                <h2 className="text-sm font-semibold text-zinc-100">
-                  {cat}
-                  <span className="ml-2 text-xs font-normal text-zinc-500">
-                    {docsInCategory.length} doc{docsInCategory.length === 1 ? '' : 's'}
-                  </span>
-                </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {docsInCategory.map((doc) => {
-                    const status = docStatusConfig[doc.status];
-                    const fullTextHit = searchHits.has(doc.id);
-
-                    return (
-                      <Link key={doc._id || doc.id} href={`/docs/read/${doc.id}`} className="block group">
-                        <Card
-                          className={cn(
-                            'border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900 transition-colors h-full',
-                            fullTextHit && 'border-primary/40'
-                          )}
+        <div className="rounded-lg border border-zinc-800 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-zinc-800 bg-zinc-900/80">
+                  <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 w-10">#</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500">Title</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500">Category</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500">Type</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500">Status</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500">Progress</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500">Updated</th>
+                  <th className="px-4 py-3" />
+                  <th className="px-4 py-3" />
+                </tr>
+              </thead>
+              <tbody>
+                {filteredDocs.map((doc, idx) => {
+                  const status = docStatusConfig[doc.status];
+                  const fullTextHit = searchHits.has(doc.id);
+                  return (
+                    <tr
+                      key={doc._id || doc.id}
+                      onClick={() => router.push(`/docs/read/${doc.id}`)}
+                      className={cn(
+                        'border-b border-zinc-800/50 hover:bg-zinc-800/20 transition-colors cursor-pointer',
+                        fullTextHit && 'bg-primary/5'
+                      )}
+                    >
+                      <td className="px-4 py-3 text-zinc-600 text-xs">{idx + 1}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-zinc-500 shrink-0" />
+                          <span className="text-zinc-200 font-medium truncate max-w-[240px]">{doc.title}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-zinc-400 text-xs">{doc.category || 'other'}</td>
+                      <td className="px-4 py-3">
+                        <Badge
+                          variant="outline"
+                          className={cn('text-[10px] font-medium', fileTypeConfig[doc.fileType].className)}
                         >
-                          <CardHeader className="p-5 pb-3">
-                            <div className="flex items-start justify-between gap-3">
-                              <CardTitle className="text-sm font-medium text-zinc-100 truncate flex-1 min-w-0">
-                                {doc.title}
-                              </CardTitle>
-                              <Badge
-                                variant="outline"
-                                className={cn('text-[10px] font-medium shrink-0', status.className)}
-                              >
-                                {status.label}
-                              </Badge>
-                            </div>
-                          </CardHeader>
-                          <CardContent className="p-5 pt-0 space-y-3">
-                            <div className="text-[10px] text-zinc-600 uppercase tracking-wider">
-                              {doc.category || 'other'}
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs text-zinc-500">{fileTypeLabels[doc.fileType]}</span>
-                              {doc.progress > 0 && (
-                                <div className="flex items-center gap-2">
-                                  <div className="w-16 h-1 rounded-full bg-zinc-800 overflow-hidden">
-                                    <div
-                                      className="h-full rounded-full bg-primary/60"
-                                      style={{ width: `${doc.progress}%` }}
-                                    />
-                                  </div>
-                                  <span className="text-[10px] text-zinc-500">{doc.progress}%</span>
-                                </div>
-                              )}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </Link>
-                    );
-                  })}
-                </div>
-              </section>
-            );
-          })}
+                          {fileTypeConfig[doc.fileType].label}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge
+                          variant="outline"
+                          className={cn('text-[10px] font-medium', status.className)}
+                        >
+                          {status.label}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-16 h-1 rounded-full bg-zinc-800 overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-primary/60"
+                              style={{ width: `${doc.progress}%` }}
+                            />
+                          </div>
+                          <span className="text-[10px] text-zinc-500">{doc.progress}%</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-zinc-400 text-xs">
+                        {formatDate(doc.updatedAt || doc.createdAt) || '—'}
+                      </td>
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); openEditDialog(doc); }}
+                          className="p-1.5 rounded hover:bg-zinc-800 text-zinc-600 hover:text-zinc-300 transition-colors cursor-pointer"
+                          title="Edit"
+                          type="button"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                      </td>
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleDelete(doc._id || doc.id); }}
+                          className="p-1.5 rounded hover:bg-zinc-800 text-zinc-600 hover:text-red-400 transition-colors cursor-pointer"
+                          title="Delete"
+                          type="button"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       ) : (
         <Card className="border-zinc-800 bg-zinc-900/30">
           <CardContent className="p-12 flex flex-col items-center justify-center text-center">
             <FileText className="h-10 w-10 text-zinc-700 mb-3" />
             <p className="text-sm font-medium text-zinc-400">
-              {q ? 'No docs match your search' : 'No docs yet'}
+              {q || selectedCategory ? 'No docs match your filters' : 'No docs yet'}
             </p>
             <p className="text-xs text-zinc-600 mt-1">
               Upload a PDF, DOCX, or Markdown file with Add Doc
@@ -251,10 +334,11 @@ export default function DocsPage() {
       <DocFormDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
+        mode={dialogMode}
         form={form}
         onFormChange={setForm}
         onSave={handleSave}
-        isPending={addDoc.isPending}
+        isPending={addDoc.isPending || updateDoc.isPending}
         categorySuggestions={categories}
       />
     </div>

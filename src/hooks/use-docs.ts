@@ -14,6 +14,8 @@ export interface DocData {
   fileType: 'pdf' | 'docx' | 'md';
   fileName: string;
   userEmail?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export type DocStatus = DocData['status'];

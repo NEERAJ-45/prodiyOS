@@ -43,6 +43,7 @@ export interface DocFormState {
 interface DocFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  mode: 'add' | 'edit';
   form: DocFormState;
   onFormChange: (form: DocFormState) => void;
   onSave: () => void;
@@ -53,6 +54,7 @@ interface DocFormDialogProps {
 export function DocFormDialog({
   open,
   onOpenChange,
+  mode,
   form,
   onFormChange,
   onSave,
@@ -85,13 +87,16 @@ export function DocFormDialog({
     if (!open) setFileError(null);
   }, [open]);
 
-  const isValid = form.title.trim().length > 0 && !!form.fileUrl && !!form.fileType;
+  const isValid =
+    form.title.trim().length > 0 && (mode === 'edit' || (!!form.fileUrl && !!form.fileType));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-zinc-950 border-zinc-800 sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-zinc-100">Add Doc</DialogTitle>
+          <DialogTitle className="text-zinc-100">
+            {mode === 'add' ? 'Add Doc' : 'Edit Doc'}
+          </DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-2">
           <Field label="Title *">
@@ -116,7 +121,8 @@ export function DocFormDialog({
               ))}
             </datalist>
           </Field>
-          <Field label="File * (PDF, DOCX, MD)">
+          {mode === 'add' && (
+            <Field label="File * (PDF, DOCX, MD)">
             <div className="flex items-center gap-2">
               <input
                 ref={fileInputRef}
@@ -159,6 +165,7 @@ export function DocFormDialog({
             </div>
             {fileError && <p className="text-xs text-red-400 mt-1">{fileError}</p>}
           </Field>
+          )}
           <Field label="Status">
             <Select value={form.status} onValueChange={(v) => set('status', v as DocStatus)}>
               <SelectTrigger className="bg-zinc-900 border-zinc-700 text-zinc-100">
@@ -183,7 +190,11 @@ export function DocFormDialog({
             <Button variant="outline" size="sm">Cancel</Button>
           </DialogClose>
           <Button size="sm" onClick={onSave} disabled={!isValid || isPending || uploading}>
-            {uploading ? 'Uploading...' : isPending ? 'Adding...' : 'Add Doc'}
+            {uploading
+              ? 'Uploading...'
+              : isPending
+                ? mode === 'add' ? 'Adding...' : 'Saving...'
+                : mode === 'add' ? 'Add Doc' : 'Save'}
           </Button>
         </DialogFooter>
       </DialogContent>
