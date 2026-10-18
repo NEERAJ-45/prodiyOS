@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db';
 import { ChatMessage } from '@/lib/models/ChatMessage';
+import { requireChatAccess } from '@/lib/chat-allowlist';
 
 export async function DELETE() {
   try {
+    const access = await requireChatAccess();
+    if (!access.ok) return access.response;
     await connectToDatabase();
     await ChatMessage.deleteMany({});
     return NextResponse.json({ ok: true });
@@ -15,8 +18,12 @@ export async function DELETE() {
 
 export async function POST(request: NextRequest) {
   try {
+    const access = await requireChatAccess();
+    if (!access.ok) return access.response;
+
     const body = await request.json();
-    const { from, text, replyTo } = body;
+    const { text, replyTo } = body;
+    const from = access.name;
 
     if (!from || !text) {
       return NextResponse.json(
@@ -51,6 +58,9 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
+    const access = await requireChatAccess();
+    if (!access.ok) return access.response;
+
     const { searchParams } = new URL(request.url);
     const since = searchParams.get('since');
 

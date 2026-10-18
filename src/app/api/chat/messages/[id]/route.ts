@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import { connectToDatabase } from '@/lib/db';
 import { ChatMessage } from '@/lib/models/ChatMessage';
 import { toggleReaction } from '@/lib/chat-reactions';
+import { requireChatAccess } from '@/lib/chat-allowlist';
 
 // Toggle the caller's reaction: same emoji removes it, different emoji replaces it.
 export async function PATCH(
@@ -10,9 +11,13 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const access = await requireChatAccess();
+    if (!access.ok) return access.response;
+
     const { id } = await params;
     const body = await request.json();
-    const { user, emoji } = body as { user?: unknown; emoji?: unknown };
+    const { emoji } = body as { emoji?: unknown };
+    const user = access.name;
 
     if (typeof user !== 'string' || !user || typeof emoji !== 'string' || !emoji) {
       return NextResponse.json({ error: 'user and emoji required' }, { status: 400 });
@@ -37,12 +42,15 @@ export async function PATCH(
   }
 }
 
-// Delete a single message (anyone may delete any message).
+// Delete a single message (anyone in the two-user allowlist may delete any message).
 export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const access = await requireChatAccess();
+    if (!access.ok) return access.response;
+
     const { id } = await params;
     if (!mongoose.isValidObjectId(id)) {
       return NextResponse.json({ error: 'Invalid message id' }, { status: 400 });
