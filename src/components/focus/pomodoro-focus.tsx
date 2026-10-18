@@ -101,9 +101,11 @@ async function playSrc(audio: HTMLAudioElement, src: string) {
     const srcState = await fetch(src, { headers: { Range: "bytes=0-1" } })
       .then((r) => `${r.status}${r.redirected ? ` → ${new URL(r.url).pathname}` : ""} ${r.headers.get("content-type")}`)
       .catch((x) => `fetch failed: ${x instanceof Error ? x.message : String(x)}`);
-    console.error("[music] play failed", src, { readyState: audio.readyState, mediaError: audio.error, srcState }, e);
+    const el = audio.currentSrc ? new URL(audio.currentSrc).pathname : "∅ (no source)";
+    const st = `err=${audio.error ? audio.error.code : "none"} net=${audio.networkState} ready=${audio.readyState}`;
+    console.error("[music] play failed", src, { el, st, mediaError: audio.error, srcState }, e);
     const reason = e instanceof DOMException ? `${e.name}: ${e.message}` : String(e);
-    return `${reason} [src: ${srcState}]`;
+    return `${reason} [src: ${srcState} | el: ${el}, ${st}]`;
   }
 }
 
@@ -268,6 +270,9 @@ export default function PomodoroFocus() {
   });
 
   // ---- dragging the music player ----
+  // Position is written straight to the DOM during the drag: a setState per
+  // pointermove would re-render this whole (heavy) component every frame and
+  // makes the drag feel sticky. State is committed once on release.
   const playerRef = useRef<HTMLDivElement>(null);
   const [playerPos, setPlayerPos] = useState<{ left: number; top: number } | null>(null);
   const dragRef = useRef<{
@@ -275,18 +280,28 @@ export default function PomodoroFocus() {
     startY: number;
     dx: number;
     dy: number;
+    rootLeft: number;
+    rootTop: number;
+    maxLeft: number;
+    maxTop: number;
     moved: boolean;
   } | null>(null);
 
   function onPlayerDragStart(e: React.PointerEvent<HTMLDivElement>) {
     const el = playerRef.current;
-    if (!el) return;
+    const root = emberRef.current;
+    if (!el || !root) return;
     const rect = el.getBoundingClientRect();
+    const rootRect = root.getBoundingClientRect();
     dragRef.current = {
       startX: e.clientX,
       startY: e.clientY,
       dx: e.clientX - rect.left,
       dy: e.clientY - rect.top,
+      rootLeft: rootRect.left,
+      rootTop: rootRect.top,
+      maxLeft: Math.max(0, rootRect.width - el.offsetWidth),
+      maxTop: Math.max(0, rootRect.height - el.offsetHeight),
       moved: false,
     };
     e.currentTarget.setPointerCapture(e.pointerId);
@@ -295,8 +310,7 @@ export default function PomodoroFocus() {
   function onPlayerDragMove(e: React.PointerEvent<HTMLDivElement>) {
     const drag = dragRef.current;
     const el = playerRef.current;
-    const root = emberRef.current;
-    if (!drag || !el || !root) return;
+    if (!drag || !el) return;
     if (
       !drag.moved &&
       Math.abs(e.clientX - drag.startX) + Math.abs(e.clientY - drag.startY) <= 4
@@ -304,16 +318,26 @@ export default function PomodoroFocus() {
       return;
     }
     drag.moved = true;
-    const bounds = root.getBoundingClientRect();
+    const left = Math.min(
+      Math.max(0, e.clientX - drag.rootLeft - drag.dx),
+      drag.maxLeft,
+    );
+    const top = Math.min(
+      Math.max(0, e.clientY - drag.rootTop - drag.dy),
+      drag.maxTop,
+    );
+    el.style.left = `${left}px`;
+    el.style.top = `${top}px`;
+    el.style.right = 'auto';
+  }
+
+  function onPlayerDragEnd() {
+    const drag = dragRef.current;
+    const el = playerRef.current;
+    if (!drag?.moved || !el) return;
     setPlayerPos({
-      left: Math.min(
-        Math.max(0, e.clientX - bounds.left - drag.dx),
-        bounds.width - el.offsetWidth,
-      ),
-      top: Math.min(
-        Math.max(0, e.clientY - bounds.top - drag.dy),
-        bounds.height - el.offsetHeight,
-      ),
+      left: parseFloat(el.style.left) || 0,
+      top: parseFloat(el.style.top) || 0,
     });
   }
 
@@ -1231,6 +1255,8 @@ export default function PomodoroFocus() {
           onClick={onPlayerHeadClick}
           onPointerDown={onPlayerDragStart}
           onPointerMove={onPlayerDragMove}
+          onPointerUp={onPlayerDragEnd}
+          onPointerCancel={onPlayerDragEnd}
         >
           <Music size={13} />
           <span className="mp-now">{nowPlaying ?? "Music"}</span>
