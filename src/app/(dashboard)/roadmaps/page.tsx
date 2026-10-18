@@ -4,6 +4,7 @@ import * as React from 'react';
 import Link from 'next/link';
 
 import { cn } from '@/lib/utils';
+import { computeCategoryProgress } from '@/lib/roadmap-progress';
 
 import { CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -44,8 +45,8 @@ const CATEGORY_DISPLAY: Omit<CategoryDisplay, 'progress'>[] = [
     hours: 250,
     difficulty: 'Hard',
     topics: ['System Design', 'Distributed Systems'],
-    storageKeys: ['system-design-concepts-completed', 'system-design-problems-completed'],
-    total: 100,
+    storageKeys: ['system-design-hld-completed', 'system-design-lld-completed', 'system-design-problems-completed'],
+    total: 540,
   },
   {
     slug: 'backend',
@@ -66,8 +67,8 @@ const CATEGORY_DISPLAY: Omit<CategoryDisplay, 'progress'>[] = [
     hours: 260,
     difficulty: 'Medium-Hard',
     topics: ['React Core', 'Next.js Framework', 'MicroFrontends'],
-    storageKeys: ['frontend-react-completed', 'frontend-nextjs-completed', 'frontend-mfe-completed'],
-    total: 150,
+    storageKeys: ['frontend-javascript-completed', 'frontend-react-completed', 'frontend-nextjs-completed', 'frontend-mfe-completed', 'frontend-machine-coding-completed'],
+    total: 273,
   },
   {
     slug: 'devops-cloud',
@@ -113,24 +114,19 @@ const difficultyColors: Record<string, string> = {
 };
 
 export default function RoadmapsPage() {
-  const progressMap = React.useMemo(() => {
-    const getCompletedCount = (storageKey: string, defaultVal: number = 0) => {
-      try {
-        const raw = localStorage.getItem(storageKey);
-        if (!raw) return defaultVal;
-        const data = JSON.parse(raw);
-        return Object.keys(data).length;
-      } catch {
-        return defaultVal;
-      }
-    };
+  const [progressMap, setProgressMap] = React.useState<Record<string, number>>({});
 
-    const newProgress: Record<string, number> = {};
-    CATEGORY_DISPLAY.forEach((cat) => {
-      const totalCompleted = cat.storageKeys.reduce((sum, key) => sum + getCompletedCount(key), 0);
-      newProgress[cat.slug] = Math.round((totalCompleted / cat.total) * 100);
-    });
-    return newProgress;
+  React.useEffect(() => {
+    const update = () =>
+      setProgressMap(computeCategoryProgress(CATEGORY_DISPLAY, window.localStorage));
+    update();
+    const bc = new BroadcastChannel('roadmap-progress');
+    bc.onmessage = update;
+    window.addEventListener('storage', update);
+    return () => {
+      bc.close();
+      window.removeEventListener('storage', update);
+    };
   }, []);
 
   const dynamicCategories: CategoryDisplay[] = React.useMemo(() => {
