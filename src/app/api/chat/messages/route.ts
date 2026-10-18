@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db';
 import { ChatMessage } from '@/lib/models/ChatMessage';
-import { requireChatAccess } from '@/lib/chat-allowlist';
+import { requireChatAccess } from '@/lib/chat-access';
 
 export async function DELETE() {
   try {

@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import { connectToDatabase } from '@/lib/db';
 import { ChatMessage } from '@/lib/models/ChatMessage';
 import { toggleReaction } from '@/lib/chat-reactions';
-import { requireChatAccess } from '@/lib/chat-allowlist';
+import { requireChatAccess } from '@/lib/chat-access';
 
 // Toggle the caller's reaction: same emoji removes it, different emoji replaces it.
 export async function PATCH(
