@@ -83,8 +83,13 @@ export function DocFormDialog({
   const { startUpload } = useUploadThing('docUploader', {
     onClientUploadComplete: (res) => {
       if (res?.[0]) {
-        set('fileUrl', res[0].url);
-        set('fileName', res[0].name);
+        // single update: two sequential `set` calls here would spread the same
+        // stale `form` and the second would erase `fileUrl`
+        onFormChange({
+          ...form,
+          fileUrl: res[0].url,
+          fileName: res[0].name,
+        });
       }
       setUploading(false);
     },
@@ -150,17 +155,18 @@ export function DocFormDialog({
                   const file = e.target.files?.[0] || null;
                   e.target.value = '';
                   setFileError(null);
-                  set('fileUrl', undefined);
-                  set('fileType', undefined);
-                  set('fileName', undefined);
-                  if (!file) return;
+                  if (!file) {
+                    onFormChange({ ...form, fileUrl: undefined, fileType: undefined, fileName: undefined });
+                    return;
+                  }
 
                   const result = validateDocFile(file);
                   if ('error' in result) {
+                    onFormChange({ ...form, fileUrl: undefined, fileType: undefined, fileName: undefined });
                     setFileError(result.error);
                     return;
                   }
-                  set('fileType', result.type);
+                  onFormChange({ ...form, fileUrl: undefined, fileType: result.type, fileName: undefined });
                   setUploading(true);
                   startUpload([file]);
                 }}
