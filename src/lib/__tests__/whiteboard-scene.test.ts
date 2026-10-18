@@ -34,4 +34,24 @@ describe('whiteboard scene round-trip', () => {
 
     expect(parseScene(scene).elements).toHaveLength(1);
   });
+
+  it('keeps image files in the serialized scene', () => {
+    const elements = [
+      { id: 'img1', type: 'image', fileId: 'f1', isDeleted: false },
+    ] as unknown as Parameters<typeof serializeScene>[0];
+    const files = {
+      f1: {
+        id: 'f1',
+        mimeType: 'image/png',
+        dataURL: 'data:image/png;base64,AAAA',
+        created: 1,
+        lastRetrieved: 1,
+      },
+    } as unknown as Parameters<typeof serializeScene>[2];
+
+    const scene = serializeScene(elements, { viewBackgroundColor: '#1e1e1e' }, files);
+
+    expect((JSON.parse(scene).files ?? {}).f1).toBeTruthy();
+    expect(parseScene(scene).files).toHaveProperty('f1');
+  });
 });

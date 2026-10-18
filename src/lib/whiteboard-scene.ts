@@ -5,12 +5,15 @@ export const DARK_BG = '#1e1e1e';
 
 // serializeAsJSON is Excalidraw's official serializer: it strips ephemeral appState
 // fields (e.g. collaborators: Map) that break on a JSON round-trip.
+// Type MUST be 'local': 'database' intentionally omits image files from the JSON
+// (Excalidraw expects a database backend to store them separately) — we keep
+// everything in one scene string, so 'local' (the .excalidraw format) is correct.
 export function serializeScene(
   elements: Parameters<typeof serializeAsJSON>[0],
   appState: Parameters<typeof serializeAsJSON>[1],
   files: Parameters<typeof serializeAsJSON>[2],
 ): string {
-  return serializeAsJSON(elements, appState, files, 'database');
+  return serializeAsJSON(elements, appState, files, 'local');
 }
 
 // restore sanitizes a parsed scene back into a valid Excalidraw state.
