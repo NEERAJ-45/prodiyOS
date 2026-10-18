@@ -231,8 +231,11 @@ export default function TextDocViewer({
       }
       setToolbar({
         visible: true,
-        x: rect.left + rect.width / 2,
-        y: rect.top - 44,
+        x: Math.min(
+          window.innerWidth - 120,
+          Math.max(120, rect.left + rect.width / 2)
+        ),
+        y: Math.max(52, rect.top - 44),
         selectedText: sel.toString().trim(),
       });
     }

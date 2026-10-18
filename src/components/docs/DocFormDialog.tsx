@@ -31,6 +31,21 @@ function detectDocFileType(fileName: string): DocFileType | null {
   return null;
 }
 
+const MAX_DOC_FILE_BYTES = 32 * 1024 * 1024;
+
+export function validateDocFile(
+  file: File
+): { type: DocFileType } | { error: string } {
+  const type = detectDocFileType(file.name);
+  if (!type) return { error: 'Unsupported file type. Use PDF, DOCX, or MD.' };
+  if (file.size > MAX_DOC_FILE_BYTES) {
+    return {
+      error: `File is too large (${(file.size / (1024 * 1024)).toFixed(1)}MB). Maximum is 32MB.`,
+    };
+  }
+  return { type };
+}
+
 export interface DocFormState {
   title: string;
   category: string;
@@ -70,11 +85,12 @@ export function DocFormDialog({
       if (res?.[0]) {
         set('fileUrl', res[0].url);
         set('fileName', res[0].name);
-        setUploading(false);
       }
+      setUploading(false);
     },
-    onUploadError: () => {
-      setFileError('Upload failed. Try again or use a smaller file.');
+    onUploadError: (err) => {
+      console.error('[doc-upload] failed:', err);
+      setFileError(`Upload failed: ${err.message || 'network error, try again.'}`);
       setUploading(false);
     },
   });
@@ -83,15 +99,17 @@ export function DocFormDialog({
     onFormChange({ ...form, [field]: value });
   };
 
-  React.useEffect(() => {
-    if (!open) setFileError(null);
-  }, [open]);
+  const handleOpenChange = (open: boolean) => {
+    setFileError(null);
+    if (!open) setUploading(false);
+    onOpenChange(open);
+  };
 
   const isValid =
     form.title.trim().length > 0 && (mode === 'edit' || (!!form.fileUrl && !!form.fileType));
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="bg-zinc-950 border-zinc-800 sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-zinc-100">
@@ -130,18 +148,19 @@ export function DocFormDialog({
                 accept=".pdf,.docx,.md,.markdown,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/markdown,text/plain"
                 onChange={(e) => {
                   const file = e.target.files?.[0] || null;
+                  e.target.value = '';
                   setFileError(null);
                   set('fileUrl', undefined);
                   set('fileType', undefined);
                   set('fileName', undefined);
                   if (!file) return;
 
-                  const type = detectDocFileType(file.name);
-                  if (!type) {
-                    setFileError('Unsupported file type. Use PDF, DOCX, or MD.');
+                  const result = validateDocFile(file);
+                  if ('error' in result) {
+                    setFileError(result.error);
                     return;
                   }
-                  set('fileType', type);
+                  set('fileType', result.type);
                   setUploading(true);
                   startUpload([file]);
                 }}

@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 
-import { FileText, FolderOpen, Loader2, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { FileText, FolderOpen, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -59,15 +59,23 @@ export default function DocsPage() {
   const [dialogMode, setDialogMode] = React.useState<'add' | 'edit'>('add');
   const [editingDoc, setEditingDoc] = React.useState<DocData | null>(null);
   const [form, setForm] = React.useState<DocFormState>(emptyFormState);
-  const { data: docsData, isLoading } = useDocsQuery();
+  const { data: docsData, isLoading, isError } = useDocsQuery();
   const addDoc = useAddDoc();
   const updateDoc = useUpdateDoc();
   const deleteDoc = useDeleteDoc();
+  const showSkeleton = !docsData && !isError;
 
-  const docs = docsData?.docs ?? [];
+  const [debouncedQuery, setDebouncedQuery] = React.useState('');
+  React.useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(searchQuery), 300);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
+
+  const docs = React.useMemo(() => docsData?.docs ?? [], [docsData]);
   const q = searchQuery.toLowerCase().trim();
+  const debouncedQ = debouncedQuery.toLowerCase().trim();
 
-  const { data: searchResults, isFetching: isSearching } = useDocSearchQuery(searchQuery, !!q);
+  const { data: searchResults, isFetching: isSearching } = useDocSearchQuery(debouncedQuery, !!debouncedQ);
 
   const categories = React.useMemo(() => {
     const set = new Set(docs.map((d) => d.category || 'other'));
@@ -158,30 +166,39 @@ export default function DocsPage() {
     );
   }
 
-  function handleDelete(id: string) {
-    deleteDoc.mutate(id, {
+  function handleDelete(doc: DocData) {
+    if (!window.confirm(`Delete "${doc.title}"? This cannot be undone.`)) return;
+    deleteDoc.mutate(doc._id || doc.id, {
       onSuccess: () => toast({ title: 'Doc deleted' }),
       onError: () => toast({ variant: 'destructive', title: 'Failed to delete doc' }),
     });
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
-        <div className="relative max-w-md flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search docs..."
-            className="w-full bg-zinc-900/40 border border-zinc-800 rounded-lg pl-9 pr-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-600 outline-none focus:border-primary/50 focus:bg-zinc-900/80 transition-all"
-          />
+    <div className="p-4 md:p-6 space-y-4">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-zinc-100">Docs</h1>
+          <p className="text-sm text-zinc-500 mt-1">
+            {filteredDocs.length} doc{filteredDocs.length === 1 ? '' : 's'}
+            {filteredDocs.length !== docs.length ? ` of ${docs.length}` : ''}
+          </p>
         </div>
-        <Button variant="outline" size="sm" onClick={openAddDialog} className="shrink-0">
-          <Plus className="h-3.5 w-3.5 mr-1" />
+        <Button variant="outline" size="sm" onClick={openAddDialog} className="shrink-0 gap-1.5 active:scale-[0.97] transition-transform">
+          <Plus className="h-3.5 w-3.5" />
           Add Doc
         </Button>
+      </div>
+
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search titles, categories, or full contents..."
+          className="w-full bg-zinc-900/50 border border-zinc-800 rounded-lg pl-9 pr-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600 outline-none focus:border-zinc-600 focus:bg-zinc-900/80 transition-all"
+        />
       </div>
 
       {categories.length > 0 && (
@@ -218,14 +235,22 @@ export default function DocsPage() {
         </p>
       )}
 
-      {isLoading ? (
-        <div className="flex items-center justify-center py-10">
-          <Loader2 className="h-6 w-6 animate-spin text-zinc-500" />
+      {showSkeleton ? (
+        <div className="rounded-lg border border-zinc-800 overflow-hidden">
+          <div className="h-10 border-b border-zinc-800 bg-zinc-900/80" />
+          {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-4 px-4 py-3 border-b border-zinc-800/50 last:border-b-0">
+                <div className="h-4 w-4 rounded bg-zinc-800 animate-pulse motion-reduce:animate-none" />
+                <div className="h-4 flex-1 rounded bg-zinc-800/80 animate-pulse motion-reduce:animate-none" style={{ maxWidth: `${40 - i * 4}%` }} />
+                <div className="h-4 w-16 rounded bg-zinc-800/60 animate-pulse motion-reduce:animate-none" />
+                <div className="h-4 w-12 rounded bg-zinc-800/60 animate-pulse motion-reduce:animate-none" />
+              </div>
+          ))}
         </div>
       ) : filteredDocs.length > 0 ? (
         <div className="rounded-lg border border-zinc-800 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[760px] text-sm">
               <thead>
                 <tr className="border-b border-zinc-800 bg-zinc-900/80">
                   <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 w-10">#</th>
@@ -241,14 +266,26 @@ export default function DocsPage() {
               </thead>
               <tbody>
                 {filteredDocs.map((doc, idx) => {
-                  const status = docStatusConfig[doc.status];
+                  const status = docStatusConfig[doc.status] ?? docStatusConfig.TO_READ;
+                  const fileType = fileTypeConfig[doc.fileType] ?? {
+                    label: String(doc.fileType || 'FILE').toUpperCase(),
+                    className: 'bg-zinc-800 text-zinc-300 border-zinc-700',
+                  };
                   const fullTextHit = searchHits.has(doc.id);
                   return (
                     <tr
                       key={doc._id || doc.id}
                       onClick={() => router.push(`/docs/read/${doc.id}`)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          router.push(`/docs/read/${doc.id}`);
+                        }
+                      }}
+                      tabIndex={0}
+                      role="link"
                       className={cn(
-                        'border-b border-zinc-800/50 hover:bg-zinc-800/20 transition-colors cursor-pointer',
+                        'border-b border-zinc-800/50 hover:bg-zinc-800/20 focus-visible:bg-zinc-800/30 focus-visible:outline-none active:bg-zinc-800/30 transition-colors cursor-pointer',
                         fullTextHit && 'bg-primary/5'
                       )}
                     >
@@ -263,9 +300,9 @@ export default function DocsPage() {
                       <td className="px-4 py-3">
                         <Badge
                           variant="outline"
-                          className={cn('text-[10px] font-medium', fileTypeConfig[doc.fileType].className)}
+                          className={cn('text-[10px] font-medium', fileType.className)}
                         >
-                          {fileTypeConfig[doc.fileType].label}
+                          {fileType.label}
                         </Badge>
                       </td>
                       <td className="px-4 py-3">
@@ -302,7 +339,7 @@ export default function DocsPage() {
                       </td>
                       <td className="px-4 py-3">
                         <button
-                          onClick={(e) => { e.stopPropagation(); handleDelete(doc._id || doc.id); }}
+                          onClick={(e) => { e.stopPropagation(); handleDelete(doc); }}
                           className="p-1.5 rounded hover:bg-zinc-800 text-zinc-600 hover:text-red-400 transition-colors cursor-pointer"
                           title="Delete"
                           type="button"
@@ -325,8 +362,33 @@ export default function DocsPage() {
               {q || selectedCategory ? 'No docs match your filters' : 'No docs yet'}
             </p>
             <p className="text-xs text-zinc-600 mt-1">
-              Upload a PDF, DOCX, or Markdown file with Add Doc
+              {q || selectedCategory
+                ? 'Try a different search or category'
+                : 'Upload a PDF, DOCX, or Markdown file to get started'}
             </p>
+            {q || selectedCategory ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSearchQuery('');
+                  setSelectedCategory(null);
+                }}
+                className="mt-4 active:scale-[0.97] transition-transform"
+              >
+                Clear filters
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={openAddDialog}
+                className="mt-4 gap-1.5 active:scale-[0.97] transition-transform"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Add Doc
+              </Button>
+            )}
           </CardContent>
         </Card>
       )}
