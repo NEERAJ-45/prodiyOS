@@ -1,18 +1,21 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   Flame, BookOpen, Target, Activity,
   Loader2, TrendingUp, AlertTriangle, CheckCircle,
   ChevronDown, ChevronRight, CalendarDays,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { ROADMAPS } from '@/data/roadmaps';
 import { useMounted } from '@/hooks/useMounted';
 import { useProfile } from '@/components/providers/ProfileProvider';
+import { ActivityHeatmap } from '@/components/charts/activity-heatmap';
+import { WeeklyActivityChart } from '@/components/charts/weekly-activity-chart';
+import { CategoryProgressChart } from '@/components/charts/category-progress-chart';
 
 const TOTAL_TOPICS = ROADMAPS.reduce((s, r) => s + r.total, 0);
 
@@ -26,8 +29,6 @@ const CATEGORY_COLORS: Record<string, string> = {
   Aptitude: '#14b8a6',
 };
 
-const HEATMAP_COLORS = ['#1a1a2e', '#0f3b5e', '#1a6b4a', '#2ecc71', '#27ae60'];
-
 function computeStreak(dates: string[]): number {
   if (!dates.length) return 0;
   const daySet = new Set(dates.map((d) => d.split('T')[0]));
@@ -40,109 +41,6 @@ function computeStreak(dates: string[]): number {
   const cur = new Date(daySet.has(todayStr) ? today : yest);
   while (daySet.has(cur.toISOString().split('T')[0])) { streak++; cur.setDate(cur.getDate() - 1); }
   return streak;
-}
-
-function ContributionHeatmap({ dates }: { dates: string[] }) {
-  const dayCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    dates.forEach((d) => {
-      const key = d.split('T')[0];
-      counts[key] = (counts[key] || 0) + 1;
-    });
-    return counts;
-  }, [dates]);
-
-  const { weeks, monthLabels } = useMemo(() => {
-    const today = new Date();
-    today.setHours(23, 59, 59, 999);
-    const start = new Date(today);
-    start.setDate(start.getDate() - 6 * 7 - 6);
-    start.setHours(0, 0, 0, 0);
-
-    const cells: { date: string; count: number; day: number }[] = [];
-    const cur = new Date(start);
-    while (cur <= today) {
-      const key = cur.toISOString().split('T')[0];
-      cells.push({ date: key, count: dayCounts[key] || 0, day: cur.getDay() });
-      cur.setDate(cur.getDate() + 1);
-    }
-
-    const w: { days: typeof cells }[] = [];
-    for (let i = 0; i < cells.length; i += 7) {
-      w.push({ days: cells.slice(i, i + 7) });
-    }
-
-    const labels: { label: string; index: number }[] = [];
-    w.forEach((week, wi) => {
-      const firstDate = new Date(week.days[0]?.date || '');
-      const month = firstDate.toLocaleString('default', { month: 'short' });
-      if (wi === 0 || labels[labels.length - 1]?.label !== month) {
-        labels.push({ label: month, index: wi });
-      }
-    });
-
-    return { weeks: w, monthLabels: labels };
-  }, [dayCounts]);
-
-  const maxCount = Math.max(...Object.values(dayCounts), 1);
-
-  const colorForCount = (count: number) => {
-    if (count === 0) return HEATMAP_COLORS[0];
-    const ratio = count / maxCount;
-    if (ratio < 0.25) return HEATMAP_COLORS[1];
-    if (ratio < 0.5) return HEATMAP_COLORS[2];
-    if (ratio < 0.75) return HEATMAP_COLORS[3];
-    return HEATMAP_COLORS[4];
-  };
-
-  const DAY_LABELS = ['', 'Mon', '', 'Wed', '', 'Fri', ''];
-
-  return (
-    <div className="overflow-x-auto">
-      <div className="min-w-[600px]">
-        <div className="flex text-[10px] text-zinc-500 mb-1" style={{ paddingLeft: 32 }}>
-          {monthLabels.map((m) => (
-            <div key={m.label} style={{ marginLeft: m.index * 14 }}>{m.label}</div>
-          ))}
-        </div>
-        <div className="flex gap-[3px]">
-          <div className="flex flex-col gap-[3px] pr-1.5 pt-0.5">
-            {DAY_LABELS.map((d, i) => (
-              <div key={i} className="h-[10px] text-[9px] text-zinc-500 leading-[10px]">{d}</div>
-            ))}
-          </div>
-          {weeks.map((week, wi) => (
-            <div key={wi} className="flex flex-col gap-[3px]">
-              {[0, 1, 2, 3, 4, 5, 6].map((dayIdx) => {
-                const cell = week.days[dayIdx];
-                if (!cell) return <div key={dayIdx} className="h-[10px] w-[10px]" />;
-                return (
-                  <Tooltip key={cell.date}>
-                    <TooltipTrigger asChild>
-                      <div
-                        className="h-[10px] w-[10px] rounded-sm cursor-pointer transition-colors hover:ring-1 hover:ring-zinc-400"
-                        style={{ backgroundColor: colorForCount(cell.count) }}
-                      />
-                    </TooltipTrigger>
-                    <TooltipContent side="top" className="text-xs px-2 py-1">
-                      {cell.count} completion{cell.count !== 1 ? 's' : ''} on {cell.date}
-                    </TooltipContent>
-                  </Tooltip>
-                );
-              })}
-            </div>
-          ))}
-        </div>
-        <div className="flex items-center gap-1 mt-2 justify-end text-[10px] text-zinc-500">
-          <span>Less</span>
-          {HEATMAP_COLORS.map((c) => (
-            <div key={c} className="h-[10px] w-[10px] rounded-sm" style={{ backgroundColor: c }} />
-          ))}
-          <span>More</span>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 function AnimatedNumber({ value, suffix = '' }: { value: number; suffix?: string }) {
@@ -335,19 +233,6 @@ export default function AnalyticsPage() {
     })).sort((a, b) => b.pct - a.pct);
   }, [roadmapStats]);
 
-  const weeklyActivity = useMemo(() => {
-    const now = new Date(); now.setHours(23, 59, 59, 999);
-    return Array.from({ length: 8 }, (_, i) => {
-      const weekEnd = new Date(now); weekEnd.setDate(now.getDate() - i * 7);
-      const weekStart = new Date(weekEnd); weekStart.setDate(weekEnd.getDate() - 6); weekStart.setHours(0, 0, 0, 0);
-      const count = completionDates.filter((d) => {
-        const t = new Date(d).getTime();
-        return t >= weekStart.getTime() && t <= weekEnd.getTime();
-      }).length;
-      return { label: `W${8 - i}`, value: count, color: '#6366f1' };
-    }).reverse();
-  }, [completionDates]);
-
   const weakAreas = useMemo(() => [...roadmapStats].sort((a, b) => a.pct - b.pct).slice(0, 5), [roadmapStats]);
   const strongAreas = useMemo(() => [...roadmapStats].filter((r) => r.completed > 0).sort((a, b) => b.pct - a.pct).slice(0, 5), [roadmapStats]);
 
@@ -429,7 +314,7 @@ export default function AnalyticsPage() {
                   {loading ? (
                     <div className="flex items-center justify-center h-24"><Loader2 className="h-5 w-5 animate-spin text-zinc-500" /></div>
                   ) : (
-                    <ContributionHeatmap dates={completionDates} />
+                    <ActivityHeatmap dates={completionDates} />
                   )}
                 </CardContent>
               </Card>
@@ -449,35 +334,7 @@ export default function AnalyticsPage() {
                     {loading ? (
                       <div className="flex items-center justify-center h-40"><Loader2 className="h-5 w-5 animate-spin text-zinc-500" /></div>
                     ) : (
-                      <div className="flex items-end gap-1.5 h-40 w-full">
-                        {weeklyActivity.map((d, i) => {
-                          const max = Math.max(...weeklyActivity.map((w) => w.value), 1);
-                          const h = (d.value / max) * 100;
-                          return (
-                            <div key={i} className="flex-1 flex flex-col items-center gap-1 min-w-0 h-full justify-end">
-                              <AnimatePresence>
-                                {d.value > 0 && (
-                                  <motion.span
-                                    initial={{ opacity: 0, y: 5 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="text-[9px] font-medium text-zinc-400"
-                                  >
-                                    {d.value}
-                                  </motion.span>
-                                )}
-                              </AnimatePresence>
-                              <motion.div
-                                initial={{ height: 0 }}
-                                animate={{ height: `${Math.max(h, d.value > 0 ? 4 : 2)}%` }}
-                                transition={{ duration: 0.5, delay: i * 0.03 }}
-                                className="w-full rounded-t bg-indigo-500 min-h-[2px]"
-                                style={{ opacity: d.value > 0 ? 1 : 0.15 }}
-                              />
-                              <span className="text-[9px] text-zinc-600 truncate w-full text-center leading-none">{d.label}</span>
-                            </div>
-                          );
-                        })}
-                      </div>
+                      <WeeklyActivityChart dates={completionDates} />
                     )}
                     <p className="text-[10px] text-zinc-500 mt-3 text-center">Completions per week (last 8 weeks)</p>
                   </CardContent>
@@ -492,38 +349,11 @@ export default function AnalyticsPage() {
                       <CardTitle className="text-sm font-medium">Category Progress</CardTitle>
                     </div>
                   </CardHeader>
-                  <CardContent className="p-5 pt-0 space-y-3">
+                  <CardContent className="p-5 pt-0">
                     {loading ? (
                       <div className="flex items-center justify-center h-40"><Loader2 className="h-5 w-5 animate-spin text-zinc-500" /></div>
                     ) : (
-                      categoryStats.map((cat, i) => (
-                        <motion.div
-                          key={cat.label}
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 0.35 + i * 0.04 }}
-                        >
-                          <div className="flex items-center justify-between text-xs mb-1">
-                            <div className="flex items-center gap-2">
-                              <div className="h-2 w-2 rounded-full" style={{ backgroundColor: cat.color }} />
-                              <span className="text-zinc-300">{cat.label}</span>
-                            </div>
-                            <span className="text-zinc-500">
-                              {cat.completed}/{cat.total}
-                              <span className="ml-1.5 font-semibold" style={{ color: cat.color }}>{cat.pct}%</span>
-                            </span>
-                          </div>
-                          <div className="h-2 w-full rounded-full bg-zinc-800 overflow-hidden">
-                            <motion.div
-                              initial={{ width: 0 }}
-                              animate={{ width: `${cat.pct}%` }}
-                              transition={{ duration: 0.8, delay: 0.4 + i * 0.04 }}
-                              className="h-full rounded-full"
-                              style={{ backgroundColor: cat.color }}
-                            />
-                          </div>
-                        </motion.div>
-                      ))
+                      <CategoryProgressChart categories={categoryStats} />
                     )}
                   </CardContent>
                 </Card>

@@ -10,10 +10,10 @@ import {
   useResumeAnalysesQuery,
   type AtsResult,
   type ResumeAnalysisRow,
-  type AnalysisScores,
 } from '@/hooks/use-resume-analyses';
 import ResumeCompare from './resume-compare';
 import { mergeChanges } from '@/lib/diff';
+import { AtsCriteriaChart, AtsScoreGauge } from '@/components/charts/ats-charts';
 
 interface Props {
   source: string;
@@ -22,41 +22,9 @@ interface Props {
   onClose: () => void;
 }
 
-const CRITERIA: { key: keyof AnalysisScores; label: string }[] = [
-  { key: 'structure', label: 'Structure' },
-  { key: 'keywords', label: 'Keywords' },
-  { key: 'actionVerbs', label: 'Action Verbs' },
-  { key: 'quantifiableImpact', label: 'Impact' },
-  { key: 'length', label: 'Length' },
-  { key: 'contactInfo', label: 'Contact' },
-];
-
 function extractApiError(err: unknown): string {
   if (err instanceof Error) return err.message;
   return 'Something went wrong';
-}
-
-function scoreColor(v: number): string {
-  if (v >= 80) return '#10b981';
-  if (v >= 60) return '#f59e0b';
-  return '#ef4444';
-}
-
-function ScoreRing({ label, value }: { label: string; value: number }) {
-  const color = scoreColor(value);
-  return (
-    <div className="flex flex-col items-center gap-1">
-      <div
-        className="relative h-20 w-20 rounded-full flex items-center justify-center"
-        style={{ background: `conic-gradient(${color} ${value * 3.6}deg, rgba(255,255,255,0.06) 0deg)` }}
-      >
-        <div className="h-16 w-16 rounded-full bg-zinc-950 flex items-center justify-center">
-          <span className="text-xl font-bold tabular-nums" style={{ color }}>{value}%</span>
-        </div>
-      </div>
-      <span className="text-[11px] text-zinc-500 uppercase tracking-wider">{label}</span>
-    </div>
-  );
 }
 
 function Tag({ label, tone }: { label: string; tone: 'good' | 'missing' }) {
@@ -91,33 +59,14 @@ function Section({ title, items, tone }: { title: string; items: string[]; tone:
   );
 }
 
-function SubBars({ scores }: { scores: AnalysisScores }) {
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
-      {CRITERIA.map((c) => {
-        const v = scores[c.key] ?? 0;
-        return (
-          <div key={c.key} className="flex items-center gap-2">
-            <span className="text-[11px] text-zinc-500 w-20 shrink-0">{c.label}</span>
-            <div className="flex-1 h-1.5 rounded-full bg-zinc-800 overflow-hidden">
-              <div className="h-full rounded-full" style={{ width: `${v}%`, backgroundColor: scoreColor(v) }} />
-            </div>
-            <span className="text-[11px] tabular-nums w-8 text-right text-zinc-400">{v}</span>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
 function ResultBody({ result, onReapply }: { result: Pick<AtsResult, 'scores' | 'missingKeywords' | 'presentKeywords' | 'strengths' | 'weaknesses' | 'recommendations' | 'optimizedSource'>; onReapply?: () => void }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-around">
-        <ScoreRing label="ATS Score" value={result.scores.atsScore} />
-        <ScoreRing label="JD Match" value={result.scores.matchScore} />
+        <AtsScoreGauge label="ATS Score" value={result.scores.atsScore} />
+        <AtsScoreGauge label="JD Match" value={result.scores.matchScore} />
       </div>
-      <SubBars scores={result.scores} />
+      <AtsCriteriaChart scores={result.scores} />
 
       {result.presentKeywords?.length > 0 && (
         <div>
