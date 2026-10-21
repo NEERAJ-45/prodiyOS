@@ -4,6 +4,8 @@ import * as React from 'react';
 import Link from 'next/link';
 
 import { cn } from '@/lib/utils';
+import { computeRoadmapProgress } from '@/lib/roadmap-progress';
+import { useAllCompletionsQuery } from '@/hooks/use-completions';
 
 import { CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -113,25 +115,12 @@ const difficultyColors: Record<string, string> = {
 };
 
 export default function RoadmapsPage() {
-  const progressMap = React.useMemo(() => {
-    const getCompletedCount = (storageKey: string, defaultVal: number = 0) => {
-      try {
-        const raw = localStorage.getItem(storageKey);
-        if (!raw) return defaultVal;
-        const data = JSON.parse(raw);
-        return Object.keys(data).length;
-      } catch {
-        return defaultVal;
-      }
-    };
+  const { data: completions } = useAllCompletionsQuery();
 
-    const newProgress: Record<string, number> = {};
-    CATEGORY_DISPLAY.forEach((cat) => {
-      const totalCompleted = cat.storageKeys.reduce((sum, key) => sum + getCompletedCount(key), 0);
-      newProgress[cat.slug] = Math.round((totalCompleted / cat.total) * 100);
-    });
-    return newProgress;
-  }, []);
+  const progressMap = React.useMemo(() => {
+    const rows = completions?.dbConnected ? completions.data : [];
+    return computeRoadmapProgress(CATEGORY_DISPLAY, rows);
+  }, [completions]);
 
   const dynamicCategories: CategoryDisplay[] = React.useMemo(() => {
     return CATEGORY_DISPLAY.map((cat) => ({
