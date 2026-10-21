@@ -1,22 +1,7 @@
 'use client';
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { STORAGE_KEYS } from '@/lib/storage-keys';
-
-export function useOnboardingStatus(email: string) {
-  return useQuery({
-    queryKey: ['onboarding', email],
-    queryFn: async () => {
-      if (!email) return { onboarded: true, onboardingData: null };
-      const res = await fetch(`/api/db/onboarding?email=${encodeURIComponent(email)}`);
-      if (!res.ok) throw new Error('Failed to fetch onboarding status');
-      return res.json();
-    },
-    enabled: !!email,
-    staleTime: 0,
-    gcTime: 0,
-  });
-}
 
 export function useSaveOnboarding() {
   const queryClient = useQueryClient();

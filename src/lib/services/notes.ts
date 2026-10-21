@@ -38,17 +38,6 @@ export interface SaveNoteResponse {
   error?: string;
 }
 
-export interface ResetNotesRequest {
-  storagePrefix: string;
-  userEmail: string;
-}
-
-export interface ResetNotesResponse {
-  success: boolean;
-  deleted?: boolean;
-  error?: string;
-}
-
 // ---------------------------------------------------------------------------
 // Service functions
 // ---------------------------------------------------------------------------
@@ -97,27 +86,4 @@ export async function saveNote(
     );
   }
   return res.json() as Promise<SaveNoteResponse>;
-}
-
-/**
- * Delete all notes for a given storagePrefix.
- *
- * @throws Error when the network request fails or the server returns a non-2xx status.
- */
-export async function resetNotes(
-  payload: ResetNotesRequest,
-  headers: Record<string, string>,
-): Promise<ResetNotesResponse> {
-  const res = await fetch('/api/db/notes', {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ ...payload, resetAll: true }),
-  });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error(
-      (body as { error?: string }).error ?? `resetNotes failed: ${res.status}`,
-    );
-  }
-  return res.json() as Promise<ResetNotesResponse>;
 }

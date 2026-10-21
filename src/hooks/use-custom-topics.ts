@@ -1,8 +1,7 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useProfile } from '@/components/providers/ProfileProvider';
 import { useCallback } from 'react';
-import { fetchCustomTopics, addCustomTopic, deleteCustomTopic } from '@/lib/services/custom-topics';
-import type { FetchCustomTopicsResponse } from '@/lib/services/custom-topics';
+import { addCustomTopic, deleteCustomTopic } from '@/lib/services/custom-topics';
 
 function useTopicsHeaders() {
   const { userEmail, customDbUrl } = useProfile();
@@ -14,18 +13,6 @@ function useTopicsHeaders() {
     if (customDbUrl) headers['x-mongodb-url'] = customDbUrl;
     return headers;
   }, [userEmail, customDbUrl]);
-}
-
-export function useCustomTopicsQuery(storagePrefix: string) {
-  const { userEmail } = useProfile();
-  const getHeaders = useTopicsHeaders();
-
-  return useQuery<FetchCustomTopicsResponse>({
-    queryKey: ['custom-topics', storagePrefix],
-    queryFn: () => fetchCustomTopics(userEmail, getHeaders()),
-    enabled: !!userEmail,
-    staleTime: 2 * 60 * 1000,
-  });
 }
 
 export function useAddCustomTopic() {

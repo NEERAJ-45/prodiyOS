@@ -1,8 +1,7 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useProfile } from '@/components/providers/ProfileProvider';
 import { useCallback } from 'react';
-import { fetchCompletions, toggleCompletion } from '@/lib/services/completions';
-import type { FetchCompletionsResponse } from '@/lib/services/completions';
+import { toggleCompletion } from '@/lib/services/completions';
 
 function useRequestHeaders() {
   const { userEmail, customDbUrl } = useProfile();
@@ -14,18 +13,6 @@ function useRequestHeaders() {
     if (customDbUrl) headers['x-mongodb-url'] = customDbUrl;
     return headers;
   }, [userEmail, customDbUrl]);
-}
-
-export function useCompletionsQuery(storagePrefix: string) {
-  const { userEmail } = useProfile();
-  const getHeaders = useRequestHeaders();
-
-  return useQuery<FetchCompletionsResponse>({
-    queryKey: ['completions', storagePrefix],
-    queryFn: () => fetchCompletions(userEmail, getHeaders()),
-    enabled: !!userEmail,
-    staleTime: 2 * 60 * 1000,
-  });
 }
 
 export function useToggleCompletion() {

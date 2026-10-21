@@ -62,25 +62,6 @@ export function useResumesQuery() {
   });
 }
 
-export function useSaveResume() {
-  const getHeaders = useResumeHeaders();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ id, title, company, latexSource }: { id?: string; title: string; company?: string; latexSource: string }) => {
-      const res = await fetch('/api/db/resumes', {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify({ id, title, company, latexSource }),
-      });
-      return handleResponse<{ success: boolean; data: ResumeData }>(res);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['resumes'] });
-    },
-  });
-}
-
 export function useDeleteResume() {
   const getHeaders = useResumeHeaders();
   const queryClient = useQueryClient();

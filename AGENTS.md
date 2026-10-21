@@ -15,9 +15,9 @@ A full-stack learning progress tracking platform built with Next.js, MongoDB, an
 - All API data is fetched via shared hooks in `src/hooks/` using `@tanstack/react-query`
 - `QueryProvider` wraps the app (in `src/components/providers/QueryProvider.tsx`) with `ReactQueryDevtools` in dev
 - Available shared hooks:
-  - `useCompletionsQuery(storagePrefix)` / `useToggleCompletion()` — `/api/db/completions`
+  - `useToggleCompletion()` — `/api/db/completions`
   - `useNotesQuery(storagePrefix)` / `useSaveNote()` — `/api/db/notes`
-  - `useCustomTopicsQuery(storagePrefix)` / `useAddCustomTopic()` / `useDeleteCustomTopic()` — `/api/db/custom-topics`
+  - `useAddCustomTopic()` / `useDeleteCustomTopic()` — `/api/db/custom-topics`
   - `useDailyQuery(date)` / `useSyncDaily()` / `useActivityLog()` — `/api/db/daily` and `/api/db/activity`
 - Query keys follow convention: `['resource', ...params]` (e.g. `['completions', prefix]`, `['daily', date]`)
 - Mutations automatically `invalidateQueries` on success to keep cache fresh

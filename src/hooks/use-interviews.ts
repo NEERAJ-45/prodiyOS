@@ -59,10 +59,6 @@ interface CompanyResponse {
   company: Company;
 }
 
-interface CompaniesResponse {
-  companies: Company[];
-}
-
 export function useApplicationsQuery() {
   const { userEmail } = useProfile();
   const getHeaders = useInterviewsHeaders();
@@ -79,26 +75,6 @@ export function useApplicationsQuery() {
   });
 }
 
-export function useCreateApplication() {
-  const getHeaders = useInterviewsHeaders();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (data: Record<string, unknown>) => {
-      const res = await fetch('/api/interviews', {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify(data),
-      });
-      if (!res.ok) throw new Error('Failed to create application');
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['interviews', 'applications'] });
-    },
-  });
-}
-
 export function useUpdateApplication() {
   const getHeaders = useInterviewsHeaders();
   const queryClient = useQueryClient();
@@ -111,25 +87,6 @@ export function useUpdateApplication() {
         body: JSON.stringify(data),
       });
       if (!res.ok) throw new Error('Failed to update application');
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['interviews', 'applications'] });
-    },
-  });
-}
-
-export function useDeleteApplication() {
-  const getHeaders = useInterviewsHeaders();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (id: string) => {
-      const res = await fetch(`/api/interviews/${id}`, {
-        method: 'DELETE',
-        headers: getHeaders(),
-      });
-      if (!res.ok) throw new Error('Failed to delete application');
       return res.json();
     },
     onSuccess: () => {
@@ -236,42 +193,6 @@ export function useUpdateCompany() {
     },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['interviews', 'companies', variables.id] });
-    },
-  });
-}
-
-export function useCompaniesQuery() {
-  const { userEmail } = useProfile();
-  const getHeaders = useInterviewsHeaders();
-
-  return useQuery<CompaniesResponse>({
-    queryKey: ['interviews', 'companies'],
-    queryFn: async () => {
-      const res = await fetch(`/api/companies?userEmail=${encodeURIComponent(userEmail)}`, { headers: getHeaders() });
-      if (!res.ok) throw new Error('Failed to fetch companies');
-      return res.json();
-    },
-    enabled: !!userEmail,
-    staleTime: 5 * 60 * 1000,
-  });
-}
-
-export function useCreateCompany() {
-  const getHeaders = useInterviewsHeaders();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (data: Record<string, unknown>) => {
-      const res = await fetch('/api/companies', {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify(data),
-      });
-      if (!res.ok) throw new Error('Failed to create company');
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['interviews', 'companies'] });
     },
   });
 }

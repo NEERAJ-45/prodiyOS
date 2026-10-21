@@ -69,10 +69,6 @@ interface QuestionsTableProps {
   sourceName?: string;
 }
 
-export function useDefaultCompletedIds(ids?: number[]) {
-  return ids ?? [];
-}
-
 const diffOrder: Record<string, number> = { EASY: 0, MEDIUM: 1, HARD: 2 };
 
 export default function QuestionsTable({

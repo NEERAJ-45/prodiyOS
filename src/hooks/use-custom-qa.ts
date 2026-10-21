@@ -137,22 +137,3 @@ export function useDeleteCustomQABook() {
   });
 }
 
-export function useClearCustomQA() {
-  const getHeaders = useRequestHeaders();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async () => {
-      const res = await fetch('/api/db/custom-qa', {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify({ action: 'clear' }),
-      });
-      if (!res.ok) throw new Error('Failed to clear Custom Q&A');
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['custom-qa'] });
-    },
-  });
-}
