@@ -146,10 +146,11 @@ export function useTableSync({
 
           for (const [id, dateStr] of Object.entries(initialCompleted)) {
             if (!dbCompMap[id]) {
+              const syncedItem = [...allItems, ...initialCustom].find(q => q.id === Number(id));
               fetch('/api/db/completions', {
                 method: 'POST',
                 headers,
-                body: JSON.stringify({ storagePrefix: compKey, itemId: id, completedAt: dateStr, userEmail }),
+                body: JSON.stringify({ storagePrefix: compKey, itemId: id, completedAt: dateStr, title: syncedItem?.title, userEmail }),
               }).catch(() => {});
             }
           }
@@ -238,6 +239,7 @@ export function useTableSync({
     const wasCompleted = !!completedMap[key];
     const nowCompleted = !wasCompleted;
     const compAtStr = nowCompleted ? new Date().toISOString() : '';
+    const title = extraTitle ?? allItems.find((q) => q.id === id)?.title;
 
     setCompletedMap((prev) => {
       const next = { ...prev };
@@ -251,9 +253,9 @@ export function useTableSync({
       storagePrefix: compKey,
       itemId: String(id),
       completedAt: nowCompleted ? compAtStr : undefined,
-      title: extraTitle,
+      title,
     });
-  }, [completedMap, persistCompleted, compKey, toggleCompletion]);
+  }, [completedMap, persistCompleted, compKey, toggleCompletion, allItems]);
 
   const updateNote = useCallback((id: number, value: string) => {
     setNotesMap((prev) => {

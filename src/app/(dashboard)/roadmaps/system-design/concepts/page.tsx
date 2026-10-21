@@ -145,10 +145,11 @@ export default function SystemDesignConceptsPage() {
     const headers: Record<string, string> = { 'Content-Type': 'application/json', 'x-user-email': userEmail };
     if (customDbUrl) headers['x-mongodb-url'] = customDbUrl;
     changed.forEach(({ id, completedAt }) => {
+      const title = currentGroups.flatMap((g) => g.items).find((item) => item.id === Number(id))?.text;
       fetch('/api/db/completions', {
         method: 'POST',
         headers,
-        body: JSON.stringify({ storagePrefix: `${currentPrefix}-completed`, itemId: id, completedAt, userEmail }),
+        body: JSON.stringify({ storagePrefix: `${currentPrefix}-completed`, itemId: id, completedAt, title, userEmail }),
       }).catch(() => {});
     });
   };
