@@ -21,7 +21,7 @@ export function useRevisionsQuery() {
   const getHeaders = useRevisionHeaders();
 
   return useQuery({
-    queryKey: ['revisions'],
+    queryKey: ['revisions', userEmail],
     queryFn: () => fetchRevisions(userEmail, getHeaders()),
     enabled: !!userEmail,
     staleTime: 2 * 60 * 1000,
