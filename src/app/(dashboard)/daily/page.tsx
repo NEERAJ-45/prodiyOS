@@ -18,6 +18,7 @@ import { CustomTaskList } from '@/components/daily/CustomTaskList';
 import { FocusTimer } from '@/components/daily/FocusTimer';
 import { DailyReflection } from '@/components/daily/DailyReflection';
 import { ScheduleLegend } from '@/components/daily/ScheduleLegend';
+import { SyncStatus, type SyncState } from '@/components/shared/SyncStatus';
 
 const SCHEDULE_MODE_KEY = STORAGE_KEYS.DAILY_SCHEDULE_MODE;
 const SLOT_COMPLETIONS_KEY = STORAGE_KEYS.DAILY_SLOT_COMPLETIONS;
@@ -25,13 +26,11 @@ const SLOT_NOTES_KEY = STORAGE_KEYS.DAILY_SLOT_NOTES;
 const STORAGE_KEY = STORAGE_KEYS.DAILY_COMPLETIONS;
 const NOTES_KEY = STORAGE_KEYS.DAILY_NOTES;
 
-const today = new Date();
-const dateStr = today.toLocaleDateString('en-US', {
-  weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-});
-const todayKey = today.toISOString().slice(0, 10);
 const DAY_ABBREV = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const todayDayName = DAY_ABBREV[today.getDay()];
+
+function toKey(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
 
 type Priority = 'must' | 'should' | 'nice';
 
@@ -48,10 +47,10 @@ interface SlotCompletion {
   notes: Record<string, string>;
 }
 
-function getDateRange(daysBack: number): string[] {
+function getDateRange(base: Date, daysBack: number): string[] {
   const dates: string[] = [];
   for (let i = 1; i <= daysBack; i++) {
-    const d = new Date(today);
+    const d = new Date(base);
     d.setDate(d.getDate() - i);
     dates.push(d.toISOString().slice(0, 10));
   }
@@ -77,6 +76,13 @@ function loadSlotNotes(): Record<string, Record<string, string>> {
 export default function DailyPage() {
   const { userEmail } = useProfile();
   const mounted = useMounted();
+  const [now, setNow] = React.useState(() => new Date());
+  const todayKey = toKey(now);
+  const dateStr = now.toLocaleDateString('en-US', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+  });
+  const todayDayName = DAY_ABBREV[now.getDay()];
+  const [syncState, setSyncState] = React.useState<SyncState>('idle');
   const [completed, setCompleted] = React.useState<Set<string>>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -117,13 +123,43 @@ export default function DailyPage() {
   const [slotNotes, setSlotNotes] = React.useState<Record<string, Record<string, string>>>(() => loadSlotNotes());
   const [showCatchUp, setShowCatchUp] = React.useState(true);
 
+  // Midnight rollover: re-derive the date on a timer and when tab regains focus.
+  React.useEffect(() => {
+    const check = () => {
+      const t = new Date();
+      setNow((prev) => (toKey(prev) === toKey(t) ? prev : t));
+    };
+    const id = setInterval(check, 60_000);
+    document.addEventListener('visibilitychange', check);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', check);
+    };
+  }, []);
+
+  // On date change, reload completed/note for the new day before anything writes under the new key.
+  const prevDayKeyRef = React.useRef(todayKey);
+  React.useEffect(() => {
+    if (prevDayKeyRef.current === todayKey) return;
+    prevDayKeyRef.current = todayKey;
+    try {
+      const saved: Record<string, string[]> = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      setCompleted(new Set(saved[todayKey] || []));
+      const notes: Record<string, string> = JSON.parse(localStorage.getItem(NOTES_KEY) || '{}');
+      setNote(notes[todayKey] || '');
+    } catch {
+      setCompleted(new Set());
+      setNote('');
+    }
+  }, [todayKey]);
+
   const { data: dailyDb } = useDailyQuery(todayKey);
   const syncDaily = useSyncDaily();
   const logActivity = useActivityLog();
 
   const todaySchedule = React.useMemo(() => getTodaySchedule(scheduleId), [scheduleId]);
-  const todaySlotsCompleted = React.useMemo(() => slotData[todayKey]?.completed ?? {}, [slotData]);
-  const todaySlotNotes = React.useMemo(() => slotNotes[todayKey] ?? {}, [slotNotes]);
+  const todaySlotsCompleted = React.useMemo(() => slotData[todayKey]?.completed ?? {}, [slotData, todayKey]);
+  const todaySlotNotes = React.useMemo(() => slotNotes[todayKey] ?? {}, [slotNotes, todayKey]);
   const todaySlotsDone = React.useMemo(
     () => todaySchedule ? todaySchedule.slots.filter((s) => todaySlotsCompleted[s.period]).length : 0,
     [todaySchedule, todaySlotsCompleted],
@@ -132,7 +168,7 @@ export default function DailyPage() {
 
   const catchUpMissed = React.useMemo(() => {
     const missed: { date: string; dayName: string; slot: Slot }[] = [];
-    for (const dateKey of getDateRange(7)) {
+    for (const dateKey of getDateRange(now, 7)) {
       const d = new Date(dateKey + 'T12:00:00');
       const dayName = DAY_ABBREV[d.getDay()];
       const daySchedule = getDaySchedule(scheduleId, dayName);
@@ -145,12 +181,20 @@ export default function DailyPage() {
       }
     }
     return missed;
-  }, [scheduleId, slotData]);
+  }, [scheduleId, slotData, now]);
 
   const syncDailyToServer = React.useCallback((ids: Set<string>, noteText: string) => {
     if (!userEmail) return;
-    syncDaily.mutate({ date: todayKey, completedTaskIds: Array.from(ids), note: noteText });
-  }, [userEmail, syncDaily]);
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      setSyncState('offline');
+      return;
+    }
+    setSyncState('saving');
+    syncDaily.mutate(
+      { date: todayKey, completedTaskIds: Array.from(ids), note: noteText },
+      { onSettled: (_data, error) => setSyncState(error ? 'error' : 'saved') },
+    );
+  }, [userEmail, syncDaily, todayKey]);
 
   React.useEffect(() => {
     if (!dailyDb?.record) return;
@@ -181,7 +225,7 @@ export default function DailyPage() {
       syncDailyToServer(completed, note);
     }, 2000);
     return () => clearTimeout(id);
-  }, [completed, note, scheduleId, slotData, slotNotes, customTasks, mounted, syncDailyToServer]);
+  }, [completed, note, scheduleId, slotData, slotNotes, customTasks, mounted, syncDailyToServer, todayKey]);
 
   function toggleSlotCompletion(period: string) {
     setSlotData((prev) => {
@@ -240,7 +284,7 @@ export default function DailyPage() {
     return (
       <div className="flex flex-col h-full">
         <div className="flex-1 flex items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-700 border-t-zinc-400" />
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-muted-foreground" />
         </div>
       </div>
     );
@@ -252,8 +296,11 @@ export default function DailyPage() {
         <div className="p-4 md:p-6 space-y-4 md:space-y-6 max-w-7xl mx-auto w-full">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
             <div>
-              <h1 className="text-2xl font-semibold tracking-tight text-zinc-100">Daily Execution</h1>
-              <p className="text-sm text-zinc-500 mt-1">{dateStr}</p>
+              <div className="flex items-center gap-3">
+                <h1 className="text-2xl font-semibold tracking-tight text-foreground">Daily Execution</h1>
+                <SyncStatus state={syncState} />
+              </div>
+              <p className="text-sm text-muted-foreground mt-1">{dateStr}</p>
             </div>
           </div>
 
@@ -270,10 +317,10 @@ export default function DailyPage() {
 
           <div className="space-y-1">
             <div className="flex items-center justify-between text-xs">
-              <span className="text-zinc-500">Today&apos;s Schedule Progress</span>
-              <span className="text-zinc-400">{slotProgressPct}%</span>
+              <span className="text-muted-foreground">Today&apos;s Schedule Progress</span>
+              <span className="text-muted-foreground">{slotProgressPct}%</span>
             </div>
-            <div className="h-2 w-full rounded-full bg-zinc-800 overflow-hidden">
+            <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
               <div
                 className="h-full rounded-full bg-blue-500 transition-all duration-700"
                 style={{ width: `${slotProgressPct}%` }}
@@ -283,16 +330,16 @@ export default function DailyPage() {
 
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
             <div className="xl:col-span-2 space-y-4">
-              <Card className="bg-card/50 border-zinc-800">
+              <Card className="bg-card/50 border-border">
                 <CardHeader className="p-4 pb-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Target className="h-4 w-4 text-blue-400" />
-                      <CardTitle className="text-sm font-medium text-zinc-200">
+                      <CardTitle className="text-sm font-medium text-foreground">
                         {todayDayName}&apos;s Plan — {SCHEDULES[scheduleId].label}
                       </CardTitle>
                     </div>
-                    <Badge variant="outline" className="text-[10px] text-zinc-500 border-zinc-700">
+                    <Badge variant="outline" className="text-[10px] text-muted-foreground border-border">
                       {todaySlotsDone}/{totalSlotsToday} done
                     </Badge>
                   </div>
@@ -309,7 +356,7 @@ export default function DailyPage() {
                     />
                   ))}
                   {!todaySchedule && (
-                    <p className="text-sm text-zinc-600 text-center py-4">No schedule found for today.</p>
+                    <p className="text-sm text-muted-foreground text-center py-4">No schedule found for today.</p>
                   )}
                 </CardContent>
               </Card>
