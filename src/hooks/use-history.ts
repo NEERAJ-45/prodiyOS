@@ -2,17 +2,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useProfile } from '@/components/providers/ProfileProvider';
 import { useCallback } from 'react';
 
-interface DailyRecord {
-  date: string;
-  completedTaskIds: string[];
-  note: string;
-}
-
-interface DailyHistoryResponse {
-  dbConnected: boolean;
-  records: DailyRecord[];
-}
-
 interface ActivityItem {
   text: string;
   createdAt: string;
@@ -29,20 +18,6 @@ function useHistoryHeaders() {
     if (customDbUrl) headers['x-mongodb-url'] = customDbUrl;
     return headers;
   }, [customDbUrl]);
-}
-
-export function useDailyHistoryQuery() {
-  const getHeaders = useHistoryHeaders();
-
-  return useQuery<DailyHistoryResponse>({
-    queryKey: ['daily-history'],
-    queryFn: async () => {
-      const res = await fetch('/api/db/daily/history', { headers: getHeaders() });
-      if (!res.ok) throw new Error('Failed to fetch daily history');
-      return res.json();
-    },
-    staleTime: 2 * 60 * 1000,
-  });
 }
 
 export function useActivityLogQuery() {

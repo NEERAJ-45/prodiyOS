@@ -2,71 +2,35 @@
 
 import * as React from 'react';
 import { useMounted } from '@/hooks/useMounted';
-import { useDailyHistoryQuery, useActivityLogQuery, useClearActivityLog } from '@/hooks/use-history';
+import { useActivityLogQuery, useClearActivityLog } from '@/hooks/use-history';
 import {
-  CalendarDays,
-  CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
-  FileText,
-  Target,
-  ArrowRight,
   ListOrdered,
   Trash2,
+  ChevronLeft,
+  ChevronRight,
   ChevronsLeft,
   ChevronsRight,
 } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { formatRelativeTime } from '@/lib/utils';
 import { useProfile } from '@/components/providers/ProfileProvider';
-import Link from 'next/link';
 import { toast } from '@/components/ui/toast';
-
-interface DailyRecord {
-  date: string;
-  completedTaskIds: string[];
-  note: string;
-}
-
-const ITEMS_PER_PAGE = 10;
 
 interface ActivityItem {
   text: string;
   createdAt: string;
 }
 
+const ACTIVITY_PAGE_SIZE = 20;
+
 export default function HistoryPage() {
   const { userEmail } = useProfile();
   const mounted = useMounted();
-  const { data: historyData, isLoading: historyLoading } = useDailyHistoryQuery();
   const { data: activityData, isLoading: activityLoading } = useActivityLogQuery();
   const clearActivity = useClearActivityLog();
 
-  const records = React.useMemo(() => {
-    if (!historyData?.records) return [];
-    return [...historyData.records].sort((a: DailyRecord, b: DailyRecord) => b.date.localeCompare(a.date));
-  }, [historyData]);
-
   const activities = React.useMemo(() => activityData?.activities ?? [], [activityData]);
 
-  const [page, setPage] = React.useState(0);
-  const [expandedDate, setExpandedDate] = React.useState<string | null>(null);
-
-  const getInitialTab = () => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      return params.get('tab') === 'activity' ? 'activity' : 'daily';
-    }
-    return 'daily';
-  };
-
-  const [activeTab, setActiveTab] = React.useState(getInitialTab);
   const [activityPage, setActivityPage] = React.useState(0);
-
-  const loading = historyLoading || activityLoading;
 
   const handleClearHistory = async () => {
     if (!userEmail) return;
@@ -79,10 +43,6 @@ export default function HistoryPage() {
     }
   };
 
-  const totalPages = Math.ceil(records.length / ITEMS_PER_PAGE);
-  const pageRecords = records.slice(page * ITEMS_PER_PAGE, (page + 1) * ITEMS_PER_PAGE);
-
-  const ACTIVITY_PAGE_SIZE = 20;
   const totalActivityPages = Math.ceil(activities.length / ACTIVITY_PAGE_SIZE);
   const pageActivities = React.useMemo(() => {
     return activities.slice(activityPage * ACTIVITY_PAGE_SIZE, (activityPage + 1) * ACTIVITY_PAGE_SIZE);
@@ -98,7 +58,7 @@ export default function HistoryPage() {
     return groups;
   }, [pageActivities]);
 
-  if (!mounted || loading) {
+  if (!mounted || activityLoading) {
     return (
       <div className="flex flex-col h-full">
         <div className="flex-1 flex items-center justify-center">
@@ -113,182 +73,79 @@ export default function HistoryPage() {
       <div className="flex-1 overflow-y-auto">
         <div className="p-4 md:p-6 space-y-6 max-w-4xl mx-auto w-full">
           <div className="flex items-center gap-3">
-            <CalendarDays className="h-6 w-6 text-zinc-400" />
+            <ListOrdered className="h-6 w-6 text-zinc-400" />
             <div>
-              <h1 className="text-2xl font-semibold tracking-tight text-zinc-100">History</h1>
-              <p className="text-sm text-zinc-500 mt-1">Browse your daily records and activity log</p>
+              <h1 className="text-2xl font-semibold tracking-tight text-zinc-100">Activity</h1>
+              <p className="text-sm text-zinc-500 mt-1">Your recent activity across the platform</p>
             </div>
           </div>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="bg-zinc-900 border border-zinc-800">
-              <TabsTrigger value="daily" className="data-[state=active]:bg-zinc-800 data-[state=active]:text-zinc-100 text-zinc-500 text-xs gap-2">
-                <CalendarDays className="h-3.5 w-3.5" />
-                Daily History
-              </TabsTrigger>
-              <TabsTrigger value="activity" className="data-[state=active]:bg-zinc-800 data-[state=active]:text-zinc-100 text-zinc-500 text-xs gap-2">
-                <ListOrdered className="h-3.5 w-3.5" />
-                Activity
-              </TabsTrigger>
-            </TabsList>
+          {activities.length > 0 && (
+            <div className="flex justify-end">
+              <button
+                onClick={handleClearHistory}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-red-800/40 text-red-400 bg-red-950/30 hover:bg-red-950/50 hover:border-red-700/60 transition-colors shrink-0 cursor-pointer"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                Clear Activity History
+              </button>
+            </div>
+          )}
 
-            <TabsContent value="daily" className="mt-0">
-              {records.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 text-zinc-600">
-                  <FileText className="h-12 w-12 mb-3 text-zinc-700" />
-                  <p className="text-sm font-medium text-zinc-500">No records yet</p>
-                  <p className="text-xs text-zinc-600 mt-1">Complete tasks on the Daily page to build your history.</p>
-                  <Link
-                    href="/daily"
-                    className="mt-4 inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-200 transition-colors"
-                  >
-                    Go to Daily Page <ArrowRight className="h-3 w-3" />
-                  </Link>
-                </div>
-              ) : (
-                <>
-                  <div className="space-y-3">
-                    {pageRecords.map((record) => {
-                      const expanded = expandedDate === record.date;
-                      const d = new Date(record.date + 'T00:00:00');
-                      const dayLabel = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-
-                      return (
-                        <Card
-                          key={record.date}
-                          className="bg-card/50 border-zinc-800 transition-all cursor-pointer"
-                          onClick={() => setExpandedDate(expanded ? null : record.date)}
-                        >
-                          <CardContent className="p-4">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-muted">
-                                  <CheckCircle2 className="h-5 w-5 text-zinc-400" />
-                                </div>
-                                <div>
-                                  <p className="text-sm font-medium text-zinc-200">{dayLabel}</p>
-                                  <p className="text-xs text-zinc-500">{record.completedTaskIds.length} task{record.completedTaskIds.length !== 1 ? 's' : ''} completed</p>
-                                </div>
-                              </div>
-                            </div>
-
-                            {expanded && (
-                              <div className="mt-4 pt-3 border-t border-zinc-800 space-y-3">
-                                {record.completedTaskIds.length > 0 && (
-                                  <div>
-                                    <p className="text-xs text-zinc-500 mb-2 flex items-center gap-1.5">
-                                      <Target className="h-3 w-3" /> Completed tasks
-                                    </p>
-                                    <div className="flex flex-wrap gap-1.5">
-                                      {record.completedTaskIds.map((id) => (
-                                        <Badge key={id} variant="outline" className="text-[10px] px-1.5 py-0 bg-zinc-800 text-zinc-400 border-zinc-700">
-                                          {id}
-                                        </Badge>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
-                                {record.note && (
-                                  <div>
-                                    <p className="text-xs text-zinc-500 mb-1">Daily note</p>
-                                    <p className="text-sm text-zinc-400 bg-zinc-900/50 rounded-lg p-3 border border-zinc-800">
-                                      {record.note}
-                                    </p>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
-                  </div>
-
-                  {totalPages > 1 && (
-                    <div className="flex items-center justify-center gap-3 pt-2">
-                      <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>
-                        <ChevronLeft className="h-4 w-4" />
-                      </Button>
-                      <span className="text-xs text-zinc-500 tabular-nums">
-                        {page + 1} / {totalPages}
-                      </span>
-                      <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage((p) => p + 1)}>
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  )}
-                </>
-              )}
-            </TabsContent>
-
-            <TabsContent value="activity" className="mt-0 space-y-4">
-              {activities.length > 0 && (
-                <div className="flex justify-end">
-                  <button
-                    onClick={handleClearHistory}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-red-800/40 text-red-400 bg-red-950/30 hover:bg-red-950/50 hover:border-red-700/60 transition-colors shrink-0 cursor-pointer"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                    Clear Activity History
-                  </button>
-                </div>
-              )}
-              {activities.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 text-zinc-600">
-                  <ListOrdered className="h-12 w-12 mb-3 text-zinc-700" />
-                  <p className="text-sm font-medium text-zinc-500">No activity yet</p>
-                  <p className="text-xs text-zinc-600 mt-1">Your activity log will appear here as you use the platform.</p>
-                </div>
-              ) : (
-                <>
-                  <div className="space-y-6">
-                    {Object.entries(groupedActivities).map(([date, entries]) => (
-                      <div key={date}>
-                        <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-600 mb-2">{date}</h3>
-                        <div className="space-y-2">
-                          {entries.map((entry, i) => (
-                            <div key={i} className="flex items-start gap-3 rounded-lg border border-zinc-800/60 bg-zinc-900/20 px-4 py-3">
-                              <div className="h-1.5 w-1.5 rounded-full bg-emerald-600 shrink-0 mt-1.5" />
-                              <p className="text-sm text-zinc-300 flex-1">{entry.text}</p>
-                              <span className="text-[10px] text-zinc-600 shrink-0 tabular-nums whitespace-nowrap">
-                                {formatRelativeTime(entry.createdAt)}
-                              </span>
-                            </div>
-                          ))}
+          {activities.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 text-zinc-600">
+              <ListOrdered className="h-12 w-12 mb-3 text-zinc-700" />
+              <p className="text-sm font-medium text-zinc-500">No activity yet</p>
+              <p className="text-xs text-zinc-600 mt-1">Your activity log will appear here as you use the platform.</p>
+            </div>
+          ) : (
+            <>
+              <div className="space-y-6">
+                {Object.entries(groupedActivities).map(([date, entries]) => (
+                  <div key={date}>
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-600 mb-2">{date}</h3>
+                    <div className="space-y-2">
+                      {entries.map((entry, i) => (
+                        <div key={i} className="flex items-start gap-3 rounded-lg border border-zinc-800/60 bg-zinc-900/20 px-4 py-3">
+                          <div className="h-1.5 w-1.5 rounded-full bg-emerald-600 shrink-0 mt-1.5" />
+                          <p className="text-sm text-zinc-300 flex-1">{entry.text}</p>
+                          <span className="text-[10px] text-zinc-600 shrink-0 tabular-nums whitespace-nowrap">
+                            {formatRelativeTime(entry.createdAt)}
+                          </span>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {totalActivityPages > 1 && (
-                    <div className="flex items-center justify-between gap-4 px-4 py-3 mt-6 border border-zinc-800 rounded-lg bg-zinc-900/20 text-sm text-zinc-400">
-                      <span className="text-xs">
-                        Page {activityPage + 1} of {totalActivityPages}
-                      </span>
-                      <div className="flex items-center gap-1">
-                        <button onClick={() => setActivityPage(0)} disabled={activityPage === 0}
-                          className="p-1.5 rounded border border-zinc-800 bg-zinc-950 hover:bg-zinc-900 hover:text-zinc-200 disabled:opacity-50 disabled:pointer-events-none transition-colors" title="First">
-                          <ChevronsLeft className="h-4 w-4" />
-                        </button>
-                        <button onClick={() => setActivityPage(p => p - 1)} disabled={activityPage === 0}
-                          className="p-1.5 rounded border border-zinc-800 bg-zinc-950 hover:bg-zinc-900 hover:text-zinc-200 disabled:opacity-50 disabled:pointer-events-none transition-colors" title="Previous">
-                          <ChevronLeft className="h-4 w-4" />
-                        </button>
-                        <button onClick={() => setActivityPage(p => p + 1)} disabled={activityPage >= totalActivityPages - 1}
-                          className="p-1.5 rounded border border-zinc-800 bg-zinc-950 hover:bg-zinc-900 hover:text-zinc-200 disabled:opacity-50 disabled:pointer-events-none transition-colors" title="Next">
-                          <ChevronRight className="h-4 w-4" />
-                        </button>
-                        <button onClick={() => setActivityPage(totalActivityPages - 1)} disabled={activityPage >= totalActivityPages - 1}
-                          className="p-1.5 rounded border border-zinc-800 bg-zinc-950 hover:bg-zinc-900 hover:text-zinc-200 disabled:opacity-50 disabled:pointer-events-none transition-colors" title="Last">
-                          <ChevronsRight className="h-4 w-4" />
-                        </button>
-                      </div>
+                      ))}
                     </div>
-                  )}
-                </>
+                  </div>
+                ))}
+              </div>
+
+              {totalActivityPages > 1 && (
+                <div className="flex items-center justify-between gap-4 px-4 py-3 mt-6 border border-zinc-800 rounded-lg bg-zinc-900/20 text-sm text-zinc-400">
+                  <span className="text-xs">
+                    Page {activityPage + 1} of {totalActivityPages}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <button onClick={() => setActivityPage(0)} disabled={activityPage === 0}
+                      className="p-1.5 rounded border border-zinc-800 bg-zinc-950 hover:bg-zinc-900 hover:text-zinc-200 disabled:opacity-50 disabled:pointer-events-none transition-colors" title="First">
+                      <ChevronsLeft className="h-4 w-4" />
+                    </button>
+                    <button onClick={() => setActivityPage(p => p - 1)} disabled={activityPage === 0}
+                      className="p-1.5 rounded border border-zinc-800 bg-zinc-950 hover:bg-zinc-900 hover:text-zinc-200 disabled:opacity-50 disabled:pointer-events-none transition-colors" title="Previous">
+                      <ChevronLeft className="h-4 w-4" />
+                    </button>
+                    <button onClick={() => setActivityPage(p => p + 1)} disabled={activityPage >= totalActivityPages - 1}
+                      className="p-1.5 rounded border border-zinc-800 bg-zinc-950 hover:bg-zinc-900 hover:text-zinc-200 disabled:opacity-50 disabled:pointer-events-none transition-colors" title="Next">
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                    <button onClick={() => setActivityPage(totalActivityPages - 1)} disabled={activityPage >= totalActivityPages - 1}
+                      className="p-1.5 rounded border border-zinc-800 bg-zinc-950 hover:bg-zinc-900 hover:text-zinc-200 disabled:opacity-50 disabled:pointer-events-none transition-colors" title="Last">
+                      <ChevronsRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
               )}
-            </TabsContent>
-          </Tabs>
+            </>
+          )}
         </div>
       </div>
     </div>
