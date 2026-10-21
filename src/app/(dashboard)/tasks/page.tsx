@@ -31,6 +31,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useProfile } from "@/components/providers/ProfileProvider";
 import { toast } from "@/components/ui/toast";
+import { useTasksQuery, useSaveTasks } from "@/hooks/use-tasks";
 
 import { TaskEntries } from "./TaskEntries";
 import { parseFileAsTask, parseImport, type ImportFormat } from "./task-import";
@@ -140,7 +141,64 @@ function saveTasks(tasks: Task[]) {
 export default function TasksPage() {
   const { userEmail } = useProfile();
   const [tasks, setTasks] = React.useState<Task[]>(() => loadTasks());
+  const [dirty, setDirty] = React.useState(false);
+  const { data: tasksQuery } = useTasksQuery();
+  const saveTasksMutation = useSaveTasks();
   const mounted = useMounted();
+
+  // Every user edit goes through updateTasks: update local state + mark dirty.
+  const updateTasks: React.Dispatch<React.SetStateAction<Task[]>> =
+    React.useCallback((action) => {
+      setTasks(action);
+      setDirty(true);
+    }, []);
+
+  // Initial load: if local is dirty (edits before pull finished), push local
+  // first (push-before-pull); otherwise pull from DB when it has data.
+  const pulledRef = React.useRef(false);
+  React.useEffect(() => {
+    if (pulledRef.current || !tasksQuery?.dbConnected) return;
+    pulledRef.current = true;
+    if (dirty) {
+      saveTasksMutation.mutate(tasks, {
+        onSettled: (_data, error) => {
+          if (!error) setDirty(false);
+        },
+      });
+      return;
+    }
+    if (tasksQuery.data?.length) {
+      setTasks(tasksQuery.data.map(migrateTask));
+    }
+  }, [tasksQuery, dirty, tasks, saveTasksMutation]);
+
+  // Debounced (2s) push while dirty and online; clears dirty on success.
+  React.useEffect(() => {
+    if (!dirty || typeof navigator === "undefined" || !navigator.onLine) return;
+    const id = setTimeout(() => {
+      saveTasksMutation.mutate(tasks, {
+        onSettled: (_data, error) => {
+          if (!error) setDirty(false);
+        },
+      });
+    }, 2000);
+    return () => clearTimeout(id);
+  }, [dirty, tasks, saveTasksMutation]);
+
+  // Retry pending push when connectivity returns.
+  React.useEffect(() => {
+    const onOnline = () => {
+      if (!dirty || typeof navigator === "undefined" || !navigator.onLine)
+        return;
+      saveTasksMutation.mutate(tasks, {
+        onSettled: (_data, error) => {
+          if (!error) setDirty(false);
+        },
+      });
+    };
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+  }, [dirty, tasks, saveTasksMutation]);
   const [search, setSearch] = React.useState("");
   const [filterStatus, setFilterStatus] = React.useState<Status | "all">("all");
   const [filterPriority, setFilterPriority] = React.useState<Priority | "all">(
@@ -181,7 +239,7 @@ export default function TasksPage() {
       dueDate: newDueDate,
       entries: [],
     };
-    setTasks((prev) => [task, ...prev]);
+    updateTasks((prev) => [task, ...prev]);
     setNewTitle("");
     setNewDescription("");
     setNewDueDate("");
@@ -203,7 +261,7 @@ export default function TasksPage() {
 
   function deleteTask(id: string) {
     const t = tasks.find((x) => x.id === id);
-    setTasks((prev) => prev.filter((t) => t.id !== id));
+    updateTasks((prev) => prev.filter((t) => t.id !== id));
     toast({ title: "Task deleted" });
     if (userEmail && t) {
       fetch("/api/db/activity", {
@@ -217,7 +275,7 @@ export default function TasksPage() {
   }
 
   function toggleStatus(id: string) {
-    setTasks((prev) =>
+    updateTasks((prev) =>
       prev.map((t) => {
         if (t.id !== id) return t;
         const next: Status =
@@ -255,7 +313,7 @@ export default function TasksPage() {
 
   function saveEdit() {
     if (!editTitle.trim() || !editingId) return;
-    setTasks((prev) =>
+    updateTasks((prev) =>
       prev.map((t) =>
         t.id === editingId
           ? {
@@ -488,7 +546,7 @@ export default function TasksPage() {
                           });
                           return;
                         }
-                        setTasks((prev) => [...parsed, ...prev]);
+                    updateTasks((prev) => [...parsed, ...prev]);
                         toast({ title: `Imported "${parsed[0].title}"` });
                       };
                       reader.readAsText(file);
@@ -538,7 +596,7 @@ export default function TasksPage() {
                       });
                       return;
                     }
-                    setTasks((prev) => [...parsed, ...prev]);
+                        updateTasks((prev) => [...parsed, ...prev]);
                     setImportText("");
                     setShowImport(false);
                     toast({ title: `Imported ${parsed.length} tasks` });
@@ -762,7 +820,7 @@ export default function TasksPage() {
                                       e.key === "Enter" &&
                                       newEntryTitle.trim()
                                     ) {
-                                      setTasks((prev) =>
+                                      updateTasks((prev) =>
                                         prev.map((t) =>
                                           t.id === task.id
                                             ? {
@@ -824,7 +882,7 @@ export default function TasksPage() {
                                       depth={0}
                                       expandedEntry={expandedEntry}
                                       setExpandedEntry={setExpandedEntry}
-                                      setTasks={setTasks}
+                                      setTasks={(updater) => updateTasks(updater)}
                                     />
                                     <div className="flex items-center gap-2 pt-1">
                                       <input
@@ -837,7 +895,7 @@ export default function TasksPage() {
                                             e.key === "Enter" &&
                                             newEntryTitle.trim()
                                           ) {
-                                            setTasks((prev) =>
+                                            updateTasks((prev) =>
                                               prev.map((t) =>
                                                 t.id === task.id
                                                   ? {
