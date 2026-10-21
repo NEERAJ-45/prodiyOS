@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Menu, X, LayoutDashboard, GitBranch, Map, Target, Timer, RefreshCw, FolderKanban, Briefcase, BookOpen, CalendarCheck, BarChart3, StickyNote, Rocket, CalendarDays, History, ListChecks, FileText, FileCode, NotebookPen } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useRevisionDueCount } from '@/hooks/use-revision-due';
 
 const navItems = [
   { label: 'Dashboard', href: '/command-center', icon: LayoutDashboard },
@@ -32,6 +33,7 @@ const navItems = [
 export function MobileNav() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const dueCount = useRevisionDueCount();
   const btnRef = useRef<HTMLButtonElement>(null);
   const posRef = useRef({ x: 20, y: 20 });
   const dragRef = useRef(false);
@@ -125,6 +127,14 @@ export function MobileNav() {
                   >
                     <Icon className="h-5 w-5 shrink-0" />
                     {item.label}
+                    {item.label === 'Revision System' && dueCount > 0 && (
+                      <span
+                        aria-label={`${dueCount} revisions due`}
+                        className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500/15 px-1.5 text-[10px] font-semibold text-red-500"
+                      >
+                        {dueCount}
+                      </span>
+                    )}
                   </Link>
                 );
               })}

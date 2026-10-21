@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useModeStore } from "@/lib/stores/mode-store";
 import { ModeToggle } from "@/components/layout/mode-toggle";
+import { useRevisionDueCount } from "@/hooks/use-revision-due";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import {
   LayoutDashboard,
@@ -101,6 +102,7 @@ const navGroups: NavGroup[] = [
 export function Sidebar() {
   const pathname = usePathname();
   const { sidebarCollapsed, toggleSidebar } = useModeStore();
+  const dueCount = useRevisionDueCount();
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
 
   const toggleGroup = (label: string) => {
@@ -136,6 +138,17 @@ export function Sidebar() {
         >
           {item.label}
         </span>
+        {item.label === "Revision System" && dueCount > 0 && (
+          <span
+            aria-label={`${dueCount} revisions due`}
+            className={cn(
+              "inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500/15 px-1.5 text-[10px] font-semibold text-red-500",
+              sidebarCollapsed && "absolute top-1 right-1 min-w-0 h-4 w-4 px-0 text-[9px]",
+            )}
+          >
+            {dueCount}
+          </span>
+        )}
       </Link>
     );
 

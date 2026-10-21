@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useProfile } from '@/components/providers/ProfileProvider';
 import { signOut } from 'next-auth/react';
-import { LogOut, User, X, CalendarDays, Flame, Wifi, WifiOff, Pencil } from 'lucide-react';
+import { LogOut, User, X, CalendarDays, Flame, Wifi, WifiOff, Pencil, RotateCcw } from 'lucide-react';
 import { toast } from '@/components/ui/toast';
 import { quotes } from '../../../quotes';
 import { GlobalSearch } from '@/components/shared/GlobalSearch';
@@ -18,8 +18,15 @@ export function Navbar({ global = false }: { global?: boolean }) {
   const [newEmail, setNewEmail] = useState('');
   const [emailPassword, setEmailPassword] = useState('');
   const [emailLoading, setEmailLoading] = useState(false);
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const { mode } = useModeStore();
   const isOffice = mode === 'OFFICE';
+
+  const handleReset = () => {
+    localStorage.removeItem(`samundar-command-center-${userEmail}`);
+    localStorage.removeItem('samundar-command-center');
+    setResetDialogOpen(false);
+  };
 
   if (!global) return null;
   
@@ -218,6 +225,16 @@ export function Navbar({ global = false }: { global?: boolean }) {
               <div className="mt-8 pt-4 border-t border-zinc-900 flex justify-between gap-2.5">
                 <button
                   onClick={() => {
+                    setResetDialogOpen(true);
+                    setProfileOpen(false);
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-zinc-800 hover:border-amber-500/30 hover:bg-amber-500/5 text-zinc-400 hover:text-amber-400 text-xs font-semibold transition-all cursor-pointer"
+                >
+                  <RotateCcw size={13} />
+                  Reset Dashboard
+                </button>
+                <button
+                  onClick={() => {
                     logout();
                     setProfileOpen(false);
                   }}
@@ -225,6 +242,40 @@ export function Navbar({ global = false }: { global?: boolean }) {
                 >
                   <LogOut size={13} />
                   Reset Profile / Sign Out
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reset Dashboard Dialog */}
+      {resetDialogOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-6 backdrop-blur-sm select-none"
+          onClick={() => setResetDialogOpen(false)}
+        >
+          <div
+            className="w-full max-w-sm relative animate-in fade-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="rounded-xl border border-zinc-800/80 bg-zinc-950 p-6 shadow-2xl">
+              <h3 className="text-sm font-bold text-zinc-100">Reset Dashboard</h3>
+              <p className="text-sm text-zinc-400 py-2 mt-1">
+                Clears cached dashboard data and reloads fresh stats.
+              </p>
+              <div className="flex justify-end gap-2 pt-3">
+                <button
+                  onClick={() => setResetDialogOpen(false)}
+                  className="px-3 py-1.5 rounded-lg border border-zinc-800 hover:bg-zinc-900 text-zinc-400 text-xs font-semibold transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleReset}
+                  className="px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white text-xs font-semibold transition-colors cursor-pointer"
+                >
+                  Reset
                 </button>
               </div>
             </div>
