@@ -40,7 +40,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ dbConnected: false, error: 'Database not configured' }, { status: 400 });
     }
     const body = await request.json();
-    const { id, concept, stage, dueDate, completed } = body;
+    const { id, concept, stage, dueDate, completed, lastReviewedAt } = body;
 
     if (!id || !concept || stage === undefined || !dueDate) {
       return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
@@ -50,7 +50,7 @@ export async function POST(request: Request) {
     const existing = await Revision.findOne({ id, userEmail });
     const doc = await Revision.findOneAndUpdate(
       { id, userEmail },
-      { concept, stage, dueDate, completed: !!completed },
+      { concept, stage, dueDate, completed: !!completed, lastReviewedAt: lastReviewedAt ?? null },
       { upsert: true, new: true }
     );
     logActivity(userEmail, existing ? `Updated revision for "${concept}"` : `Added revision for "${concept}"`);

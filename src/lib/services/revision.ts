@@ -16,6 +16,7 @@ export interface RevisionRecord {
   stage: number;
   dueDate: string;
   completed: boolean;
+  lastReviewedAt?: string | null;
   userEmail?: string;
 }
 
@@ -31,6 +32,7 @@ export interface SaveRevisionRequest {
   stage: number;
   dueDate: string;
   completed?: boolean;
+  lastReviewedAt?: string | null;
   userEmail: string;
 }
 

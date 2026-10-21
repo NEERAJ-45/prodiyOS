@@ -53,7 +53,7 @@ describe('isDue', () => {
 
 describe('backfillLegacyItems', () => {
   it('pushes legacy completed items out and stamps lastReviewedAt', () => {
-    const { items, changed } = backfillLegacyItems(
+    const { items, changed } = backfillLegacyItems<{ id: string; stage: number; dueDate: string; completed: boolean; lastReviewedAt?: string | null }>(
       [{ id: 'a', stage: 0, dueDate: '2026-01-01', completed: true }],
       day(0),
     );

@@ -6,6 +6,7 @@ export interface IRevision extends Document {
   stage: number;
   dueDate: string;
   completed: boolean;
+  lastReviewedAt?: string | null;
   userEmail?: string;
 }
 
@@ -15,6 +16,7 @@ const RevisionSchema: Schema = new Schema({
   stage: { type: Number, required: true, default: 0 },
   dueDate: { type: String, required: true },
   completed: { type: Boolean, required: true, default: false },
+  lastReviewedAt: { type: String, default: null },
   userEmail: { type: String, required: true, default: 'NEERAJ' },
 });
 
