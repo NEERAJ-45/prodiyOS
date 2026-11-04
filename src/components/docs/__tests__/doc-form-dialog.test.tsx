@@ -1,17 +1,7 @@
 // @vitest-environment jsdom
 import * as React from 'react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, act } from '@testing-library/react';
-
-const captured: { opts?: { onClientUploadComplete?: (res: unknown[]) => void } } = {};
-
-vi.mock('@/lib/uploadthing', () => ({
-  useUploadThing: (_endpoint: string, opts: unknown) => {
-    captured.opts = opts as typeof captured.opts;
-    return { startUpload: vi.fn(), isUploading: false };
-  },
-}));
-
+import { describe, it, expect, beforeEach } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { DocFormDialog, type DocFormState } from '../DocFormDialog';
 
 const seen: { form: DocFormState | null } = { form: null };
@@ -41,15 +31,13 @@ function Harness() {
 
 describe('DocFormDialog add flow', () => {
   beforeEach(() => {
-    captured.opts = undefined;
     seen.form = null;
   });
 
-  it('enables Add Doc after a successful upload', async () => {
+  it('enables Add Doc once a title and file are chosen', () => {
     render(<Harness />);
 
-    const addButton = screen.getByRole('button', { name: 'Add Doc' });
-    expect(addButton).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Add Doc' })).toBeDisabled();
 
     fireEvent.change(screen.getByPlaceholderText('Document title'), {
       target: { value: 'My Doc' },
@@ -59,17 +47,12 @@ describe('DocFormDialog add flow', () => {
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
     fireEvent.change(fileInput, { target: { files: [file] } });
 
-    await act(async () => {
-      captured.opts?.onClientUploadComplete?.([
-        { url: 'https://utcdn.dev/notes.pdf', name: 'notes.pdf' },
-      ]);
-    });
-
     expect(screen.getByRole('button', { name: 'Add Doc' })).toBeEnabled();
-    expect(seen.form?.fileUrl).toBe('https://utcdn.dev/notes.pdf');
+    expect(seen.form?.file).toBe(file);
+    expect(seen.form?.fileName).toBe('notes.pdf');
   });
 
-  it('clears the previous file when a new file is chosen', async () => {
+  it('replaces the previous file when a new file is chosen', () => {
     render(<Harness />);
 
     fireEvent.change(screen.getByPlaceholderText('Document title'), {
@@ -80,30 +63,12 @@ describe('DocFormDialog add flow', () => {
     fireEvent.change(fileInput, {
       target: { files: [new File(['a'], 'a.pdf', { type: 'application/pdf' })] },
     });
-    await act(async () => {
-      captured.opts?.onClientUploadComplete?.([
-        { url: 'https://utcdn.dev/a.pdf', name: 'a.pdf' },
-      ]);
-    });
 
-    fireEvent.change(fileInput, {
-      target: { files: [new File(['b'], 'b.docx', { type: 'application/octet-stream' })] },
-    });
+    const next = new File(['b'], 'b.docx', { type: 'application/octet-stream' });
+    fireEvent.change(fileInput, { target: { files: [next] } });
 
-    // new file still uploading: footer + choose-file buttons must both be disabled
-    const uploadingButtons = screen.getAllByRole('button', { name: /Uploading/i });
-    expect(uploadingButtons.length).toBeGreaterThan(0);
-    uploadingButtons.forEach((b) => expect(b).toBeDisabled());
-
-    await act(async () => {
-      captured.opts?.onClientUploadComplete?.([
-        { url: 'https://utcdn.dev/b.docx', name: 'b.docx' },
-      ]);
-    });
-
-    expect(screen.getByRole('button', { name: 'Add Doc' })).toBeEnabled();
-    // fileUrl must be the NEW upload, not the stale previous one
-    expect(seen.form?.fileUrl).toBe('https://utcdn.dev/b.docx');
+    expect(seen.form?.file).toBe(next);
     expect(seen.form?.fileName).toBe('b.docx');
+    expect(seen.form?.fileType).toBe('docx');
   });
 });

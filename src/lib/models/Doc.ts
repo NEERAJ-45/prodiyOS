@@ -7,6 +7,7 @@ export interface IDoc {
   status: 'TO_READ' | 'READING' | 'COMPLETED' | 'REFERENCE';
   progress: number;
   fileUrl: string;
+  fileData?: Buffer;
   fileType: 'pdf' | 'docx' | 'md';
   fileName: string;
   userEmail: string;
@@ -24,6 +25,7 @@ const DocSchema = new Schema<IDoc>(
     },
     progress: { type: Number, default: 0, min: 0, max: 100 },
     fileUrl: { type: String, required: true },
+    fileData: { type: Buffer, default: null, select: false },
     fileType: { type: String, enum: ['pdf', 'docx', 'md'], required: true },
     fileName: { type: String, default: '' },
     userEmail: { type: String, required: true, index: true },

@@ -6,6 +6,10 @@ import BookContent from '@/lib/models/BookContent';
 import { extractTextFromPdfBuffer } from '@/lib/pdf-extractor';
 import { logActivity } from '@/lib/activity-logger';
 import { getDbUri } from '../request';
+function bookQuery(id: string) {
+  return /^[a-f\d]{24}$/i.test(id) ? { $or: [{ id }, { _id: id }] } : { id };
+}
+
 function getErrorResponse(error: unknown) {
   const message = error instanceof Error ? error.message : 'Internal server error';
   return NextResponse.json({ error: message }, { status: 500 });
@@ -131,7 +135,7 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Database unavailable' }, { status: 503 });
     }
 
-    const existing = await Book.findOne({ id });
+    const existing = await Book.findOne(bookQuery(id));
     if (!existing) {
       return NextResponse.json({ error: 'Book not found' }, { status: 404 });
     }
@@ -142,7 +146,7 @@ export async function PUT(request: Request) {
     const { userEmail: _ignoredUserEmail, ...safeBody } = body as Record<string, unknown>;
 
     const book = await Book.findOneAndUpdate(
-      { id },
+      bookQuery(id),
       { $set: safeBody },
       { new: true, runValidators: true }
     ).lean();
@@ -171,7 +175,7 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'Database unavailable' }, { status: 503 });
     }
 
-    const existing = await Book.findOne({ id });
+    const existing = await Book.findOne(bookQuery(id));
     if (existing && existing.userEmail !== userEmail) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -179,7 +183,7 @@ export async function DELETE(request: Request) {
       logActivity(existing.userEmail, `Deleted book "${existing.title}"`);
     }
 
-    await Book.deleteOne({ id });
+    await Book.deleteOne(bookQuery(id));
     return NextResponse.json({ success: true });
   } catch (error) {
     return getErrorResponse(error);

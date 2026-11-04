@@ -19,7 +19,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { DOC_STATUSES, DOC_STATUS_LABELS, type DocStatus } from '@/hooks/use-docs';
-import { useUploadThing } from '@/lib/uploadthing';
 
 type DocFileType = 'pdf' | 'docx' | 'md';
 
@@ -51,6 +50,7 @@ export interface DocFormState {
   category: string;
   status: DocStatus;
   fileUrl?: string;
+  file?: File;
   fileType?: DocFileType;
   fileName?: string;
 }
@@ -78,27 +78,6 @@ export function DocFormDialog({
 }: DocFormDialogProps) {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [fileError, setFileError] = React.useState<string | null>(null);
-  const [uploading, setUploading] = React.useState(false);
-
-  const { startUpload } = useUploadThing('docUploader', {
-    onClientUploadComplete: (res) => {
-      if (res?.[0]) {
-        // single update: two sequential `set` calls here would spread the same
-        // stale `form` and the second would erase `fileUrl`
-        onFormChange({
-          ...form,
-          fileUrl: res[0].url,
-          fileName: res[0].name,
-        });
-      }
-      setUploading(false);
-    },
-    onUploadError: (err) => {
-      console.error('[doc-upload] failed:', err);
-      setFileError(`Upload failed: ${err.message || 'network error, try again.'}`);
-      setUploading(false);
-    },
-  });
 
   const set = (field: keyof DocFormState, value: string | undefined) => {
     onFormChange({ ...form, [field]: value });
@@ -106,12 +85,12 @@ export function DocFormDialog({
 
   const handleOpenChange = (open: boolean) => {
     setFileError(null);
-    if (!open) setUploading(false);
     onOpenChange(open);
   };
 
   const isValid =
-    form.title.trim().length > 0 && (mode === 'edit' || (!!form.fileUrl && !!form.fileType));
+    form.title.trim().length > 0 &&
+    (mode === 'edit' || (!!form.file && !!form.fileType) || (!!form.fileUrl && !!form.fileType));
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -156,19 +135,17 @@ export function DocFormDialog({
                   e.target.value = '';
                   setFileError(null);
                   if (!file) {
-                    onFormChange({ ...form, fileUrl: undefined, fileType: undefined, fileName: undefined });
+                    onFormChange({ ...form, file: undefined, fileUrl: undefined, fileType: undefined, fileName: undefined });
                     return;
                   }
 
                   const result = validateDocFile(file);
                   if ('error' in result) {
-                    onFormChange({ ...form, fileUrl: undefined, fileType: undefined, fileName: undefined });
+                    onFormChange({ ...form, file: undefined, fileUrl: undefined, fileType: undefined, fileName: undefined });
                     setFileError(result.error);
                     return;
                   }
-                  onFormChange({ ...form, fileUrl: undefined, fileType: result.type, fileName: undefined });
-                  setUploading(true);
-                  startUpload([file]);
+                  onFormChange({ ...form, file, fileUrl: undefined, fileType: result.type, fileName: file.name });
                 }}
                 className="hidden"
               />
@@ -176,11 +153,10 @@ export function DocFormDialog({
                 type="button"
                 variant="outline"
                 size="sm"
-                disabled={uploading}
                 onClick={() => fileInputRef.current?.click()}
                 className="bg-zinc-900 border-zinc-700 text-zinc-300 hover:text-zinc-100"
               >
-                {uploading ? 'Uploading...' : form.fileName ? 'Change File' : 'Choose File'}
+                {form.fileName ? 'Change File' : 'Choose File'}
               </Button>
               {form.fileName && (
                 <span className="text-xs text-zinc-400 truncate max-w-[200px]">
@@ -214,12 +190,10 @@ export function DocFormDialog({
           <DialogClose asChild>
             <Button variant="outline" size="sm">Cancel</Button>
           </DialogClose>
-          <Button size="sm" onClick={onSave} disabled={!isValid || isPending || uploading}>
-            {uploading
-              ? 'Uploading...'
-              : isPending
-                ? mode === 'add' ? 'Adding...' : 'Saving...'
-                : mode === 'add' ? 'Add Doc' : 'Save'}
+          <Button size="sm" onClick={onSave} disabled={!isValid || isPending}>
+            {isPending
+              ? mode === 'add' ? 'Adding...' : 'Saving...'
+              : mode === 'add' ? 'Add Doc' : 'Save'}
           </Button>
         </DialogFooter>
       </DialogContent>

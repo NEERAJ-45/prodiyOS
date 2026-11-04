@@ -15,12 +15,20 @@ export async function GET(
       return NextResponse.json({ error: 'Database unavailable' }, { status: 503 });
     }
 
-    const doc = await Doc.findOne({ id }).lean();
-    if (!doc?.fileUrl) {
+    const query = /^[a-f\d]{24}$/i.test(id) ? { $or: [{ id }, { _id: id }] } : { id };
+    const doc = await Doc.findOne(query).select('+fileData fileUrl fileType').lean();
+    if (!doc) {
       return NextResponse.json({ error: 'Doc not found' }, { status: 404 });
     }
 
-    const buffer = await fetchDocFile(doc.fileUrl);
+    const buffer = doc.fileData
+      ? Buffer.from(doc.fileData.buffer)
+      : doc.fileUrl
+        ? await fetchDocFile(doc.fileUrl)
+        : null;
+    if (!buffer) {
+      return NextResponse.json({ error: 'Doc content not found' }, { status: 404 });
+    }
 
     if (doc.fileType === 'docx') {
       const html = await convertDocxToHtml(buffer);

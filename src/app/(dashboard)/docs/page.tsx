@@ -49,6 +49,7 @@ const emptyFormState: DocFormState = {
   title: '',
   category: '',
   status: 'TO_READ',
+  file: undefined,
 };
 
 export default function DocsPage() {
@@ -114,6 +115,7 @@ export default function DocsPage() {
       title: doc.title,
       category: doc.category || 'other',
       status: doc.status,
+      file: undefined,
       fileUrl: doc.fileUrl,
       fileType: doc.fileType,
       fileName: doc.fileName,
@@ -127,7 +129,7 @@ export default function DocsPage() {
     if (dialogMode === 'edit' && editingDoc) {
       updateDoc.mutate(
         {
-          id: editingDoc._id || editingDoc.id,
+          id: editingDoc.id || editingDoc._id!,
           title: form.title.trim(),
           category: form.category.trim() || 'other',
           status: form.status,
@@ -144,18 +146,30 @@ export default function DocsPage() {
       return;
     }
 
-    if (!form.fileUrl || !form.fileType) return;
+    if (!form.fileType || (!form.file && !form.fileUrl)) return;
+
+    const payload = form.file
+      ? (() => {
+          const formData = new FormData();
+          formData.append('title', form.title.trim());
+          formData.append('category', form.category.trim() || 'other');
+          formData.append('status', form.status);
+          formData.append('progress', '0');
+          formData.append('file', form.file);
+          return formData;
+        })()
+      : {
+          title: form.title.trim(),
+          category: form.category.trim() || 'other',
+          status: form.status,
+          progress: 0,
+          fileUrl: form.fileUrl!,
+          fileType: form.fileType,
+          fileName: form.fileName || '',
+        };
 
     addDoc.mutate(
-      {
-        title: form.title.trim(),
-        category: form.category.trim() || 'other',
-        status: form.status,
-        progress: 0,
-        fileUrl: form.fileUrl,
-        fileType: form.fileType,
-        fileName: form.fileName || '',
-      },
+      payload,
       {
         onSuccess: () => {
           toast({ title: 'Doc added' });
@@ -168,7 +182,7 @@ export default function DocsPage() {
 
   function handleDelete(doc: DocData) {
     if (!window.confirm(`Delete "${doc.title}"? This cannot be undone.`)) return;
-    deleteDoc.mutate(doc._id || doc.id, {
+    deleteDoc.mutate(doc.id || doc._id!, {
       onSuccess: () => toast({ title: 'Doc deleted' }),
       onError: () => toast({ variant: 'destructive', title: 'Failed to delete doc' }),
     });
