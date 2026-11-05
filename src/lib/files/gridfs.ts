@@ -15,6 +15,24 @@ export function getBucket(conn: mongoose.Connection): GridFSBucket | null {
   return bucket;
 }
 
+export function toBuffer(value: unknown): Buffer {
+  if (Buffer.isBuffer(value)) return value;
+
+  const data = value as { buffer?: unknown; position?: number } | null;
+  const view = data?.buffer;
+  if (ArrayBuffer.isView(view)) {
+    const bytes = view as Uint8Array;
+    const length = typeof data?.position === 'number' ? data.position : bytes.byteLength;
+    return Buffer.from(bytes.buffer, bytes.byteOffset, length);
+  }
+
+  if (value instanceof Uint8Array) {
+    return Buffer.from(value.buffer, value.byteOffset, value.byteLength);
+  }
+
+  return Buffer.alloc(0);
+}
+
 export function uploadBuffer(
   bucket: GridFSBucket,
   filename: string,

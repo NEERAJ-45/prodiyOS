@@ -5,7 +5,7 @@ import { connectToDatabase } from '@/lib/db';
 import Doc from '@/lib/models/Doc';
 import UploadSession from '@/lib/models/UploadSession';
 import UploadChunk from '@/lib/models/UploadChunk';
-import { getBucket, deleteBucketFile } from '@/lib/files/gridfs';
+import { getBucket, deleteBucketFile, toBuffer } from '@/lib/files/gridfs';
 import { MAX_INDEX_BYTES } from '@/lib/files/constants';
 import { fileTypeOf } from '@/lib/files/mime';
 import { uniqueTitle } from '@/lib/files/nodes';
@@ -54,9 +54,7 @@ export async function POST(
     let indexBytes = 0;
 
     for (const chunk of chunks) {
-      const buffer = Buffer.isBuffer(chunk.data)
-        ? chunk.data
-        : Buffer.from(chunk.data as unknown as Uint8Array);
+      const buffer = toBuffer(chunk.data);
       if (!upload.write(buffer)) await once(upload, 'drain');
       if (indexBytes < MAX_INDEX_BYTES) {
         indexBuffers.push(buffer);

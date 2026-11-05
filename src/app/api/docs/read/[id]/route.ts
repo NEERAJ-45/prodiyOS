@@ -6,6 +6,7 @@ import {
   getBucket,
   parseRange,
   streamBucketFile,
+  toBuffer,
   toWebStream,
 } from '@/lib/files/gridfs';
 import { docIdQuery } from '@/lib/files/nodes';
@@ -92,7 +93,7 @@ export async function GET(
     }
 
     if (doc.fileData) {
-      const buffer = Buffer.from(doc.fileData.buffer, doc.fileData.byteOffset, doc.fileData.byteLength);
+      const buffer = toBuffer(doc.fileData);
       return new Response(new Uint8Array(buffer), {
         headers: {
           'Content-Type': LEGACY_MIME[doc.fileType] || 'application/octet-stream',

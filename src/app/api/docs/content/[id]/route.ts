@@ -6,6 +6,7 @@ import {
   deleteBucketFile,
   getBucket,
   readBucketFile,
+  toBuffer,
   uploadBuffer,
 } from '@/lib/files/gridfs';
 import { convertDocxToHtml, fetchDocFile } from '@/lib/doc-extractor';
@@ -45,7 +46,7 @@ export async function GET(
       const bucket = getBucket(conn);
       if (bucket) buffer = await readBucketFile(bucket, doc.gridFsId, MAX_READ_BYTES);
     } else if (doc.fileData) {
-      buffer = Buffer.from(doc.fileData.buffer, doc.fileData.byteOffset, doc.fileData.byteLength);
+      buffer = toBuffer(doc.fileData);
     } else if (doc.fileUrl) {
       buffer = await fetchDocFile(doc.fileUrl);
     }
