@@ -10,9 +10,14 @@ export interface DocData {
   category: string;
   status: 'TO_READ' | 'READING' | 'COMPLETED' | 'REFERENCE';
   progress: number;
-  fileUrl: string;
-  fileType: 'pdf' | 'docx' | 'md';
+  fileUrl?: string;
+  fileType: string;
   fileName: string;
+  kind?: 'file' | 'folder';
+  parentId?: string | null;
+  mimeType?: string;
+  size?: number;
+  deletedAt?: string | null;
   userEmail?: string;
   createdAt?: string;
   updatedAt?: string;

@@ -4,16 +4,13 @@ import * as React from 'react';
 import { useParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { DocReaderClient } from './doc-reader-client';
-import { useDocsQuery } from '@/hooks/use-docs';
+import { useFileNodeQuery } from '@/hooks/use-files';
 
 export default function DocReaderPage() {
   const params = useParams();
-  const { data, isLoading } = useDocsQuery();
+  const { data, isLoading } = useFileNodeQuery((params.id as string) ?? null);
 
-  const doc = React.useMemo(() => {
-    if (!data?.docs) return null;
-    return data.docs.find((d) => d.id === params.id || d._id === params.id);
-  }, [data, params.id]);
+  const doc = data?.doc?.kind === 'folder' ? null : (data?.doc ?? null);
 
   if (isLoading) {
     return (
