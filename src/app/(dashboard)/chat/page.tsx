@@ -6,7 +6,8 @@ import { ChatThread } from '@/components/chat/ChatThread';
 import { useProfile } from '@/components/providers/ProfileProvider';
 import { STORAGE_KEYS } from '@/lib/storage-keys';
 import { prefersReducedMotion } from '@/lib/anim';
-import { Lock } from 'lucide-react';
+import { isChatAllowedUser } from '@/lib/chat-allowlist';
+import { Lock, UserX } from 'lucide-react';
 
 const CHAT_CODE = 'TillTheEternity';
 const LEGACY_STORAGE_KEY = STORAGE_KEYS.CHAT_ACCESS_CODE;
@@ -54,6 +55,20 @@ export default function ChatPage() {
     localStorage.removeItem(LEGACY_STORAGE_KEY);
     setUnlocked(false);
   };
+
+  if (!isChatAllowedUser(userName)) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full px-4 text-center">
+        <div className="w-14 h-14 rounded-full bg-muted/50 flex items-center justify-center mb-4">
+          <UserX className="h-6 w-6 text-muted-foreground/50" />
+        </div>
+        <h2 className="text-[15px] font-semibold mb-1">Chat Unavailable</h2>
+        <p className="text-[13px] text-muted-foreground/50">
+          This chat is restricted to two accounts.
+        </p>
+      </div>
+    );
+  }
 
   if (!unlocked) {
     return (

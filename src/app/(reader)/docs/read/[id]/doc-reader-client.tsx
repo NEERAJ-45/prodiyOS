@@ -67,6 +67,7 @@ export function DocReaderClient({ doc }: { doc: DocData }) {
 
   const searchInputRef = React.useRef<HTMLInputElement>(null);
   const progressTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const didRestoreRef = React.useRef(false);
 
   const { data: bookmarks = [] } = useBookmarksQuery(doc.id);
   const addBookmark = useAddBookmark();
@@ -204,7 +205,16 @@ export function DocReaderClient({ doc }: { doc: DocData }) {
               pageNumber={pageNumber}
               scale={scale}
               rotation={0}
-              onLoadSuccess={({ numPages: pages }) => setNumPages(pages)}
+              onLoadSuccess={({ numPages: pages }) => {
+                setNumPages(pages);
+                // restore last-read page from saved progress (once per mount)
+                if (!didRestoreRef.current && doc.progress > 0 && doc.progress < 100) {
+                  didRestoreRef.current = true;
+                  setPageNumber(
+                    Math.max(1, Math.min(pages, Math.round((doc.progress / 100) * pages)))
+                  );
+                }
+              }}
               bookId={doc.id}
               searchQuery={searchQuery}
               onSearchResults={(matches) => setSearchCount(matches.length)}

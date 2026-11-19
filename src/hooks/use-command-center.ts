@@ -26,11 +26,30 @@ interface ActivityItem {
   createdAt: string;
 }
 
+export interface DashboardMetrics {
+  streak: number;
+  weeklyPct: number;
+  monthlyPct: number;
+  readiness: number;
+  readinessLabel: string;
+  weekCount: number;
+  monthCount: number;
+  dueCount: number;
+  solvedTotal: number;
+}
+
+export interface ActivityPoint {
+  date: string;
+  solved: number;
+}
+
 export interface DashboardData {
   stats: StatItem[];
   focusItems: FocusItem[];
   projects: ProjectItem[];
   activities: ActivityItem[];
+  metrics?: DashboardMetrics;
+  activitySeries?: ActivityPoint[];
 }
 
 export function useCommandCenterQuery() {

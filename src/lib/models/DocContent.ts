@@ -2,6 +2,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IDocContent extends Document {
   docId: string;
+  userEmail: string;
   title: string;
   category: string;
   content: string;
@@ -11,6 +12,7 @@ export interface IDocContent extends Document {
 
 const DocContentSchema: Schema = new Schema({
   docId: { type: String, required: true, unique: true },
+  userEmail: { type: String, default: '', index: true },
   title: { type: String, required: true },
   category: { type: String, default: 'other' },
   content: { type: String, default: '' },

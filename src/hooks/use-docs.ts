@@ -10,9 +10,14 @@ export interface DocData {
   category: string;
   status: 'TO_READ' | 'READING' | 'COMPLETED' | 'REFERENCE';
   progress: number;
-  fileUrl: string;
-  fileType: 'pdf' | 'docx' | 'md';
+  fileUrl?: string;
+  fileType: string;
   fileName: string;
+  kind?: 'file' | 'folder';
+  parentId?: string | null;
+  mimeType?: string;
+  size?: number;
+  deletedAt?: string | null;
   userEmail?: string;
   createdAt?: string;
   updatedAt?: string;
@@ -56,11 +61,12 @@ export function useAddDoc() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (docData: Omit<DocData, 'id' | 'userEmail'>) => {
+    mutationFn: async (docData: Omit<DocData, 'id' | 'userEmail'> | FormData) => {
+      const isForm = docData instanceof FormData;
       const res = await fetch('/api/db/docs', {
         method: 'POST',
-        headers: getHeaders(customDbUrl),
-        body: JSON.stringify(docData),
+        headers: isForm ? {} : getHeaders(customDbUrl),
+        body: isForm ? docData : JSON.stringify(docData),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Failed to add doc');

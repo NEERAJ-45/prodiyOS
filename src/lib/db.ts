@@ -1,19 +1,47 @@
 import mongoose from 'mongoose';
 
+type ConnectionEntry = {
+  conn: mongoose.Connection | null;
+  promise: Promise<mongoose.Connection> | null;
+  lastUsed: number;
+};
+
 const globalWithMongoose = global as typeof globalThis & {
-  mongooseCache?: Record<string, { conn: mongoose.Connection | null; promise: Promise<mongoose.Connection> | null }>;
+  mongooseCache?: Map<string, ConnectionEntry>;
 };
 
 if (!globalWithMongoose.mongooseCache) {
-  globalWithMongoose.mongooseCache = {};
+  globalWithMongoose.mongooseCache = new Map();
 }
 const connectionsCache = globalWithMongoose.mongooseCache;
+
+const MAX_CACHED_CONNECTIONS = 32;
 
 export function resolveMongoUri(mode?: string): string | null {
   if (mode === 'OFFICE') {
     return process.env.MONGODB_URI_OFFICE || process.env.MONGODB_URI || null;
   }
   return process.env.MONGODB_URI_HOME || process.env.MONGODB_URI || null;
+}
+
+function isDefaultUri(uri: string): boolean {
+  return [process.env.MONGODB_URI, process.env.MONGODB_URI_HOME, process.env.MONGODB_URI_OFFICE].some(
+    (value) => value === uri
+  );
+}
+
+function evictIdleConnections() {
+  if (connectionsCache.size <= MAX_CACHED_CONNECTIONS) return;
+
+  const candidates = Array.from(connectionsCache.entries())
+    .filter(([uri]) => !isDefaultUri(uri))
+    .sort((a, b) => a[1].lastUsed - b[1].lastUsed);
+
+  for (const [uri, entry] of candidates) {
+    if (connectionsCache.size <= MAX_CACHED_CONNECTIONS) break;
+    connectionsCache.delete(uri);
+    if (entry.conn) void entry.conn.close().catch(() => {});
+  }
 }
 
 export async function connectToDatabase(customUri?: string) {
@@ -34,37 +62,43 @@ export async function connectToDatabase(customUri?: string) {
     return null;
   }
 
-  if (!connectionsCache[uri]) {
-    connectionsCache[uri] = { conn: null, promise: null };
-  }
-
-  const cached = connectionsCache[uri];
-
-  if (cached.conn) {
+  const cached = connectionsCache.get(uri);
+  if (cached?.conn) {
+    cached.lastUsed = Date.now();
     return cached.conn;
   }
 
-  if (!cached.promise) {
+  let entry = cached;
+  if (!entry) {
+    entry = { conn: null, promise: null, lastUsed: Date.now() };
+    connectionsCache.set(uri, entry);
+  }
+
+  if (!entry.promise) {
     const opts = {
       bufferCommands: true,
       serverSelectionTimeoutMS: 15000,
       connectTimeoutMS: 15000,
       socketTimeoutMS: 30000,
+      maxPoolSize: customUri ? 5 : 20,
     };
 
     if (customUri) {
-      cached.promise = mongoose.createConnection(uri, opts).asPromise();
+      entry.promise = mongoose.createConnection(uri, opts).asPromise();
     } else {
-      cached.promise = mongoose.connect(uri, opts).then(() => mongoose.connection);
+      entry.promise = mongoose.connect(uri, opts).then(() => mongoose.connection);
     }
   }
 
   try {
-    cached.conn = await cached.promise;
+    entry.conn = await entry.promise;
+    entry.lastUsed = Date.now();
+    evictIdleConnections();
   } catch (e) {
-    cached.promise = null;
+    entry.promise = null;
+    connectionsCache.delete(uri);
     throw e;
   }
 
-  return cached.conn;
+  return entry.conn;
 }

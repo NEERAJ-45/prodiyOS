@@ -308,7 +308,7 @@ export function ChatThread({ username, onLock }: Props) {
         </div>
         <div className="flex-1 min-w-0">
           <h1 className="font-semibold text-[15px] leading-tight truncate text-foreground">
-            Group Chat
+            Private Chat
           </h1>
         </div>
         {onLock && (

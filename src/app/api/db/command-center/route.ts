@@ -70,7 +70,24 @@ async function deriveStats(conn: mongoose.Connection, userEmail: string) {
   if (avgStage >= 2.5) readinessLabel = 'Practicing';
   if (avgStage >= 4) readinessLabel = 'Strong';
 
-  return { streak, weeklyPct, monthlyPct, readiness, readinessLabel, weekCount, monthCount, dueCount };
+  const solvedTotal = allCompletions.length;
+  const perDay = new Map<string, number>();
+  for (const c of allCompletions) {
+    const key = String(c.completedAt).slice(0, 10);
+    perDay.set(key, (perDay.get(key) ?? 0) + 1);
+  }
+  const activitySeries = Array.from({ length: 14 }, (_, i) => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() - (13 - i));
+    const date = d.toISOString().split('T')[0];
+    return { date, solved: perDay.get(date) ?? 0 };
+  });
+
+  return {
+    streak, weeklyPct, monthlyPct, readiness, readinessLabel,
+    weekCount, monthCount, dueCount, solvedTotal, activitySeries,
+  };
 }
 
 export async function GET(request: Request) {
@@ -99,6 +116,18 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       dbConnected: true,
+      metrics: {
+        streak: stats.streak,
+        weeklyPct: stats.weeklyPct,
+        monthlyPct: stats.monthlyPct,
+        readiness: stats.readiness,
+        readinessLabel: stats.readinessLabel,
+        weekCount: stats.weekCount,
+        monthCount: stats.monthCount,
+        dueCount: stats.dueCount,
+        solvedTotal: stats.solvedTotal,
+      },
+      activitySeries: stats.activitySeries,
       stats: [
         { value: String(stats.streak), label: 'Current Streak', sub: 'days' },
         { value: `${stats.weeklyPct}%`, label: 'Weekly Progress', sub: `${stats.weekCount} completed` },
