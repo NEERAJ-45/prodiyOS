@@ -74,8 +74,8 @@ export function PdfDock({
         display: 'flex',
         flexDirection: 'column',
         minHeight: 0,
-        bgcolor: '#262626',
-        borderLeft: { xs: 'none', md: '1px solid #1b1b1b' },
+        bgcolor: '#1a1a1a',
+        borderLeft: { xs: 'none', md: '1px solid #101010' },
       }}
     >
       <Box
@@ -101,7 +101,7 @@ export function PdfDock({
           alignItems: 'center',
           gap: 0.5,
           px: 1,
-          borderBottom: '1px solid #1b1b1b',
+          borderBottom: '1px solid #101010',
         }}
       >
         <Typography noWrap title={node.title} sx={{ flex: 1, fontSize: 12 }}>

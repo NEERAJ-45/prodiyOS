@@ -585,7 +585,7 @@ export function FileManager() {
           height: '100%',
           display: 'flex',
           flexDirection: 'column',
-          bgcolor: '#2b2b2b',
+          bgcolor: '#0f0f0f',
           color: 'text.primary',
           outline: 'none',
           position: 'relative',
@@ -642,8 +642,8 @@ export function FileManager() {
                     gap: 1,
                     px: 1.5,
                     py: 0.75,
-                    borderBottom: '1px solid #1b1b1b',
-                    bgcolor: '#262626',
+                    borderBottom: '1px solid #101010',
+                    bgcolor: '#1a1a1a',
                   }}
                 >
                   <Typography sx={{ flex: 1, fontSize: 12, color: 'text.secondary' }}>
@@ -661,8 +661,8 @@ export function FileManager() {
                     gap: 0.75,
                     px: 1.5,
                     py: 0.75,
-                    borderBottom: '1px solid #1b1b1b',
-                    bgcolor: '#262626',
+                    borderBottom: '1px solid #101010',
+                    bgcolor: '#1a1a1a',
                   }}
                 >
                   <Chip size="small" label={`${selection.count} selected`} sx={{ mr: 1 }} />
@@ -731,8 +731,8 @@ export function FileManager() {
                     px: 1.5,
                     py: 0.75,
                     borderRadius: 1,
-                    bgcolor: '#383838',
-                    border: '1px solid #e95420',
+                    bgcolor: '#1f1f1f',
+                    border: '1px solid #c25a33',
                     fontSize: 12,
                     boxShadow: '0 6px 18px rgba(0,0,0,0.5)',
                   }}

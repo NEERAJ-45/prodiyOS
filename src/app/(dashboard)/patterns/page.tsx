@@ -372,7 +372,7 @@ function PatternsContent() {
           onClick={() => { setView("patterns"); setSelectedKey(null); setSelectedDay(null); setSelectedCustomSlug(null); }}
           className={cn(
             "flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap",
-            view === "patterns" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+            view === "patterns" ? "bg-background text-foreground" : "text-muted-foreground hover:text-foreground"
           )}
         >
           <GitBranch className="h-3.5 w-3.5" />
@@ -382,7 +382,7 @@ function PatternsContent() {
           onClick={() => { setView("striver"); setSelectedKey(null); setSelectedDay(null); setSelectedCustomSlug(null); setSearch(""); }}
           className={cn(
             "flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap",
-            view === "striver" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+            view === "striver" ? "bg-background text-foreground" : "text-muted-foreground hover:text-foreground"
           )}
         >
           <BookOpen className="h-3.5 w-3.5" />
@@ -392,7 +392,7 @@ function PatternsContent() {
           onClick={() => { setView("custom"); setSelectedKey(null); setSelectedDay(null); setSelectedCustomSlug(null); setSearch(""); }}
           className={cn(
             "flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap",
-            view === "custom" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+            view === "custom" ? "bg-background text-foreground" : "text-muted-foreground hover:text-foreground"
           )}
         >
           <ListChecks className="h-3.5 w-3.5" />
@@ -402,7 +402,7 @@ function PatternsContent() {
           onClick={() => { setView("companies"); setSelectedKey(null); setSelectedDay(null); setSelectedCustomSlug(null); setSelectedCompanySlug(null); setSearch(""); }}
           className={cn(
             "flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap",
-            view === "companies" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+            view === "companies" ? "bg-background text-foreground" : "text-muted-foreground hover:text-foreground"
           )}
         >
           <Building2 className="h-3.5 w-3.5" />

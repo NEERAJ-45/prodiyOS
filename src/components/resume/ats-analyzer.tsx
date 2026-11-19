@@ -153,8 +153,8 @@ export default function AtsAnalyzer({ source, resumeId, onApply, onClose }: Prop
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-4xl max-h-[90vh] flex flex-col bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl overflow-hidden">
+      <div className="absolute inset-0 bg-black/70" onClick={onClose} />
+      <div className="relative w-full max-w-4xl max-h-[90vh] flex flex-col bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
         <div className="flex items-center gap-2 px-4 py-3 border-b border-zinc-800 shrink-0">
           <ScanSearch className="h-4 w-4 text-blue-400" />
           <h3 className="text-sm font-semibold text-zinc-100">ATS Resume Analyzer</h3>

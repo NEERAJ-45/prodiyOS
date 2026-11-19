@@ -390,7 +390,7 @@ export default function ResumeEditor() {
             size="sm"
             onClick={handleSave}
             disabled={saving}
-            className="bg-blue-600 hover:bg-blue-500 text-white text-xs h-7 px-2 sm:px-3 shadow-sm shadow-blue-600/15"
+            className="bg-blue-600 hover:bg-blue-500 text-white text-xs h-7 px-2 sm:px-3"
           >
             {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
             <span className="hidden sm:inline ml-1">Save</span>

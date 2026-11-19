@@ -8,7 +8,7 @@ const FileManager = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-full w-full items-center justify-center bg-[#2b2b2b] text-zinc-400">
+      <div className="flex h-full w-full items-center justify-center bg-[#0a0a0a] text-zinc-400">
         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
         Loading files…
       </div>

@@ -74,8 +74,8 @@ export default function PreviewPage() {
   const downloadUrl = `/api/docs/read/${doc.id}?download=1`;
 
   return (
-    <div className="flex h-dvh flex-col bg-[#1b1b1b] text-zinc-200">
-      <header className="flex h-12 shrink-0 items-center gap-2 border-b border-zinc-800 bg-[#262626] px-3">
+    <div className="flex h-dvh flex-col bg-[#101010] text-zinc-200">
+      <header className="flex h-12 shrink-0 items-center gap-2 border-b border-zinc-800 bg-[#1a1a1a] px-3">
         <button
           onClick={() => router.back()}
           className="flex h-8 w-8 items-center justify-center rounded hover:bg-zinc-700"
@@ -166,7 +166,7 @@ export default function PreviewPage() {
                 setDirty(true);
               }}
               spellCheck={false}
-              className="h-full w-full resize-none bg-[#1b1b1b] p-5 font-mono text-[13px] leading-6 text-zinc-200 outline-none"
+              className="h-full w-full resize-none bg-[#101010] p-5 font-mono text-[13px] leading-6 text-zinc-200 outline-none"
             />
           )
         ) : (
@@ -179,7 +179,7 @@ export default function PreviewPage() {
         )}
       </main>
       {fileType === 'pdf' && numPages > 0 ? (
-        <footer className="h-7 shrink-0 border-t border-zinc-800 bg-[#262626] px-3 text-[11px] leading-7 text-zinc-500">
+        <footer className="h-7 shrink-0 border-t border-zinc-800 bg-[#1a1a1a] px-3 text-[11px] leading-7 text-zinc-500">
           {numPages} pages
         </footer>
       ) : null}

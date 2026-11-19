@@ -194,7 +194,7 @@ export function Sidebar() {
                 <TooltipTrigger asChild>
                   <button
                     onClick={toggleSidebar}
-                    className="absolute -right-3 top-4 rounded-full border bg-background p-0.5 text-muted-foreground hover:text-foreground shadow-sm"
+                    className="absolute -right-3 top-4 rounded-full border bg-background p-0.5 text-muted-foreground hover:text-foreground"
                   >
                     <PanelLeft className="h-3 w-3" />
                   </button>

@@ -35,7 +35,7 @@ const variantConfig: Record<ToastVariant, { icon: React.ReactNode; border: strin
   default: {
     icon: <Info className="h-4 w-4" />,
     border: 'border-zinc-700/60',
-    bg: 'bg-zinc-900/95',
+    bg: 'bg-zinc-900',
     text: 'text-zinc-100',
     iconColor: 'text-zinc-400',
   },
@@ -78,7 +78,7 @@ function toast({ title, description, variant = 'default', duration = 4000 }: Toa
   hotToast.custom(
     (t) => (
       <div
-        className={`${t.visible ? 'toast-enter' : 'toast-exit'} flex items-start gap-3 rounded-xl border px-4 py-3 shadow-xl backdrop-blur-md ${
+        className={`${t.visible ? 'toast-enter' : 'toast-exit'} flex items-start gap-3 rounded-xl border px-4 py-3 ${
           cfg.bg
         } ${cfg.border}`}
         style={{ minWidth: 300, maxWidth: 380 }}

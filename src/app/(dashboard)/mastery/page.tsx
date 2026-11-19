@@ -359,7 +359,7 @@ export default function MasteryPage() {
                               )}
                             >
                               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover/day:flex flex-col items-center z-20 pointer-events-none">
-                                <div className="rounded-md bg-zinc-900 border border-zinc-800 px-2 py-1 shadow-lg text-[10px] text-zinc-300 whitespace-nowrap">
+                                <div className="rounded-md bg-zinc-900 border border-zinc-800 px-2 py-1 text-[10px] text-zinc-300 whitespace-nowrap">
                                   <span className="font-semibold text-zinc-100">{count} items</span> completed on {day.date}
                                 </div>
                                 <div className="h-1 w-1 rotate-45 bg-zinc-900 border-r border-b border-zinc-800 -mt-0.5" />

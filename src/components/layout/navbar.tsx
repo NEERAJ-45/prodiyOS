@@ -40,7 +40,7 @@ export function Navbar({ global = false }: { global?: boolean }) {
 
   return (
     <>
-      <header className="sticky top-0 z-30 flex h-14 w-full justify-center border-b border-border bg-background/80 backdrop-blur-md shrink-0 shadow-[0_1px_0_0_hsl(var(--border)_/_0.4)]">
+      <header className="sticky top-0 z-30 flex h-14 w-full justify-center border-b border-border bg-background shrink-0">
         <div className="flex h-full w-full max-w-7xl items-center justify-between px-4 md:px-6">
           {/* Current page label */}
           <div className="flex items-center text-xs font-medium text-zinc-400 min-w-0">
@@ -120,14 +120,14 @@ export function Navbar({ global = false }: { global?: boolean }) {
       {/* Profile Details Dialog */}
       {profileOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-6 backdrop-blur-sm select-none"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-6 select-none"
           onClick={() => setProfileOpen(false)}
         >
           <div
             className="w-full max-w-md relative animate-in fade-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="relative overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-950 p-6 backdrop-blur-sm transition-all duration-300 shadow-2xl">
+            <div className="relative overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950 p-6">
               {/* Close Button */}
               <button 
           onClick={() => { setProfileOpen(false); setEditingEmail(false); }}

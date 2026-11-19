@@ -403,7 +403,7 @@ export default function TextDocViewer({
 
       {toolbar.visible && (
         <div
-          className="highlight-toolbar fixed z-50 flex items-center gap-1 px-2 py-1.5 rounded-lg bg-zinc-800 border border-zinc-700 shadow-xl"
+          className="highlight-toolbar fixed z-50 flex items-center gap-1 px-2 py-1.5 rounded-lg bg-zinc-800 border border-zinc-700"
           style={{ left: toolbar.x, top: toolbar.y, transform: 'translateX(-50%)' }}
         >
           <div className="flex items-center gap-0.5 mr-1">

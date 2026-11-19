@@ -74,7 +74,7 @@ export default function BooksLayout({ children }: { children: React.ReactNode })
                   className={cn(
                     'px-3 py-1.5 text-xs font-medium rounded-md transition-all whitespace-nowrap',
                     isActive
-                      ? 'bg-zinc-800 text-zinc-100 shadow-sm'
+                      ? 'bg-zinc-800 text-zinc-100'
                       : 'text-zinc-500 hover:text-zinc-300'
                   )}
                 >

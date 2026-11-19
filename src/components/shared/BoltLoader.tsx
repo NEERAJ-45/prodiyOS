@@ -46,7 +46,7 @@ export function BoltLoader({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
-      className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#050505] px-6"
+      className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#0a0a0a] px-6"
     >
       <div className="relative flex flex-col items-center">
         <motion.div
@@ -71,9 +71,9 @@ export function BoltLoader({
           <Zap
             aria-hidden
             className="absolute inset-0 h-full w-full"
-            stroke="#262626"
+            stroke="#1a1a1a"
             strokeWidth={0.85}
-            fill="#171717"
+            fill="#141414"
           />
 
           <motion.div
@@ -102,9 +102,9 @@ export function BoltLoader({
           >
             <Zap
               className="h-full w-full drop-shadow-[0_0_12px_rgba(250,204,21,0.45)]"
-              stroke="#FACC15"
+              stroke="#d4ad62"
               strokeWidth={0.85}
-              fill="#FACC15"
+              fill="#d4ad62"
             />
           </motion.div>
 
@@ -117,7 +117,7 @@ export function BoltLoader({
             >
               <motion.path
                 d={BOLT_PATH}
-                stroke="#FDE68A"
+                stroke="#e3c48c"
                 strokeWidth={0.5}
                 strokeLinecap="round"
                 initial={{ pathLength: 0.18, pathOffset: 0 }}
@@ -134,11 +134,11 @@ export function BoltLoader({
           transition={{ duration: 3.4, repeat: Infinity, ease: 'linear' }}
           className="relative mt-8 pl-[0.7em] text-xs font-semibold uppercase tracking-[0.7em]"
           style={{
-            backgroundImage: 'linear-gradient(90deg, #71717a 20%, #fafafa 50%, #71717a 80%)',
+            backgroundImage: 'linear-gradient(90deg, #6c6c6c 20%, #d6d6d6 50%, #6c6c6c 80%)',
             backgroundSize: '220% 100%',
             WebkitBackgroundClip: 'text',
             backgroundClip: 'text',
-            color: reduceMotion ? '#a1a1aa' : 'transparent',
+            color: reduceMotion ? '#8a8a8a' : 'transparent',
           }}
         >
           Samundar
@@ -150,7 +150,7 @@ export function BoltLoader({
         >
           <span>{stage}</span>
           {isDeterminate && (
-            <motion.span className="tabular-nums text-[#FACC15]">{percentText}</motion.span>
+            <motion.span className="tabular-nums text-[#d4ad62]">{percentText}</motion.span>
           )}
         </div>
       </div>

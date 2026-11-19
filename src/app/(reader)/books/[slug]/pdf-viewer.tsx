@@ -383,7 +383,7 @@ export default function PdfViewer({
                   </div>
                 </div>
               }
-              className="shadow-2xl"
+              className="w-full"
             />
             <div className="absolute inset-0 pointer-events-none" style={{ top: 0, left: 0 }}>
               {searchMatchRects.map((rect, idx) => (
@@ -413,7 +413,7 @@ export default function PdfViewer({
 
       {toolbar.visible && (
         <div
-          className="highlight-toolbar absolute z-50 flex items-center gap-1 px-2 py-1.5 rounded-lg bg-zinc-800 border border-zinc-700 shadow-xl"
+          className="highlight-toolbar absolute z-50 flex items-center gap-1 px-2 py-1.5 rounded-lg bg-zinc-800 border border-zinc-700"
           style={{
             left: toolbar.x,
             top: toolbar.y,

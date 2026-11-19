@@ -301,7 +301,7 @@ export function ChatThread({ username, onLock }: Props) {
       {/* Header — flat, Telegram-style */}
       <header className="shrink-0 px-2 sm:px-4 py-2 sm:py-2.5 flex items-center gap-2 sm:gap-3 pt-[env(safe-area-inset-top)] border-b border-border">
         <div
-          className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shrink-0"
+          className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center shrink-0"
           aria-hidden="true"
         >
           <Users className="h-5 w-5 text-primary-foreground" />
@@ -380,7 +380,7 @@ export function ChatThread({ username, onLock }: Props) {
             setNewCount(0);
             scrollToBottom();
           }}
-          className="absolute bottom-24 right-4 z-20 flex items-center gap-1.5 rounded-full bg-primary px-3.5 py-2 min-h-[40px] text-[13px] font-medium text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors cursor-pointer"
+          className="absolute bottom-24 right-4 z-20 flex items-center gap-1.5 rounded-full bg-primary px-3.5 py-2 min-h-[40px] text-[13px] font-medium text-primary-foreground hover:bg-primary/90 transition-colors cursor-pointer"
           aria-label="Scroll to latest messages"
         >
           <ArrowDown className="h-4 w-4" />
@@ -407,7 +407,7 @@ export function ChatThread({ username, onLock }: Props) {
           role="presentation"
         >
           <div
-            className="w-full sm:w-80 rounded-t-2xl sm:rounded-2xl bg-background border border-border p-2 pb-[max(8px,env(safe-area-inset-bottom))] shadow-xl"
+            className="w-full sm:w-80 rounded-t-2xl sm:rounded-2xl bg-background border border-border p-2 pb-[max(8px,env(safe-area-inset-bottom))]"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-label="Message actions"

@@ -198,7 +198,7 @@ export default function SystemDesignConceptsPage() {
                 <ChevronDown size={12} className={`transition-transform ${csvDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
               {csvDropdownOpen && (
-                <div className="absolute right-0 top-full mt-1 w-44 rounded-lg border border-zinc-700 bg-zinc-900 shadow-xl z-50 py-1">
+                <div className="absolute right-0 top-full mt-1 w-44 rounded-lg border border-zinc-700 bg-zinc-900 z-50 py-1">
                   <button
                     onClick={() => { copyFullHierarchy(); setCsvDropdownOpen(false); }}
                     className="w-full text-left px-3 py-2 text-xs text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100 transition-colors"

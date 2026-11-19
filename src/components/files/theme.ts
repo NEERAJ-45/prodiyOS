@@ -5,15 +5,15 @@ import { createTheme } from '@mui/material/styles';
 export const docsTheme = createTheme({
   palette: {
     mode: 'dark',
-    primary: { main: '#e95420' },
-    secondary: { main: '#9a9996' },
-    background: { default: '#2b2b2b', paper: '#303030' },
-    text: { primary: '#deddda', secondary: '#9a9996' },
-    divider: '#1b1b1b',
-    error: { main: '#e01b24' },
+    primary: { main: '#c25a33' },
+    secondary: { main: '#8a8a8a' },
+    background: { default: '#0a0a0a', paper: '#141414' },
+    text: { primary: '#d6d6d6', secondary: '#8a8a8a' },
+    divider: '#232323',
+    error: { main: '#b96a6a' },
     action: {
-      hover: 'rgba(255,255,255,0.07)',
-      selected: 'rgba(233,84,32,0.25)',
+      hover: 'rgba(255,255,255,0.05)',
+      selected: 'rgba(194,90,51,0.18)',
     },
   },
   typography: {
@@ -28,9 +28,9 @@ export const docsTheme = createTheme({
       styleOverrides: {
         '& ::-webkit-scrollbar': { width: 10, height: 10 },
         '& ::-webkit-scrollbar-thumb': {
-          background: '#555',
+          background: '#3a3a3a',
           borderRadius: 6,
-          border: '2px solid #2b2b2b',
+          border: '2px solid #0a0a0a',
         },
         '& ::-webkit-scrollbar-track': { background: 'transparent' },
       },
@@ -43,9 +43,8 @@ export const docsTheme = createTheme({
     MuiMenu: {
       styleOverrides: {
         paper: {
-          backgroundColor: '#383838',
-          border: '1px solid #1b1b1b',
-          boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+          backgroundColor: '#1e1e1e',
+          border: '1px solid #232323',
         },
       },
     },
@@ -56,13 +55,13 @@ export const docsTheme = createTheme({
     },
     MuiDialog: {
       styleOverrides: {
-        paper: { backgroundColor: '#303030', border: '1px solid #1b1b1b' },
+        paper: { backgroundColor: '#141414', border: '1px solid #232323' },
       },
     },
     MuiTableCell: {
       styleOverrides: {
-        root: { borderColor: '#1b1b1b', paddingTop: 4, paddingBottom: 4 },
-        head: { backgroundColor: '#262626', color: '#9a9996' },
+        root: { borderColor: '#232323', paddingTop: 4, paddingBottom: 4 },
+        head: { backgroundColor: '#1a1a1a', color: '#8a8a8a' },
       },
     },
     MuiTooltip: {

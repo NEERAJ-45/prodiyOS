@@ -94,7 +94,6 @@ function ActionIcon({
         'h-7 w-7 flex items-center justify-center rounded-full bg-background/80 border border-border/60',
         'text-muted-foreground opacity-0 group-hover:opacity-100 focus-visible:opacity-100',
         'transition-opacity duration-150 cursor-pointer hover:text-foreground',
-        'shadow-sm backdrop-blur-sm',
         danger && 'hover:text-destructive hover:border-destructive/40'
       )}
     >

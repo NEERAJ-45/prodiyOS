@@ -249,7 +249,7 @@ export function ImportDialog() {
                         ? 'text-muted-foreground/40 cursor-not-allowed'
                         : 'cursor-pointer',
                       active
-                        ? 'bg-background text-foreground shadow-sm'
+                        ? 'bg-background text-foreground'
                         : !disabled && 'text-muted-foreground hover:text-foreground'
                     )}
                   >

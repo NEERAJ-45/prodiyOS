@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { computeRoadmapProgress } from '@/lib/roadmap-progress';
+import {
+  computeCategoryProgress,
+  computeRoadmapProgress,
+  readCompletedCount,
+} from '@/lib/roadmap-progress';
 
 const CATEGORIES = [
   {
@@ -43,8 +47,8 @@ describe('computeRoadmapProgress', () => {
     }));
 
     expect(computeRoadmapProgress(CATEGORIES, rows, noLocal)).toEqual({ foundation: 100 });
-import { describe, it, expect } from 'vitest';
-import { readCompletedCount, computeCategoryProgress } from '../roadmap-progress';
+  });
+});
 
 const fakeStorage = (entries: Record<string, string>) => ({
   getItem: (key: string) => entries[key] ?? null,

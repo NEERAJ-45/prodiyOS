@@ -250,7 +250,7 @@ function TreeItem({
           {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         </IconButton>
         <ListItemIcon sx={{ minWidth: 26 }}>
-          <Folder size={16} color="#e95420" fill="#e95420" fillOpacity={0.25} />
+          <Folder size={16} color="#c25a33" fill="#c25a33" fillOpacity={0.25} />
         </ListItemIcon>
         <ListItemText
           primary={folder.title}
@@ -390,8 +390,8 @@ export function Headerbar({
         alignItems: 'center',
         gap: 1,
         px: 1.25,
-        bgcolor: '#303030',
-        borderBottom: '1px solid #1b1b1b',
+        bgcolor: '#141414',
+        borderBottom: '1px solid #101010',
         position: 'relative',
         zIndex: 5,
       }}
@@ -444,13 +444,13 @@ export function Headerbar({
           px: 1,
           height: 32,
           width: { xs: 150, sm: 220 },
-          bgcolor: '#262626',
-          border: '1px solid #1b1b1b',
+          bgcolor: '#1a1a1a',
+          border: '1px solid #101010',
           borderRadius: 4,
           position: 'relative',
         }}
       >
-        <Search size={14} color="#9a9996" />
+        <Search size={14} color="#8a8a8a" />
         <InputBase
           value={searchQuery}
           placeholder="Search files…"
@@ -470,8 +470,8 @@ export function Headerbar({
               right: 0,
               maxHeight: 280,
               overflowY: 'auto',
-              bgcolor: '#383838',
-              border: '1px solid #1b1b1b',
+              bgcolor: '#1f1f1f',
+              border: '1px solid #101010',
               zIndex: 20,
             }}
           >
@@ -498,7 +498,7 @@ export function Headerbar({
                     '&:hover': { bgcolor: HOVER },
                   }}
                 >
-                  <Folder size={14} color={node.kind === 'folder' ? '#e95420' : '#9a9996'} />
+                  <Folder size={14} color={node.kind === 'folder' ? '#c25a33' : '#8a8a8a'} />
                   <Typography noWrap sx={{ fontSize: 12.5 }}>
                     {node.title}
                   </Typography>
@@ -514,7 +514,7 @@ export function Headerbar({
         exclusive
         value={view}
         onChange={(_, next: FileView | null) => next && onViewChange(next)}
-        sx={{ height: 32, '& .MuiToggleButton-root': { px: 1, border: '1px solid #1b1b1b' } }}
+        sx={{ height: 32, '& .MuiToggleButton-root': { px: 1, border: '1px solid #101010' } }}
       >
         <ToggleButton value="grid" aria-label="Grid view">
           <LayoutGrid size={16} />
@@ -531,7 +531,7 @@ export function Headerbar({
             variant="outlined"
             startIcon={<Plus size={15} />}
             onClick={(e) => setMenuAnchor(e.currentTarget)}
-            sx={{ height: 32, borderColor: '#1b1b1b', color: 'text.primary', whiteSpace: 'nowrap' }}
+            sx={{ height: 32, borderColor: '#101010', color: 'text.primary', whiteSpace: 'nowrap' }}
           >
             New
           </Button>
@@ -614,8 +614,8 @@ export function PlacesSidebar({
       sx={{
         width: 220,
         flexShrink: 0,
-        bgcolor: '#262626',
-        borderRight: '1px solid #1b1b1b',
+        bgcolor: '#1a1a1a',
+        borderRight: '1px solid #101010',
         display: { xs: 'none', md: 'flex' },
         flexDirection: 'column',
         overflow: 'hidden',
@@ -707,8 +707,8 @@ export function StatusBar({
         alignItems: 'center',
         gap: 2,
         px: 1.5,
-        bgcolor: '#303030',
-        borderTop: '1px solid #1b1b1b',
+        bgcolor: '#141414',
+        borderTop: '1px solid #101010',
         fontSize: 11.5,
         color: 'text.secondary',
       }}

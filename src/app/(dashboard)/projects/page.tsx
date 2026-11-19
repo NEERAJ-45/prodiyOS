@@ -271,7 +271,7 @@ function ExpandedDialog({ project, open, onOpenChange }: { project: Project | nu
               ) : docBlobUrl ? (
                 <DocViewer
                   documents={[{ uri: docBlobUrl, fileName: viewingDoc.name }]}
-                  theme={{ primary: '#18181b', secondary: '#27272a', tertiary: '#3f3f46', textPrimary: '#e4e4e7', textSecondary: '#a1a1aa', textTertiary: '#71717a', disableThemeScrollbar: true }}
+                  theme={{ primary: '#18181b', secondary: '#27272a', tertiary: '#3f3f46', textPrimary: '#e4e4e7', textSecondary: '#8a8a8a', textTertiary: '#6c6c6c', disableThemeScrollbar: true }}
                   config={{ header: { disableHeader: false, disableFileName: false }, pdfZoom: { defaultZoom: 1, zoomJump: 0.5 }, pdfVerticalScrollByDefault: true }}
                 />
               ) : (

@@ -217,7 +217,7 @@ export default function ResumeDashboard() {
             {isFetching && <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-zinc-600" />}
             <kbd className="text-[10px] text-zinc-700 bg-zinc-900 border border-zinc-800 rounded px-1 py-0.5 font-mono">⌘K</kbd>
           </div>
-          <Button size="sm" onClick={handleCreate} className="bg-blue-600 hover:bg-blue-500 text-white shadow-sm shadow-blue-600/20">
+          <Button size="sm" onClick={handleCreate} className="bg-blue-600 hover:bg-blue-500 text-white">
             <Plus className="h-4 w-4 mr-1" />
             New
           </Button>

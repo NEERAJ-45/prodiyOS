@@ -125,13 +125,13 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/95 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950 p-4"
     >
       <motion.div
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: 'spring', stiffness: 100, damping: 20 }}
-        className="w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-zinc-800 bg-zinc-950 rounded-2xl shadow-2xl"
+        className="w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-zinc-800 bg-zinc-950 rounded-2xl"
       >
         {/* Progress bar */}
         <div className="h-1 bg-zinc-900 rounded-t-2xl overflow-hidden">

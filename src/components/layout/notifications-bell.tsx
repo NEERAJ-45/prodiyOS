@@ -72,7 +72,7 @@ export function NotificationsBell() {
       {open && (
         <div
           ref={panelRef}
-          className="absolute right-0 top-full mt-2 w-72 rounded-xl border border-border bg-popover text-popover-foreground shadow-xl z-50 overflow-hidden"
+          className="absolute right-0 top-full mt-2 w-72 rounded-xl border border-border bg-popover text-popover-foreground z-50 overflow-hidden"
           role="dialog"
           aria-label="Notification settings"
         >

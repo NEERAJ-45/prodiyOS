@@ -90,7 +90,7 @@ function DiffSide({ pdfUrl, highlightSet, tone, label }: {
               pageNumber={i + 1}
               renderTextLayer
               renderAnnotationLayer
-              className="mb-3 shadow-lg"
+              className="mb-3"
             />
           ))}
         </Document>

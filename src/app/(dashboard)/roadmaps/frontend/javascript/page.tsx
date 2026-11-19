@@ -206,7 +206,7 @@ export default function JavascriptRoadmapPage() {
         </div>
 
         {/* Priority Notes Alert Box */}
-        <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 md:p-5 relative overflow-hidden backdrop-blur-md">
+        <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 md:p-5 relative overflow-hidden">
           <div className="absolute top-0 right-0 h-40 w-40 bg-amber-500/5 rounded-full filter blur-3xl pointer-events-none" />
           <div className="flex gap-3">
             <ShieldAlert className="h-5 w-5 text-amber-400 shrink-0 mt-0.5" />

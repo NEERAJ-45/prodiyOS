@@ -57,7 +57,7 @@ export function ProblemDesc({ slug }: ProblemDescProps) {
         <div
           className={cn(
             "fixed left-1/2 top-1/2 z-50 w-full max-w-2xl -translate-x-1/2 -translate-y-1/2",
-            "rounded-lg border border-border bg-background shadow-xl",
+            "rounded-lg border border-border bg-background",
           )}
         >
           <div className="flex items-center justify-between border-b border-border px-4 py-3">

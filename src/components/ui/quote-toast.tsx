@@ -14,7 +14,7 @@ export function QuoteToast() {
           <div
             className={`${
               t.visible ? 'toast-enter' : 'toast-exit'
-            } flex items-start gap-2 rounded-lg border border-zinc-700/50 bg-zinc-900/95 px-3 py-2.5 shadow-lg text-xs text-zinc-100`}
+            } flex items-start gap-2 rounded-lg border border-zinc-700/50 bg-zinc-900 px-3 py-2.5 text-xs text-zinc-100`}
             style={{ minWidth: 260, maxWidth: 320 }}
           >
             <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-400" />

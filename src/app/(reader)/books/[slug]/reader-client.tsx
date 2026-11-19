@@ -273,7 +273,7 @@ export function BookReaderClient({ book, title: propTitle, pdfUrl: propPdfUrl, b
                   max={numPages}
                   value={pageNumber}
                   onChange={(e) => setPageNumber(parseInt(e.target.value, 10))}
-                  className="w-full h-1 appearance-none cursor-pointer rounded-full bg-zinc-800 accent-zinc-400 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-zinc-400 [&::-webkit-slider-thumb]:shadow-sm"
+                  className="w-full h-1 appearance-none cursor-pointer rounded-full bg-zinc-800 accent-zinc-400 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-zinc-400"
                 />
               </div>
             )}

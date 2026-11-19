@@ -24,10 +24,10 @@ function elapsed(startedAt: number, now: number) {
 }
 
 const STATUS_COLOR: Record<AppProcess['status'], string> = {
-  running: '#e95420',
+  running: '#c25a33',
   done: '#57e389',
   error: '#e01b24',
-  canceled: '#9a9996',
+  canceled: '#8a8a8a',
 };
 
 export function ProcessPanel({
@@ -69,8 +69,8 @@ export function ProcessPanel({
         maxHeight: '55vh',
         display: 'flex',
         flexDirection: 'column',
-        bgcolor: '#303030',
-        border: '1px solid #1b1b1b',
+        bgcolor: '#141414',
+        border: '1px solid #101010',
         zIndex: 30,
       }}
     >

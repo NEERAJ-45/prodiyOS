@@ -33,8 +33,8 @@ export function FileGlyph({ node, size = 18 }: { node: FileNode; size?: number }
     return (
       <Folder
         size={size}
-        color="#e95420"
-        fill="#e95420"
+        color="#c25a33"
+        fill="#c25a33"
         fillOpacity={0.25}
         style={{ flexShrink: 0 }}
       />
@@ -132,7 +132,7 @@ export function InlineRename({
       }}
       sx={{
         '& .MuiOutlinedInput-root': { height: 24, fontSize: 12, backgroundColor: '#1f1f1f' },
-        '& .MuiOutlinedInput-notchedOutline': { borderColor: '#e95420' },
+        '& .MuiOutlinedInput-notchedOutline': { borderColor: '#c25a33' },
         '& input': { padding: '2px 6px' },
       }}
     />
@@ -188,7 +188,7 @@ function FileTile(props: ItemProps) {
         boxShadow: selected
           ? 'inset 0 0 0 1px rgba(233,84,32,0.7)'
           : drop.isOver
-            ? 'inset 0 0 0 2px #e95420'
+            ? 'inset 0 0 0 2px #c25a33'
             : 'none',
         '&:hover': { bgcolor: selected ? 'rgba(233,84,32,0.3)' : 'rgba(255,255,255,0.07)' },
       }}
@@ -261,7 +261,7 @@ function FileRow(props: ItemProps) {
         cursor: 'default',
         userSelect: 'none',
         opacity: drag.isDragging ? 0.4 : 1,
-        outline: drop.isOver ? '2px solid #e95420' : 'none',
+        outline: drop.isOver ? '2px solid #c25a33' : 'none',
         outlineOffset: -2,
         '&.Mui-selected': { bgcolor: 'rgba(233,84,32,0.25)' },
         '&.Mui-selected:hover': { bgcolor: 'rgba(233,84,32,0.3)' },

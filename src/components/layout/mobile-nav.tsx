@@ -84,7 +84,7 @@ export function MobileNav() {
         ref={btnRef}
         onClick={() => { if (!dragRef.current) setOpen(true); }}
         onPointerDown={handlePointerDown}
-        className="fixed bottom-5 right-5 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-xl hover:bg-blue-500 active:bg-blue-700 active:scale-95 transition-colors md:hidden touch-none select-none"
+        className="fixed bottom-5 right-5 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white hover:bg-blue-500 active:bg-blue-700 active:scale-95 transition-colors md:hidden touch-none select-none"
         aria-label="Open menu"
         style={{ touchAction: 'none' }}
       >
@@ -93,11 +93,11 @@ export function MobileNav() {
       {open && (
         <div className="fixed inset-0 z-50 md:hidden">
           <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+            className="absolute inset-0 bg-black/60 animate-in fade-in duration-200"
             onClick={() => setOpen(false)}
           />
           <div className={cn(
-            "absolute left-0 top-0 bottom-0 bg-background border-r border-border shadow-2xl flex flex-col",
+            "absolute left-0 top-0 bottom-0 bg-background border-r border-border flex flex-col",
             "w-72 max-w-[85vw] animate-in slide-in-from-left duration-300"
           )}>
             <div className="flex items-center justify-between h-14 border-b border-border px-4 shrink-0">

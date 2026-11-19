@@ -550,7 +550,7 @@ export default function CustomQAViewer() {
                   className="group relative cursor-pointer"
                   onClick={() => handleSelectSubject(subject.slug)}
                 >
-                  <div className="relative overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-900/40 p-6 backdrop-blur-sm transition-all duration-300 h-full hover:border-zinc-700/80">
+                  <div className="relative overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-900/40 p-6 transition-all duration-300 h-full hover:border-zinc-700/80">
                     <div className="flex flex-col justify-between h-full space-y-5">
                       <div>
                         <div className="flex justify-between items-start mb-2">
@@ -841,7 +841,7 @@ export default function CustomQAViewer() {
                             <Card 
                               key={q.id} 
                               className={`border transition-all duration-300 ${
-                                isExpanded ? 'border-zinc-700 bg-zinc-900/60 shadow-md' : 'border-border bg-zinc-900/20 hover:bg-zinc-900/40 hover:border-zinc-800'
+                                isExpanded ? 'border-zinc-700 bg-zinc-900/60' : 'border-border bg-zinc-900/20 hover:bg-zinc-900/40 hover:border-zinc-800'
                               }`}
                             >
                               <CardContent className="p-3.5 space-y-3">

@@ -470,7 +470,7 @@ export default function LibraryPage() {
                     "border transition-all cursor-pointer group h-full",
                     colors.border,
                     colors.bg,
-                    "hover:scale-[1.02] hover:shadow-lg hover:shadow-black/20",
+                    "hover:scale-[1.02] hover:shadow-black/20",
                   )}
                 >
                   <CardContent className="p-6 flex flex-col items-center justify-center text-center gap-3">

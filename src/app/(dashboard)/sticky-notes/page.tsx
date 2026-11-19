@@ -186,7 +186,7 @@ Note               </p>
                       whileDrag={{ scale: 1.05, rotate: 0, zIndex: 10, boxShadow: "0px 15px 30px rgba(0,0,0,0.5)" }}
                       onClick={() => toggleExpand(note.id)}
                       className={cn(
-                        "flex flex-col justify-between p-5 shadow-lg relative select-none overflow-hidden rounded-none border-t-[10px] transition-all cursor-grab active:cursor-grabbing",
+                        "flex flex-col justify-between p-5 relative select-none overflow-hidden rounded-none border-t-[10px] transition-all cursor-grab active:cursor-grabbing",
                         style.bg,
                         style.border,
                         tiltClass,

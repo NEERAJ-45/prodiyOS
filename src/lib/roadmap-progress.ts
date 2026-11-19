@@ -49,6 +49,8 @@ export function computeRoadmapProgress(
       category.total > 0 ? Math.min(100, Math.round((completed / category.total) * 100)) : 0;
   }
   return progress;
+}
+
 export function readCompletedCount(
   storage: Pick<Storage, 'getItem'>,
   storageKey: string,

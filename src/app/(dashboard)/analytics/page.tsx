@@ -378,7 +378,7 @@ export default function AnalyticsPage() {
                           <span className="text-zinc-300 truncate mr-2">{area.title}</span>
                           <div className="flex items-center gap-2 shrink-0">
                             <span className="text-zinc-500">{area.completed}/{area.total}</span>
-                            <span className="w-8 text-right font-medium tabular-nums" style={{ color: area.pct >= 40 ? '#f59e0b' : '#71717a' }}>{area.pct}%</span>
+                            <span className="w-8 text-right font-medium tabular-nums" style={{ color: area.pct >= 40 ? '#f59e0b' : '#6c6c6c' }}>{area.pct}%</span>
                           </div>
                         </div>
                         <div className="h-1.5 w-full rounded-full bg-zinc-800 overflow-hidden">

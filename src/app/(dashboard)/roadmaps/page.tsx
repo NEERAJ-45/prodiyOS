@@ -6,7 +6,6 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { computeRoadmapProgress } from '@/lib/roadmap-progress';
 import { useAllCompletionsQuery } from '@/hooks/use-completions';
-import { computeCategoryProgress } from '@/lib/roadmap-progress';
 
 import { CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -122,20 +121,6 @@ export default function RoadmapsPage() {
     const rows = completions?.dbConnected ? completions.data : [];
     return computeRoadmapProgress(CATEGORY_DISPLAY, rows);
   }, [completions]);
-  const [progressMap, setProgressMap] = React.useState<Record<string, number>>({});
-
-  React.useEffect(() => {
-    const update = () =>
-      setProgressMap(computeCategoryProgress(CATEGORY_DISPLAY, window.localStorage));
-    update();
-    const bc = new BroadcastChannel('roadmap-progress');
-    bc.onmessage = update;
-    window.addEventListener('storage', update);
-    return () => {
-      bc.close();
-      window.removeEventListener('storage', update);
-    };
-  }, []);
 
   const dynamicCategories: CategoryDisplay[] = React.useMemo(() => {
     return CATEGORY_DISPLAY.map((cat) => ({
@@ -164,7 +149,7 @@ export default function RoadmapsPage() {
               yOffset={15}
             >
               <Link href={category.href} className="group block">
-                <div className="relative overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-900/40 p-6 backdrop-blur-sm transition-all duration-300 h-full hover:border-zinc-700/80">
+                <div className="relative overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-900/40 p-6 transition-all duration-300 h-full hover:border-zinc-700/80">
                   <div className="flex flex-col justify-between h-full space-y-6">
                     <div>
                       <div className="flex justify-between items-start mb-3">

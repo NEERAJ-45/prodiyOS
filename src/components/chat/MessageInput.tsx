@@ -89,7 +89,7 @@ export function MessageInput({ onSend, disabled, replyTo, onCancelReply, onFocus
       {showEmoji && (
         <div
           ref={emojiRef}
-          className="absolute bottom-full left-3 right-3 sm:left-4 sm:right-4 mb-2 rounded-xl border border-border overflow-y-auto overscroll-contain max-h-[40vh] sm:max-h-64 z-50 shadow-xl bg-muted"
+          className="absolute bottom-full left-3 right-3 sm:left-4 sm:right-4 mb-2 rounded-xl border border-border overflow-y-auto overscroll-contain max-h-[40vh] sm:max-h-64 z-50 bg-muted"
           role="dialog"
           aria-label="Emoji picker"
         >
@@ -174,7 +174,7 @@ export function MessageInput({ onSend, disabled, replyTo, onCancelReply, onFocus
           className={cn(
             'shrink-0 h-11 w-11 rounded-full cursor-pointer transition-all duration-200 active:scale-95 border-0',
             text.trim()
-              ? 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm'
+              ? 'bg-primary text-primary-foreground hover:bg-primary/90'
               : 'bg-muted text-muted-foreground/50'
           )}
           aria-label="Send message"

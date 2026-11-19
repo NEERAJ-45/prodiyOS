@@ -146,8 +146,8 @@ export function ActivityChart({ series }: { series: ActivityPoint[] }) {
         >
           <defs>
             <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stopColor="#E1DCC9" stopOpacity="0.16" />
-              <stop offset="1" stopColor="#E1DCC9" stopOpacity="0" />
+              <stop offset="0" stopColor="#d6d6d6" stopOpacity="0.16" />
+              <stop offset="1" stopColor="#d6d6d6" stopOpacity="0" />
             </linearGradient>
           </defs>
 
@@ -155,8 +155,8 @@ export function ActivityChart({ series }: { series: ActivityPoint[] }) {
             const y = H - PAD.bottom - (value / maxValue) * (H - PAD.top - PAD.bottom);
             return (
               <g key={value}>
-                <line x1={6} y1={y} x2={W - 2} y2={y} stroke="#2C2C2C" strokeWidth={1} />
-                <text x={8} y={y - 5} fontSize={9} fill="#919191">
+                <line x1={6} y1={y} x2={W - 2} y2={y} stroke="#262626" strokeWidth={1} />
+                <text x={8} y={y - 5} fontSize={9} fill="#8a8a8a">
                   {value}
                 </text>
               </g>
@@ -167,13 +167,13 @@ export function ActivityChart({ series }: { series: ActivityPoint[] }) {
           <path
             d={averageLine}
             fill="none"
-            stroke="#B9A98C"
+            stroke="#8a8a8a"
             strokeWidth={1.5}
             strokeDasharray="4 4"
             strokeLinecap="round"
             opacity={0.85}
           />
-          <path d={solvedLine} fill="none" stroke="#E1DCC9" strokeWidth={2.2} strokeLinecap="round" />
+          <path d={solvedLine} fill="none" stroke="#d6d6d6" strokeWidth={2.2} strokeLinecap="round" />
 
           {active !== null && (
             <line
@@ -181,25 +181,25 @@ export function ActivityChart({ series }: { series: ActivityPoint[] }) {
               y1={PAD.top}
               x2={round(marker.x)}
               y2={H - PAD.bottom}
-              stroke="#484848"
+              stroke="#3a3a3a"
               strokeWidth={1}
               strokeDasharray="3 3"
             />
           )}
 
-          <circle cx={round(marker.x)} cy={round(marker.y)} r={6.5} fill="#000000" stroke="#E1DCC9" strokeWidth={2} />
-          <circle cx={round(marker.x)} cy={round(marker.y)} r={2.5} fill="#E1DCC9" />
+          <circle cx={round(marker.x)} cy={round(marker.y)} r={6.5} fill="#0a0a0a" stroke="#d6d6d6" strokeWidth={2} />
+          <circle cx={round(marker.x)} cy={round(marker.y)} r={2.5} fill="#d6d6d6" />
         </svg>
 
         {active !== null && (
           <div
-            className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-[115%] whitespace-nowrap rounded-lg border border-zinc-700 bg-[#222222] px-2.5 py-2 shadow-lg"
+            className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-[115%] whitespace-nowrap rounded-lg border border-zinc-700 bg-[#1a1a1a] px-2.5 py-2"
             style={{ left: `${tooltipLeft}%`, top: `${tooltipTop}%` }}
           >
             <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-zinc-500">
               {labels[active]}
             </p>
-            <p className="mt-0.5 text-xs text-[#E1DCC9]">
+            <p className="mt-0.5 text-xs text-[#d6d6d6]">
               {series[active].solved} solved · avg {average[active].toFixed(1)}
             </p>
           </div>
@@ -214,16 +214,16 @@ export function ActivityChart({ series }: { series: ActivityPoint[] }) {
 
       <div className="flex items-center gap-4 text-[11px] text-zinc-500">
         <span className="flex items-center gap-1.5">
-          <span className="h-1.5 w-1.5 rounded-full bg-[#E1DCC9]" aria-hidden />
+          <span className="h-1.5 w-1.5 rounded-full bg-[#d6d6d6]" aria-hidden />
           Solved
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="h-1.5 w-1.5 rounded-full bg-[#B9A98C]" aria-hidden />
+          <span className="h-1.5 w-1.5 rounded-full bg-[#8a8a8a]" aria-hidden />
           7-day average
         </span>
         <Link
           href="/analytics"
-          className="ml-auto flex items-center gap-1 text-[#E1DCC9] transition-opacity hover:opacity-70"
+          className="ml-auto flex items-center gap-1 text-[#d6d6d6] transition-opacity hover:opacity-70"
         >
           View analytics
           <ArrowRight className="h-3 w-3" aria-hidden />

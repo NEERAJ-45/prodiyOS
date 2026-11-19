@@ -43,7 +43,7 @@ export function NotesDialog({ id, initialValue, onSave }: NotesDialogProps) {
           {initialValue ? 'Note' : 'Add Note'}
         </button>
       </DialogTrigger>
-      <DialogContent className="border-border bg-background sm:max-w-[400px] shadow-2xl">
+      <DialogContent className="border-border bg-background sm:max-w-[400px]">
         <DialogHeader>
           <DialogTitle className="text-zinc-100 flex items-center gap-2.5 text-base font-semibold">
             <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
@@ -68,7 +68,7 @@ export function NotesDialog({ id, initialValue, onSave }: NotesDialogProps) {
           </DialogClose>
           <button
             onClick={handleSave}
-            className="px-4 py-2 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-500 transition-all cursor-pointer shadow-lg shadow-indigo-600/20"
+            className="px-4 py-2 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-500 transition-all cursor-pointer"
           >
             Save Note
           </button>
