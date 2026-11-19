@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { SCHEDULES, type ScheduleId, type DaySchedule } from '@/data/schedules';
 import { Button } from '@/components/ui/button';
+import { PlanEvents } from '@/components/shared/PlanEvents';
 
 const SCHEDULE_TABS: { id: ScheduleId; label: string; color: string }[] = [
   { id: 'steady', label: 'Steady', color: 'text-blue-400 border-blue-500/30 bg-blue-500/10' },
@@ -51,6 +52,16 @@ export default function WeeklyPage() {
   const todayLabel = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][dayIndex];
   const schedule = scheduleId === 'custom' && customSchedule ? customSchedule : SCHEDULES[scheduleId];
   const days = editing && editDays ? editDays : (schedule?.days ?? []);
+  const weekDates = React.useMemo(() => {
+    const base = new Date();
+    const monday = new Date(base);
+    monday.setDate(base.getDate() - ((base.getDay() + 6) % 7));
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    });
+  }, []);
 
   function startEdit() {
     const src = scheduleId === 'custom' && customSchedule ? customSchedule : SCHEDULES[scheduleId];
@@ -92,6 +103,8 @@ export default function WeeklyPage() {
             <p className="text-sm text-zinc-500 mt-1">Your weekly study rotation planner</p>
           </div>
         </div>
+
+        <PlanEvents dates={weekDates} />
 
         <div className="flex items-center justify-between">
           <div className="text-xs text-zinc-600 tabular-nums">

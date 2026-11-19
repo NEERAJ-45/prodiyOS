@@ -19,6 +19,7 @@ import { FocusTimer } from '@/components/daily/FocusTimer';
 import { DailyReflection } from '@/components/daily/DailyReflection';
 import { ScheduleLegend } from '@/components/daily/ScheduleLegend';
 import { SyncStatus, type SyncState } from '@/components/shared/SyncStatus';
+import { PlanEvents } from '@/components/shared/PlanEvents';
 
 const SCHEDULE_MODE_KEY = STORAGE_KEYS.DAILY_SCHEDULE_MODE;
 const SLOT_COMPLETIONS_KEY = STORAGE_KEYS.DAILY_SLOT_COMPLETIONS;
@@ -330,6 +331,7 @@ export default function DailyPage() {
 
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
             <div className="xl:col-span-2 space-y-4">
+              <PlanEvents dates={[todayKey]} />
               <Card className="bg-card/50 border-border">
                 <CardHeader className="p-4 pb-3">
                   <div className="flex items-center justify-between">

@@ -3,7 +3,10 @@
 import React, { useState } from 'react';
 import { useProfile } from '@/components/providers/ProfileProvider';
 import { signOut } from 'next-auth/react';
-import { LogOut, User, X, CalendarDays, Flame, Wifi, WifiOff, Pencil, RotateCcw } from 'lucide-react';
+import { LogOut, User, X, CalendarDays, Flame, Wifi, WifiOff, Pencil, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { addMonths, format, getDaysInMonth, isToday, startOfMonth, subMonths } from 'date-fns';
+import { useSchedulePlansQuery } from '@/hooks/use-schedule-plans';
 import { toast } from '@/components/ui/toast';
 import { quotes } from '../../../quotes';
 import { GlobalSearch } from '@/components/shared/GlobalSearch';
@@ -19,6 +22,11 @@ export function Navbar({ global = false }: { global?: boolean }) {
   const [emailPassword, setEmailPassword] = useState('');
   const [emailLoading, setEmailLoading] = useState(false);
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [calOpen, setCalOpen] = useState(false);
+  const [calMonth, setCalMonth] = useState(() => new Date());
+  const router = useRouter();
+  const { data: plansData } = useSchedulePlansQuery();
+  const planDates = new Set((plansData?.plans ?? []).flatMap((plan) => plan.events.map((event) => event.date)));
   const { mode } = useModeStore();
   const isOffice = mode === 'OFFICE';
 
@@ -56,10 +64,53 @@ export function Navbar({ global = false }: { global?: boolean }) {
 
           {/* Database Status & User Badge */}
           <div className="flex items-center gap-2 md:gap-4">
-            {/* Date Display */}
-            <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground border-r border-border pr-4">
-              <CalendarDays className="h-3.5 w-3.5 text-zinc-500" />
-              <span className="font-medium text-zinc-300">{dateStr}</span>
+            {/* Date Display + mini calendar */}
+            <div className="relative hidden sm:block">
+              <button
+                onClick={() => setCalOpen((open) => !open)}
+                aria-expanded={calOpen}
+                className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent"
+              >
+                <CalendarDays className="h-3.5 w-3.5" />
+                <span className="font-medium text-zinc-300">{dateStr}</span>
+              </button>
+              {calOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setCalOpen(false)} />
+                  <div className="absolute right-0 top-full z-50 mt-2 w-64 rounded-xl border bg-card p-3 shadow-lg">
+                    <div className="mb-2 flex items-center justify-between">
+                      <button onClick={() => setCalMonth((m) => subMonths(m, 1))} className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground" aria-label="Previous month">
+                        <ChevronLeft className="h-4 w-4" />
+                      </button>
+                      <span className="text-xs font-medium">{format(calMonth, 'MMMM yyyy')}</span>
+                      <button onClick={() => setCalMonth((m) => addMonths(m, 1))} className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground" aria-label="Next month">
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-muted-foreground">
+                      {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((label, i) => <span key={i}>{label}</span>)}
+                    </div>
+                    <div className="mt-1 grid grid-cols-7 gap-1">
+                      {Array.from({ length: (startOfMonth(calMonth).getDay() + 6) % 7 }).map((_, i) => <span key={`blank-${i}`} />)}
+                      {Array.from({ length: getDaysInMonth(calMonth) }, (_, i) => {
+                        const day = new Date(calMonth.getFullYear(), calMonth.getMonth(), i + 1);
+                        const key = format(day, 'yyyy-MM-dd');
+                        return (
+                          <button
+                            key={key}
+                            onClick={() => { setCalOpen(false); router.push(`/plan/calendar?date=${key}`); }}
+                            className={`relative flex h-7 items-center justify-center rounded-md text-xs tabular-nums transition-colors hover:bg-accent ${isToday(day) ? 'bg-primary text-primary-foreground hover:bg-primary' : 'text-foreground/80'}`}
+                          >
+                            {i + 1}
+                            {planDates.has(key) && <span className="absolute bottom-0.5 h-1 w-1 rounded-full bg-current opacity-60" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <p className="mt-2 text-[10px] text-muted-foreground">Dot marks days with planned events.</p>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Mode Toggle */}
