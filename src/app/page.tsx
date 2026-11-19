@@ -1,5 +1,5 @@
-import { redirect } from 'next/navigation';
+import { AgentShell } from '@/components/agent/AgentShell';
 
 export default function Home() {
-  redirect('/command-center');
+  return <AgentShell />;
 }
