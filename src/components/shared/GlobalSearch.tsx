@@ -79,6 +79,8 @@ export function GlobalSearch() {
   );
 
   useEffect(() => {
+      console.log("query:", query);
+
     if (!open) return;
     const handler = (e: KeyboardEvent) => {
       if (e.key === "ArrowDown") {

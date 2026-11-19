@@ -1,0 +1,176 @@
+
+> ProdigyOS@0.1.0 dev
+> next dev
+
+▲ Next.js 16.2.9 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://172.25.54.168:3000
+- Environments: .env.local
+✓ Ready in 1649ms
+○ Compiling proxy ...
+- Experiments (use with caution):
+  · serverActions
+
+○ Compiling /login ...
+⚠ Unsupported metadata viewport is configured in metadata export in /login. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+⚠ Unsupported metadata viewport is configured in metadata export in /login. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET /login?callbackUrl=%2F 200 in 83ms (next.js: 6ms, proxy.ts: 10ms, application-code: 67ms)
+⚠ Unsupported metadata viewport is configured in metadata export in /login. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET /login?callbackUrl=%2F 200 in 278ms (next.js: 11ms, proxy.ts: 9ms, application-code: 258ms)
+⚠ Blocked cross-origin request to Next.js dev resource /_next/webpack-hmr from "127.0.0.1".
+Cross-origin access to Next.js dev resources is blocked by default for safety.
+
+To allow this host in development, add it to "allowedDevOrigins" in next.config.js and restart the dev server:
+
+// next.config.js
+module.exports = {
+  allowedDevOrigins: ['127.0.0.1'],
+}
+
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+⚠ Unsupported metadata viewport is configured in metadata export in /login. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET /login?callbackUrl=%2F 200 in 84ms (next.js: 8ms, proxy.ts: 11ms, application-code: 65ms)
+⚠ Unsupported metadata viewport is configured in metadata export in /. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET / 200 in 1860ms (next.js: 1568ms, proxy.ts: 60ms, application-code: 231ms)
+(node:25028) Warning: Setting the NODE_TLS_REJECT_UNAUTHORIZED environment variable to '0' makes TLS connections and HTTPS requests insecure by disabling certificate verification.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[browser] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <HotReload globalError={[...]} webSocket={WebSocket} staticIndicatorState={{pathname:null, ...}}>
+      <AppDevOverlayErrorBoundary globalError={[...]}>
+        <ReplaySsrOnlyErrors>
+        <DevRootHTTPAccessFallbackBoundary>
+          <HTTPAccessFallbackBoundary notFound={<NotAllowedRootHTTPFallbackError>}>
+            <HTTPAccessFallbackErrorBoundary pathname="/" notFound={<NotAllowedRootHTTPFallbackError>} ...>
+              <RedirectBoundary>
+                <RedirectErrorBoundary router={{...}}>
+                  <Head>
+                  <__next_root_layout_boundary__>
+                    <SegmentViewNode type="layout" pagePath="layout.tsx">
+                      <SegmentTrieNode>
+                      <link>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <RootLayout>
+                        <html
+                          lang="en"
+                          className="dark geistsans_1ae61996-module__IlKU3W__variable geistmono_f060a206-module__5BN90..."
+-                         suppresshydrationwarning="true"
+-                         data-qb-installed="true"
+                        >
+                  ...
+ 
+    at <unknown> (file://D:/Neeraj Surnis/Prsnl_Project/New folder/Samundar/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:3439:25)
+    at runWithFiberInDEV (file://D:/Neeraj Surnis/Prsnl_Project/New folder/Samundar/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:965:74)
+    at emitPendingHydrationWarnings (file://D:/Neeraj Surnis/Prsnl_Project/New folder/Samundar/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:3438:13)
+    at completeWork (file://D:/Neeraj Surnis/Prsnl_Project/New folder/Samundar/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:6885:102)
+    at runWithFiberInDEV (file://D:/Neeraj Surnis/Prsnl_Project/New folder/Samundar/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:965:131)
+    at completeUnitOfWork (file://D:/Neeraj Surnis/Prsnl_Project/New folder/Samundar/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9622:23)
+    at performUnitOfWork (file://D:/Neeraj Surnis/Prsnl_Project/New folder/Samundar/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9557:28)
+    at workLoopConcurrentByScheduler (file://D:/Neeraj Surnis/Prsnl_Project/New folder/Samundar/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9551:58)
+    at renderRootConcurrent (file://D:/Neeraj Surnis/Prsnl_Project/New folder/Samundar/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9534:71)
+    at performWorkOnRoot (file://D:/Neeraj Surnis/Prsnl_Project/New folder/Samundar/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:9061:150)
+    at performWorkOnRootViaSchedulerTask (file://D:/Neeraj Surnis/Prsnl_Project/New folder/Samundar/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:10255:9)
+    at MessagePort.performWorkUntilDeadline (file://D:/Neeraj Surnis/Prsnl_Project/New folder/Samundar/.next/dev/static/chunks/node_modules_next_dist_compiled_1amofcm._.js:2647:64) (file://D:/Neeraj Surnis/Prsnl_Project/New folder/Samundar/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:3439:25)
+ GET /api/auth/session 200 in 7.0s (next.js: 7.0s, application-code: 50ms)
+ GET /api/auth/session 200 in 436ms (next.js: 246ms, application-code: 190ms)
+ GET /api/auth/session 200 in 207ms (next.js: 96ms, application-code: 112ms)
+ GET /api/auth/session 200 in 31ms (next.js: 6ms, application-code: 25ms)
+○ Compiling /api/db/onboarding ...
+⚠ Unsupported metadata viewport is configured in metadata export in /command-center. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET /command-center 200 in 5.3s (next.js: 5.1s, proxy.ts: 20ms, application-code: 101ms)
+⚠ Unsupported metadata viewport is configured in metadata export in /command-center. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET /command-center 200 in 95ms (next.js: 11ms, proxy.ts: 29ms, application-code: 55ms)
+ GET /api/db/onboarding?email=neerajsurnis%40gmail.com 500 in 16.1s (next.js: 765ms, application-code: 15.4s)
+ GET /api/interviews?userEmail=neerajsurnis%40gmail.com 200 in 9.6s (next.js: 1289ms, application-code: 8.3s)
+ GET /api/db/revision?userEmail=neerajsurnis%40gmail.com 500 in 9.7s (next.js: 2.1s, application-code: 7.6s)
+ GET /api/db/command-center?userEmail=neerajsurnis%40gmail.com 500 in 9.6s (next.js: 2.2s, application-code: 7.4s)
+[browser] Detected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior="smooth"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior (file://D:/Neeraj Surnis/Prsnl_Project/New folder/Samundar/.next/dev/static/chunks/node_modules_next_dist_1ybzpk2._.js:2477:13)
+ GET /api/auth/session 200 in 166ms (next.js: 101ms, application-code: 64ms)
+ GET /api/auth/session 200 in 33ms (next.js: 11ms, application-code: 22ms)
+ GET /api/db/onboarding?email=neerajsurnis%40gmail.com 500 in 17.8s (next.js: 15ms, application-code: 17.8s)
+ GET /api/db/command-center?userEmail=neerajsurnis%40gmail.com 500 in 16.6s (next.js: 18ms, application-code: 16.6s)
+ GET /api/db/revision?userEmail=neerajsurnis%40gmail.com 500 in 16.6s (next.js: 55ms, application-code: 16.6s)
+⚠ Unsupported metadata viewport is configured in metadata export in /analytics. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET /analytics 200 in 2.6s (next.js: 2.5s, proxy.ts: 17ms, application-code: 116ms)
+[API/completions] Connection error: Could not connect to any servers in your MongoDB Atlas cluster. One common reason is that you're trying to access the database from an IP that isn't whitelisted. Make sure your current IP address is on your Atlas cluster's IP whitelist: https://www.mongodb.com/docs/atlas/security-whitelist/
+ GET /api/db/onboarding?email=neerajsurnis%40gmail.com 500 in 15.4s (next.js: 5ms, application-code: 15.4s)
+ GET /api/db/onboarding?email=neerajsurnis%40gmail.com 500 in 12.4s (next.js: 3ms, application-code: 12.4s)
+ GET /api/db/completions?userEmail=neerajsurnis%40gmail.com 500 in 11.0s (next.js: 442ms, application-code: 10.6s)
+[API/completions] Connection error: Could not connect to any servers in your MongoDB Atlas cluster. One common reason is that you're trying to access the database from an IP that isn't whitelisted. Make sure your current IP address is on your Atlas cluster's IP whitelist: https://www.mongodb.com/docs/atlas/security-whitelist/
+ GET /api/db/completions?userEmail=neerajsurnis%40gmail.com 500 in 15.6s (next.js: 3ms, application-code: 15.6s)
+ GET /api/auth/session 200 in 109ms (next.js: 79ms, application-code: 29ms)
+ GET /api/auth/session 200 in 161ms (next.js: 29ms, application-code: 132ms)
+ GET /api/db/onboarding?email=neerajsurnis%40gmail.com 500 in 15.5s (next.js: 66ms, application-code: 15.4s)
+⚠ Unsupported metadata viewport is configured in metadata export in /interview. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET /interview 200 in 2.3s (next.js: 2.0s, proxy.ts: 16ms, application-code: 201ms)
+⚠ Unsupported metadata viewport is configured in metadata export in /command-center. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET /command-center 200 in 374ms (next.js: 71ms, proxy.ts: 120ms, application-code: 182ms)
+ GET /api/db/onboarding?email=neerajsurnis%40gmail.com 500 in 15.5s (next.js: 9ms, application-code: 15.5s)
+ GET /api/db/command-center?userEmail=neerajsurnis%40gmail.com 500 in 10.0s (next.js: 8ms, application-code: 10.0s)
+ GET /api/db/revision?userEmail=neerajsurnis%40gmail.com 500 in 10.0s (next.js: 18ms, application-code: 10.0s)
+ GET /api/auth/session 200 in 241ms (next.js: 91ms, application-code: 149ms)
+ GET /api/auth/session 200 in 86ms (next.js: 9ms, application-code: 77ms)
+ GET /api/auth/session 200 in 159ms (next.js: 77ms, application-code: 82ms)
+ GET /api/auth/session 200 in 153ms (next.js: 80ms, application-code: 73ms)
+ GET /api/db/revision?userEmail=neerajsurnis%40gmail.com 500 in 15.4s (next.js: 125ms, application-code: 15.3s)
+ GET /api/db/command-center?userEmail=neerajsurnis%40gmail.com 500 in 15.4s (next.js: 155ms, application-code: 15.3s)
+ GET /api/db/onboarding?email=neerajsurnis%40gmail.com 500 in 15.1s (next.js: 16ms, application-code: 15.0s)
+ GET /api/db/onboarding?email=neerajsurnis%40gmail.com 500 in 15.2s (next.js: 4ms, application-code: 15.2s)
+ GET /api/db/onboarding?email=neerajsurnis%40gmail.com 500 in 2.7s (next.js: 3ms, application-code: 2.7s)
+ GET /api/db/onboarding?email=neerajsurnis%40gmail.com 500 in 2.5s (next.js: 6ms, application-code: 2.5s)
+ GET /api/auth/session 200 in 525ms (next.js: 233ms, application-code: 292ms)
+ GET /api/auth/session 200 in 88ms (next.js: 8ms, application-code: 80ms)
+⚠ Unsupported metadata viewport is configured in metadata export in /command-center. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET /api/db/onboarding?email=neerajsurnis%40gmail.com 200 in 2.2s (next.js: 18ms, application-code: 2.2s)
+ GET /command-center 200 in 654ms (next.js: 19ms, proxy.ts: 19ms, application-code: 617ms)
+ GET /api/auth/session 200 in 277ms (next.js: 97ms, application-code: 180ms)
+ GET /api/auth/session 200 in 89ms (next.js: 65ms, application-code: 24ms)
+ GET /api/db/onboarding?email=neerajsurnis%40gmail.com 500 in 11.3s (next.js: 30ms, application-code: 11.2s)
+ GET /api/interviews?userEmail=neerajsurnis%40gmail.com 200 in 11.3s (next.js: 77ms, application-code: 11.2s)
+ GET /api/db/revision?userEmail=neerajsurnis%40gmail.com 500 in 11.3s (next.js: 58ms, application-code: 11.2s)
+ GET /api/db/command-center?userEmail=neerajsurnis%40gmail.com 500 in 11.3s (next.js: 66ms, application-code: 11.2s)
+ GET /api/auth/session 200 in 305ms (next.js: 170ms, application-code: 135ms)
+ GET /api/auth/session 200 in 29ms (next.js: 8ms, application-code: 21ms)
+ GET /api/db/revision?userEmail=neerajsurnis%40gmail.com 500 in 16.3s (next.js: 14ms, application-code: 16.3s)
+ GET /api/db/command-center?userEmail=neerajsurnis%40gmail.com 500 in 16.3s (next.js: 146ms, application-code: 16.2s)
+ GET /api/db/onboarding?email=neerajsurnis%40gmail.com 500 in 15.9s (next.js: 34ms, application-code: 15.8s)
+ GET /api/db/onboarding?email=neerajsurnis%40gmail.com 500 in 15.4s (next.js: 9ms, application-code: 15.4s)
+ GET /api/auth/session 200 in 106ms (next.js: 74ms, application-code: 32ms)
+ GET /api/auth/session 200 in 61ms (next.js: 22ms, application-code: 39ms)
+ GET /api/db/onboarding?email=neerajsurnis%40gmail.com 500 in 15.7s (next.js: 23ms, application-code: 15.6s)
+ GET /api/auth/session 200 in 95ms (next.js: 50ms, application-code: 45ms)
+ GET /api/auth/session 200 in 36ms (next.js: 11ms, application-code: 25ms)
+ GET /api/db/onboarding?email=neerajsurnis%40gmail.com 500 in 15.5s (next.js: 9ms, application-code: 15.5s)
+ GET /api/db/onboarding?email=neerajsurnis%40gmail.com 500 in 15.4s (next.js: 4ms, application-code: 15.4s)
+ GET /api/db/onboarding?email=neerajsurnis%40gmail.com 500 in 15.4s (next.js: 9ms, application-code: 15.4s)
+ GET /api/auth/session 200 in 84ms (next.js: 64ms, application-code: 20ms)
+ GET /api/auth/session 200 in 67ms (next.js: 5ms, application-code: 61ms)
+ GET /api/db/onboarding?email=neerajsurnis%40gmail.com 200 in 3.1s (next.js: 16ms, application-code: 3.1s)

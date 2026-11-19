@@ -71,6 +71,7 @@ const navGroups: NavGroup[] = [
     label: "Plan",
     items: [
       { label: "Daily Planner", href: "/daily", icon: CalendarCheck },
+      { label: "Calendar Plans", href: "/plan/calendar", icon: CalendarDays },
       { label: "Weekly Overview", href: "/weekly", icon: Calendar },
       { label: "Activity Log", href: "/history", icon: CalendarDays },
       { label: "Task Manager", href: "/tasks", icon: ListChecks },
