@@ -94,24 +94,3 @@ em-emoji-picker {
   max-height: 100% !important;
 }
 
-/* Agent HUD surface */
-.hud-surface {
-  background-image:
-    radial-gradient(ellipse at 50% -10%, rgba(34, 211, 238, 0.09), transparent 55%),
-    linear-gradient(to right, rgba(255, 255, 255, 0.028) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.028) 1px, transparent 1px);
-  background-size: 100% 100%, 34px 34px, 34px 34px;
-}
-
-.hud-scanlines::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: repeating-linear-gradient(to bottom, rgba(255, 255, 255, 0.022) 0 1px, transparent 1px 3px);
-  mix-blend-mode: overlay;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .hud-scanlines::after { display: none; }
-}

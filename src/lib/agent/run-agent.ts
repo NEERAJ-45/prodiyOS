@@ -1,7 +1,7 @@
 import { executeTool } from './tools';
 import type { AgentAction, AgentMessage, AgentResponse } from './types';
 
-const MODEL = 'gemini-3.5-flash';
+const MODEL = 'gemini-3.1-flash-lite';
 const MAX_ROUNDS = 3;
 const MAX_HISTORY = 12;
 
@@ -135,7 +135,7 @@ export async function runAgent(input: {
       systemInstruction: { parts: [{ text: systemPrompt(today, actions) }] },
       contents,
       tools: [{ functionDeclarations }],
-      generationConfig: { temperature: 0.4 },
+      generationConfig: { temperature: 0.4, thinkingConfig: { thinkingBudget: 0 } },
     });
 
     const calls = functionCalls(parts);
@@ -176,7 +176,7 @@ export async function runAgent(input: {
   const parts = await generate(apiKey, {
     systemInstruction: { parts: [{ text: systemPrompt(today, actions) }] },
     contents,
-    generationConfig: { temperature: 0.4 },
+    generationConfig: { temperature: 0.4, thinkingConfig: { thinkingBudget: 0 } },
   });
 
   return { message: textOf(parts) || 'Done.', run, runDangerous: runDangerous || undefined, navigate };
