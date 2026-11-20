@@ -44,3 +44,6 @@ AUDIT_REPORT.md
 
 # Reader's Corner local logs
 logs/
+
+.vercel
+.env*
