@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { Menu, X, LayoutDashboard, GitBranch, Map, Target, Timer, RefreshCw, FolderKanban, Briefcase, BookOpen, CalendarCheck, BarChart3, StickyNote, Rocket, CalendarDays, History, ListChecks, FileText, FileCode, NotebookPen } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRevisionDueCount } from '@/hooks/use-revision-due';
+import { AgentLauncher } from '@/components/agent/AgentLauncher';
 
 const navItems = [
   { label: 'Dashboard', href: '/command-center', icon: LayoutDashboard },
@@ -112,6 +113,9 @@ export function MobileNav() {
               </button>
             </div>
             <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
+              <div className="mb-2 border-b border-border pb-2">
+                <AgentLauncher showLabel />
+              </div>
               {navItems.map((item) => {
                 const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
                 const Icon = item.icon;

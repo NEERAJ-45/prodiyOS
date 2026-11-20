@@ -9,6 +9,7 @@ import { useModeStore } from "@/lib/stores/mode-store";
 import { ModeToggle } from "@/components/layout/mode-toggle";
 import { useRevisionDueCount } from "@/hooks/use-revision-due";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
+import { AgentLauncher } from "@/components/agent/AgentLauncher";
 import {
   LayoutDashboard,
   GitBranch,
@@ -256,7 +257,8 @@ export function Sidebar() {
 
         <div className="border-t p-4">
           {sidebarCollapsed ? (
-            <div className="flex justify-center">
+            <div className="flex justify-center gap-2">
+              <AgentLauncher />
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
@@ -270,7 +272,10 @@ export function Sidebar() {
               </Tooltip>
             </div>
           ) : (
-            <ModeToggle />
+            <div className="space-y-2">
+              <AgentLauncher showLabel />
+              <ModeToggle />
+            </div>
           )}
         </div>
       </aside>
