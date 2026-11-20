@@ -3,11 +3,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
-import { ArrowUp, PlugZap } from 'lucide-react';
+import { ArrowUp, Mic, PlugZap, Volume2, VolumeX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { scanActions, runAction } from '@/lib/agent/actions';
 import type { AgentMessage, AgentResponse } from '@/lib/agent/types';
 import { AgentOrb, type OrbState } from './AgentOrb';
+import { createRecognizer, speak, stopSpeaking } from '@/lib/agent/speech';
 
 const QUICK_PROMPTS = ["What's today?", "What's next?", 'Open my calendar'];
 
@@ -19,7 +20,22 @@ export function AgentShell() {
   const [phase, setPhase] = useState<OrbState>('idle');
   const [offline, setOffline] = useState(false);
   const [error, setError] = useState('');
+  const [sound, setSound] = useState(true);
+  const [listening, setListening] = useState(false);
+  const [recognizerSupported, setRecognizerSupported] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
+  const recognizerRef = useRef<ReturnType<typeof createRecognizer>>(null);
+
+  useEffect(() => {
+    setSound(window.localStorage.getItem('samundar-agent-sound') !== 'off');
+    const win = window as unknown as { SpeechRecognition?: unknown; webkitSpeechRecognition?: unknown };
+    setRecognizerSupported(Boolean(win.SpeechRecognition ?? win.webkitSpeechRecognition));
+    return () => stopSpeaking();
+  }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem('samundar-agent-sound', sound ? 'on' : 'off');
+  }, [sound]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: 'end' });
@@ -148,6 +164,34 @@ export function AgentShell() {
             disabled={offline || busy}
             className="max-h-32 min-h-10 flex-1 resize-none rounded-lg border bg-card px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring disabled:opacity-60"
           />
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            disabled={offline || busy || !recognizerSupported}
+            onClick={() => {
+              if (listening) { recognizerRef.current?.stop(); setListening(false); return; }
+              stopSpeaking();
+              const recognizer = createRecognizer((text) => { setListening(false); void send(text); }, () => setListening(false));
+              if (!recognizer) return;
+              recognizerRef.current = recognizer;
+              recognizer.start();
+              setListening(true);
+            }}
+            aria-label={listening ? 'Stop listening' : 'Speak to agent'}
+            title={recognizerSupported ? 'Speak to agent' : 'Voice input needs Chrome or Edge'}
+          >
+            <Mic className={`h-4 w-4 ${listening ? 'text-ring' : ''}`} />
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={() => { setSound((value) => !value); stopSpeaking(); }}
+            aria-label={sound ? 'Mute replies' : 'Unmute replies'}
+          >
+            {sound ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+          </Button>
           <Button type="submit" size="icon" disabled={offline || busy || !input.trim()} aria-label="Send">
             <ArrowUp className="h-4 w-4" />
           </Button>
