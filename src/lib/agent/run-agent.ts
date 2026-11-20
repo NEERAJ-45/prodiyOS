@@ -5,6 +5,12 @@ const MODEL = 'gemini-3.5-flash';
 const MAX_ROUNDS = 3;
 const MAX_HISTORY = 12;
 
+const APP_PATHS = [
+  '/', '/analytics', '/books', '/career', '/chat', '/command-center', '/daily', '/docs', '/focus',
+  '/history', '/interview', '/interviews', '/mastery', '/patterns', '/plan/calendar', '/plan/resume',
+  '/plan/study-plan', '/projects', '/revision', '/roadmaps', '/sticky-notes', '/tasks', '/weekly',
+];
+
 type Part = Record<string, unknown>;
 type Content = { role: 'user' | 'model'; parts: Part[] };
 
@@ -74,7 +80,7 @@ function systemPrompt(today: string, actions: AgentAction[]) {
     'Available dashboard actions on the current screen:',
     list,
     'To use an action call run_action with its exact id. Dangerous actions need the user to explicitly agree first; only then pass confirmed=true.',
-    'Use navigate only for in-app paths starting with /.',
+    `Use navigate only with one of these paths: ${APP_PATHS.join(', ')}.`,
     'If you cannot do something, say so plainly.',
   ].join('\n');
 }
@@ -153,11 +159,11 @@ export async function runAgent(input: {
         }
       } else if (call.name === 'navigate') {
         const path = String(args.path ?? '');
-        if (/^\/[a-z0-9\-/?=&]*$/i.test(path)) {
+        if (APP_PATHS.includes(path)) {
           navigate = path;
           responses.push(functionResponse(call.name, { ok: true }));
         } else {
-          responses.push(functionResponse(call.name, { error: 'Invalid path' }));
+          responses.push(functionResponse(call.name, { error: `Unknown path. Valid paths: ${APP_PATHS.join(', ')}` }));
         }
       } else {
         responses.push(functionResponse(call.name, await executeTool(call.name, args, { email, today })));
