@@ -21,6 +21,8 @@ export function ScheduleTabs({ scheduleId, onChange }: { scheduleId: ScheduleId;
           <button
             key={tab.id}
             onClick={() => onChange(tab.id)}
+            data-agent-action={`tab-${tab.id}`}
+            data-agent-label={`Switch to ${tab.label} schedule`}
             className={cn(
               'px-3 py-1.5 rounded-lg text-xs font-medium border transition-all cursor-pointer',
               isActive

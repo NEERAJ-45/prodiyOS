@@ -94,6 +94,8 @@ export function ModeToggle() {
     <div className="flex items-center gap-1.5">
       <button
         onClick={() => setMode('HOME')}
+        data-agent-action="mode-home"
+        data-agent-label="Switch to home mode"
         className={cn(
           'inline-flex items-center gap-1 px-1.5 py-1 rounded text-[10px] font-medium transition-colors',
           mode === 'HOME'
@@ -112,6 +114,8 @@ export function ModeToggle() {
       />
       <button
         onClick={() => setMode('OFFICE')}
+        data-agent-action="mode-office"
+        data-agent-label="Switch to office mode"
         className={cn(
           'inline-flex items-center gap-1 px-1.5 py-1 rounded text-[10px] font-medium transition-colors',
           mode === 'OFFICE'

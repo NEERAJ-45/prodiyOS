@@ -85,15 +85,15 @@ export function FocusTimer() {
         </div>
         <div className="flex items-center gap-2">
           {!timerRunning ? (
-            <Button variant="outline" size="sm" onClick={startTimer} disabled={timerMinutes === 0 && timerSecs === 0}>
+            <Button variant="outline" size="sm" onClick={startTimer} data-agent-action="focus-start" data-agent-label="Start focus timer" disabled={timerMinutes === 0 && timerSecs === 0}>
               <Play className="h-3.5 w-3.5 mr-1" /> Start
             </Button>
           ) : (
-            <Button variant="outline" size="sm" onClick={pauseTimer}>
+            <Button variant="outline" size="sm" onClick={pauseTimer} data-agent-action="focus-pause" data-agent-label="Pause focus timer">
               <Pause className="h-3.5 w-3.5 mr-1" /> Pause
             </Button>
           )}
-          <Button variant="outline" size="sm" onClick={resetTimer}>
+          <Button variant="outline" size="sm" onClick={resetTimer} data-agent-action="focus-reset" data-agent-label="Reset focus timer">
             <RotateCcw className="h-3.5 w-3.5" />
           </Button>
         </div>

@@ -1,7 +1,7 @@
 import { executeTool } from './tools';
 import type { AgentAction, AgentMessage, AgentResponse } from './types';
 
-const MODEL = 'gemini-2.5-flash';
+const MODEL = 'gemini-3.5-flash';
 const MAX_ROUNDS = 3;
 const MAX_HISTORY = 12;
 

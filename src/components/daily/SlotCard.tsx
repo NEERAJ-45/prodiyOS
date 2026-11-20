@@ -42,7 +42,7 @@ export function SlotCard({ slot, isDone, slotNote, onToggle, onNoteChange }: Slo
       )}
     >
       <div className="flex items-start gap-3">
-        <button onClick={onToggle} className="mt-0.5 shrink-0 cursor-pointer">
+        <button onClick={onToggle} data-agent-action={`slot-${slot.period}`} data-agent-label={`Toggle ${slot.period}`} className="mt-0.5 shrink-0 cursor-pointer">
           {isDone ? (
             <CheckCircle2 className="h-5 w-5 text-emerald-400" />
           ) : (

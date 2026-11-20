@@ -208,8 +208,8 @@ export default function CalendarPlansPage() {
           <p className="mt-1 text-xs text-muted-foreground tabular-nums">{activePlan.events.length} events · {activePlan.sourceFileName}</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button size="sm" onClick={() => { setImportError(''); setImportOpen(true); }}><Plus className="h-4 w-4" /> Import schedule</Button>
-          <Button variant="outline" size="sm" onClick={() => setDeleteOpen(true)}>
+          <Button size="sm" onClick={() => { setImportError(''); setImportOpen(true); }} data-agent-action="calendar-import" data-agent-label="Import schedule"><Plus className="h-4 w-4" /> Import schedule</Button>
+          <Button variant="outline" size="sm" onClick={() => setDeleteOpen(true)} data-agent-action="calendar-delete-plan" data-agent-label="Delete this schedule" data-agent-danger>
             <Trash2 className="h-4 w-4" /> Delete
           </Button>
         </div>
@@ -242,6 +242,8 @@ export default function CalendarPlansPage() {
                 variants={cellVariants}
                 whileTap={reduceMotion ? undefined : { scale: 0.985 }}
                 onClick={() => openDay(key)}
+                data-agent-action={`day-${key}`}
+                data-agent-label={`Open ${key}`}
                 aria-label={`${format(date, 'EEEE, MMM d')}${dayEvents.length ? `, ${dayEvents.length} scheduled` : ', nothing scheduled'}`}
                 className={cn(cellClass, !inMonth && 'opacity-45', key === selectedDate && 'ring-2 ring-ring')}
               >
