@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { addMonths, format, subMonths } from 'date-fns';
-import { CalendarDays, ChevronLeft, ChevronRight, FileUp, Loader2, Plus, Trash2 } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight, FileUp, Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
 import { datesForMonth, dateKey, parseDateKey } from '@/lib/schedule-plans/date-mapping';
 import { applyLegacyStartDate, draftsToEvents, parseScheduleCsv } from '@/lib/schedule-plans/csv';
 import type { ImportedScheduleDraft, ScheduleEvent } from '@/lib/schedule-plans/types';
@@ -13,6 +14,68 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+
+/* ------------------------------------------------------------------ */
+/* Task mutations (inline so this stays a single file)                 */
+/*                                                                     */
+/* IMPORTANT: set PLANS_KEY to the same query key your                 */
+/* useSchedulePlansQuery uses, and make sure these API routes exist:   */
+/*   POST   /api/schedule-plans/:scheduleId/events                     */
+/*   PATCH  /api/schedule-plans/:scheduleId/events/:eventId            */
+/*   DELETE /api/schedule-plans/:scheduleId/events/:eventId            */
+/* ------------------------------------------------------------------ */
+
+const PLANS_KEY = ['schedule-plans'];
+
+type EventFields = {
+  title: string;
+  date: string;
+  category: string;
+  startTime: string | null;
+  endTime: string | null;
+  notes: string | null;
+};
+
+async function api(url: string, init: RequestInit, fallback: string) {
+  const res = await fetch(url, { headers: { 'Content-Type': 'application/json' }, ...init });
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.error ?? fallback);
+  }
+  return res.status === 204 ? null : res.json().catch(() => null);
+}
+
+function useCreateTask() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ scheduleId, event }: { scheduleId: string; event: EventFields & { id: string; completed: boolean } }) =>
+      api(`/api/schedule-plans/${scheduleId}/events`, { method: 'POST', body: JSON.stringify(event) }, 'Could not add task'),
+    onSuccess: () => qc.invalidateQueries({ queryKey: PLANS_KEY }),
+  });
+}
+
+function useEditTask() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ scheduleId, eventId, fields }: { scheduleId: string; eventId: string; fields: EventFields }) =>
+      api(`/api/schedule-plans/${scheduleId}/events/${eventId}`, { method: 'PATCH', body: JSON.stringify(fields) }, 'Could not update task'),
+    onSuccess: () => qc.invalidateQueries({ queryKey: PLANS_KEY }),
+  });
+}
+
+function useDeleteTask() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ scheduleId, eventId }: { scheduleId: string; eventId: string }) =>
+      api(`/api/schedule-plans/${scheduleId}/events/${eventId}`, { method: 'DELETE' }, 'Could not delete task'),
+    onSuccess: () => qc.invalidateQueries({ queryKey: PLANS_KEY }),
+  });
+}
+
+/* ------------------------------------------------------------------ */
+
+type EventForm = { title: string; date: string; startTime: string; endTime: string; category: string; notes: string };
+const emptyForm = (date: string): EventForm => ({ title: '', date, startTime: '', endTime: '', category: '', notes: '' });
 
 const cellClass = 'min-h-28 rounded-lg border bg-card p-2 text-left transition-colors hover:border-muted-foreground/30';
 
@@ -46,11 +109,15 @@ function EventChip({ event }: { event: ScheduleEvent }) {
 function EventRow({
   event,
   onToggle,
+  onEdit,
+  onDelete,
   onNotes,
   full = false,
 }: {
   event: ScheduleEvent;
   onToggle: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
   onNotes?: (notes: string) => void;
   full?: boolean;
 }) {
@@ -78,6 +145,22 @@ function EventRow({
           />
         )}
       </div>
+      <div className="flex shrink-0 items-start gap-1">
+        <button
+          aria-label={`Edit ${event.title}`}
+          onClick={onEdit}
+          className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+        >
+          <Pencil className="h-3.5 w-3.5" />
+        </button>
+        <button
+          aria-label={`Delete ${event.title}`}
+          onClick={onDelete}
+          className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
+      </div>
     </div>
   );
 }
@@ -91,6 +174,9 @@ export default function CalendarPlansPage() {
   const createPlan = useCreateSchedulePlan();
   const updateEvent = useUpdateScheduleEvent();
   const deletePlan = useDeleteSchedulePlan();
+  const createTask = useCreateTask();
+  const editTask = useEditTask();
+  const deleteTask = useDeleteTask();
   const plans = data?.plans ?? [];
   const [activeId, setActiveId] = useState<string>();
   const activePlan = plans.find((plan) => plan.scheduleId === activeId) ?? plans[0];
@@ -105,6 +191,15 @@ export default function CalendarPlansPage() {
   const [importName, setImportName] = useState('');
   const [importStart, setImportStart] = useState('');
   const [deleteOpen, setDeleteOpen] = useState(false);
+
+  // task add / edit / delete
+  const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState<ScheduleEvent | null>(null);
+  const [form, setForm] = useState<EventForm>(() => emptyForm(dateKey(new Date())));
+  const [formError, setFormError] = useState('');
+  const [eventToDelete, setEventToDelete] = useState<ScheduleEvent | null>(null);
+  const formBusy = createTask.isPending || editTask.isPending;
+
   const reduceMotion = useReducedMotion();
 
   useEffect(() => {
@@ -165,6 +260,71 @@ export default function CalendarPlansPage() {
   function saveNotes(event: ScheduleEvent, notes: string) { if (!activePlan) return; updateEvent.mutate({ scheduleId: activePlan.scheduleId, eventId: event.id, notes }); }
   function openDay(key: string) { setSelectedDate(key); setDayOpen(true); }
 
+  function openAdd() {
+    setEditing(null);
+    setForm(emptyForm(selectedDate));
+    setFormError('');
+    setDayOpen(false); setFullOpen(false); setFormOpen(true);
+  }
+
+  function openEdit(event: ScheduleEvent) {
+    setEditing(event);
+    setForm({
+      title: event.title,
+      date: event.date,
+      startTime: event.startTime ?? '',
+      endTime: event.endTime ?? '',
+      category: event.category ?? '',
+      notes: event.notes ?? '',
+    });
+    setFormError('');
+    setDayOpen(false); setFullOpen(false); setFormOpen(true);
+  }
+
+  async function saveTask() {
+    if (!activePlan) return;
+    const title = form.title.trim();
+    if (!title) { setFormError('Title is required'); return; }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(form.date)) { setFormError('Date is required'); return; }
+    if (form.endTime && !form.startTime) { setFormError('Add a start time or clear the end time'); return; }
+    if (form.startTime && form.endTime && form.endTime <= form.startTime) { setFormError('End time must be after start time'); return; }
+    setFormError('');
+
+    const fields: EventFields = {
+      title,
+      date: form.date,
+      category: form.category.trim() || 'General',
+      startTime: form.startTime || null,
+      endTime: form.endTime || null,
+      notes: form.notes.trim() || null,
+    };
+
+    try {
+      if (editing) {
+        await editTask.mutateAsync({ scheduleId: activePlan.scheduleId, eventId: editing.id, fields });
+      } else {
+        await createTask.mutateAsync({
+          scheduleId: activePlan.scheduleId,
+          event: { id: crypto.randomUUID(), completed: false, ...fields },
+        });
+      }
+      setSelectedDate(form.date);
+      setMonth(parseDateKey(form.date));
+      setFormOpen(false);
+    } catch (caught) {
+      setFormError(caught instanceof Error ? caught.message : 'Could not save');
+    }
+  }
+
+  async function confirmDeleteTask() {
+    if (!activePlan || !eventToDelete) return;
+    try {
+      await deleteTask.mutateAsync({ scheduleId: activePlan.scheduleId, eventId: eventToDelete.id });
+    } finally {
+      setEventToDelete(null);
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="space-y-5 p-4 md:p-6">
@@ -208,7 +368,8 @@ export default function CalendarPlansPage() {
           <p className="mt-1 text-xs text-muted-foreground tabular-nums">{activePlan.events.length} events · {activePlan.sourceFileName}</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button size="sm" onClick={() => { setImportError(''); setImportOpen(true); }} data-agent-action="calendar-import" data-agent-label="Import schedule"><Plus className="h-4 w-4" /> Import schedule</Button>
+          <Button size="sm" onClick={openAdd} data-agent-action="event-add" data-agent-label="Add task"><Plus className="h-4 w-4" /> Add task</Button>
+          <Button variant="outline" size="sm" onClick={() => { setImportError(''); setImportOpen(true); }} data-agent-action="calendar-import" data-agent-label="Import schedule"><FileUp className="h-4 w-4" /> Import schedule</Button>
           <Button variant="outline" size="sm" onClick={() => setDeleteOpen(true)} data-agent-action="calendar-delete-plan" data-agent-label="Delete this schedule" data-agent-danger>
             <Trash2 className="h-4 w-4" /> Delete
           </Button>
@@ -260,6 +421,7 @@ export default function CalendarPlansPage() {
       </div>
     </>}
 
+    {/* Day dialog */}
     <Dialog open={dayOpen} onOpenChange={setDayOpen}>
       <DialogContent className="max-w-md">
         <DialogHeader>
@@ -270,17 +432,26 @@ export default function CalendarPlansPage() {
           {selectedEvents.length
             ? selectedEvents.map((event, i) => (
                 <motion.div key={event.id} custom={i} variants={rowVariants} initial={reduceMotion ? false : 'hidden'} animate="show">
-                  <EventRow event={event} onToggle={() => toggleEvent(event)} />
+                  <EventRow
+                    event={event}
+                    onToggle={() => toggleEvent(event)}
+                    onEdit={() => openEdit(event)}
+                    onDelete={() => setEventToDelete(event)}
+                  />
                 </motion.div>
               ))
             : <p className="py-8 text-center text-sm text-muted-foreground">Nothing scheduled</p>}
         </div>
         <DialogFooter>
+          <Button variant="outline" size="sm" disabled={!activePlan} onClick={openAdd} data-agent-action="event-add-day" data-agent-label="Add task to this day">
+            <Plus className="h-4 w-4" /> Add task
+          </Button>
           <Button size="sm" disabled={!selectedEvents.length} onClick={() => { setDayOpen(false); setFullOpen(true); }}>Open full day</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
 
+    {/* Full-day sheet */}
     <Sheet open={fullOpen} onOpenChange={setFullOpen}>
       <SheetContent side="right" className="flex flex-col sm:max-w-md">
         <SheetHeader>
@@ -291,14 +462,91 @@ export default function CalendarPlansPage() {
           {selectedEvents.length
             ? selectedEvents.map((event, i) => (
                 <motion.div key={event.id} custom={i} variants={rowVariants} initial={reduceMotion ? false : 'hidden'} animate="show">
-                  <EventRow event={event} onToggle={() => toggleEvent(event)} onNotes={(notes) => saveNotes(event, notes)} full />
+                  <EventRow
+                    event={event}
+                    onToggle={() => toggleEvent(event)}
+                    onNotes={(notes) => saveNotes(event, notes)}
+                    onEdit={() => openEdit(event)}
+                    onDelete={() => setEventToDelete(event)}
+                    full
+                  />
                 </motion.div>
               ))
             : <p className="py-8 text-center text-sm text-zinc-500">Nothing scheduled</p>}
         </div>
+        <div className="border-t p-4">
+          <Button size="sm" className="w-full" disabled={!activePlan} onClick={openAdd}><Plus className="h-4 w-4" /> Add task</Button>
+        </div>
       </SheetContent>
     </Sheet>
 
+    {/* Add / edit task dialog */}
+    <Dialog open={formOpen} onOpenChange={setFormOpen}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>{editing ? 'Edit task' : 'Add task'}</DialogTitle>
+          <DialogDescription>{editing ? 'Changes are saved to this schedule.' : 'Adds a task to this schedule.'}</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <label className="block space-y-1.5">
+            <span className="text-xs text-muted-foreground">Title</span>
+            <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Task title" autoFocus />
+          </label>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="block space-y-1.5">
+              <span className="text-xs text-muted-foreground">Date</span>
+              <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
+            </label>
+            <label className="block space-y-1.5">
+              <span className="text-xs text-muted-foreground">Category</span>
+              <Input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} placeholder="General" />
+            </label>
+            <label className="block space-y-1.5">
+              <span className="text-xs text-muted-foreground">Start (optional)</span>
+              <Input type="time" value={form.startTime} onChange={(e) => setForm({ ...form, startTime: e.target.value })} />
+            </label>
+            <label className="block space-y-1.5">
+              <span className="text-xs text-muted-foreground">End (optional)</span>
+              <Input type="time" value={form.endTime} onChange={(e) => setForm({ ...form, endTime: e.target.value })} />
+            </label>
+          </div>
+          <label className="block space-y-1.5">
+            <span className="text-xs text-muted-foreground">Notes</span>
+            <textarea
+              value={form.notes}
+              onChange={(e) => setForm({ ...form, notes: e.target.value })}
+              placeholder="Add a note…"
+              className="min-h-16 w-full resize-y rounded-md border bg-background px-2 py-1.5 text-sm outline-none focus:ring-1 focus:ring-ring"
+            />
+          </label>
+        </div>
+        {formError && <p className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">{formError}</p>}
+        <DialogFooter>
+          <Button variant="outline" size="sm" onClick={() => setFormOpen(false)}>Cancel</Button>
+          <Button size="sm" disabled={formBusy} onClick={() => void saveTask()}>
+            {formBusy && <Loader2 className="h-4 w-4 animate-spin" />} {editing ? 'Save' : 'Add'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    {/* Delete task confirmation */}
+    <Dialog open={!!eventToDelete} onOpenChange={(open) => { if (!open) setEventToDelete(null); }}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Delete “{eventToDelete?.title}”?</DialogTitle>
+          <DialogDescription>This can’t be undone.</DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" size="sm" onClick={() => setEventToDelete(null)}>Cancel</Button>
+          <Button variant="destructive" size="sm" disabled={deleteTask.isPending} onClick={() => void confirmDeleteTask()}>
+            {deleteTask.isPending && <Loader2 className="h-4 w-4 animate-spin" />} Delete
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    {/* Import dialog */}
     <Dialog open={importOpen} onOpenChange={(open) => { setImportOpen(open); if (!open) resetImport(); }}>
       <DialogContent className="max-w-md">
         <DialogHeader>
@@ -338,6 +586,7 @@ export default function CalendarPlansPage() {
       </DialogContent>
     </Dialog>
 
+    {/* Delete plan dialog */}
     <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
       <DialogContent className="max-w-sm">
         <DialogHeader>

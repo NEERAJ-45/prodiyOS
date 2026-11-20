@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>Interview Defense Guide - Neeraj Surnis</title>
+<style>
+@page { size: A4; margin: 16mm 15mm; }
+* { box-sizing: border-box; }
+body { font-family: "Calibri","Segoe UI",Arial,sans-serif; font-size: 10.2pt; line-height: 1.42; color: #1a1a1a; margin: 0; }
+h1 { font-size: 19pt; color: #0f2a43; margin: 0 0 2px; }
+h2 { font-size: 12.5pt; color: #0f2a43; margin: 16px 0 5px; padding-bottom: 2px; border-bottom: 0.8px solid #c9d4de; page-break-after: avoid; }
+h3 { font-size: 10.8pt; color: #1f3a52; margin: 11px 0 3px; page-break-after: avoid; }
+p { margin: 0 0 5px; }
+ul, ol { margin: 0 0 6px; padding-left: 17px; }
+li { margin-bottom: 2.5px; }
+blockquote { margin: 5px 0 7px; padding: 5px 9px; border-left: 2.5px solid #0f2a43; background: #f3f6f9; }
+blockquote p { margin: 0 0 4px; }
+code { font-family: Consolas,monospace; font-size: 9pt; background: #eef2f6; padding: 0 2px; border-radius: 2px; }
+table { width: 100%; border-collapse: collapse; margin: 6px 0 9px; font-size: 9.4pt; page-break-inside: avoid; }
+th, td { border: 0.6px solid #c3ced8; padding: 3.5px 5px; text-align: left; vertical-align: top; }
+th { background: #e9eff4; color: #0f2a43; }
+hr { border: 0; border-top: 0.8px solid #c9d4de; margin: 12px 0; }
+strong { color: #12222f; }
+em { color: #3b4a57; }
+</style></head><body>
+<h1>Interview Defense Guide - Neeraj Surnis</h1>
+<p>Companion to <code>RESUME-IMPROVED.md</code>. Every claim on the resume has a follow-up question attached. The answers below are complete and can be said as written. Where a number is not in memory, the answer says so and offers the record instead - that is the move. Never invent a figure to fill a silence.</p>
+<hr>
+<h2>1. The 60-second intro</h2>
+<blockquote>
+<p>&quot;I&#39;m a backend engineer on a payment platform at Maximus Infoware. I build Java and Spring Boot services and REST APIs, and I work on the Kafka event flows and maker-checker approvals that sit in front of money movement - RBAC, certificate-based auth. A lot of my job is the unglamorous part: 25+ production issues, SQL and PL/SQL tuning, cutting query time 40%. I ship through Docker, Kubernetes, and Azure DevOps CI/CD. Outside work I built RevPay, a distributed payments project where I worked through idempotency, optimistic locking, and the transactional outbox - the failure modes that actually break payment systems. I want to do that at a larger scale, which is why I&#39;m talking to you.&quot;</p>
+</blockquote>
+<p>Then stop. Do not add more. Let them pick the thread.</p>
+<hr>
+<h2>2. Claim-by-claim defense</h2>
+<h3>2.1 &quot;Cut query time 40%&quot;</h3>
+<p><strong>They ask:</strong> &quot;40% from what? On what data? How did you measure?&quot;</p>
+<p><strong>Say:</strong></p>
+<blockquote>
+<p>&quot;The table had no index at all. Every lookup was a full scan, so cost grew with row count. I added a clustered B-tree index on the filter column. Clustered means the rows are physically ordered by that key, so the leaf level holds the rows themselves - a seek lands on the data instead of scanning and then chasing row pointers. Query time dropped 40%, and I measured before and after on production-sized data. The absolute p95 is in the database&#39;s query statistics if you want the number.&quot;</p>
+</blockquote>
+<p>Expect the follow-up: &quot;Why clustered and not non-clustered?&quot; Answer: the table was read by that key in ranges and the row count was small enough that the leaf-level rows avoided a second lookup. A non-clustered index would have added a bookmark lookup per row and could have been slower than the scan.</p>
+<p>Expect the second follow-up: &quot;What&#39;s the cost?&quot; Answer: clustered keys define physical order, so inserts and updates to that key can cause page splits. I checked write volume before choosing it and kept the key narrow and monotonic.</p>
+<p>Why this holds: you are explaining the data structure, not reciting a number. Branching factor, leaf level, seek versus scan - this is the part that cannot be faked and cannot be shaken.</p>
+<h3>2.2 &quot;60% admin automation&quot;</h3>
+<p><strong>They ask:</strong> &quot;60% of what? Minutes? Steps? Headcount?&quot;</p>
+<p><strong>Say:</strong></p>
+<blockquote>
+<p>&quot;Handling time per case, not steps. Before, an admin touched each record across several screens to complete the same workflow. I built the REST APIs that replaced those manual screens. After, the same outcome takes 60% less handling time. I measured it on the same workflow before and after, at the volume the team actually processes.&quot;</p>
+</blockquote>
+<p>Why this holds: it names the unit. Someone who copied a metric cannot name the unit.</p>
+<h3>2.3 &quot;~5,200 transactions/second&quot;</h3>
+<p><strong>They ask:</strong> &quot;How did you measure that? What was p99? How many instances? What broke first?&quot;</p>
+<p><strong>Say:</strong></p>
+<blockquote>
+<p>&quot;JMeter, non-production, three app instances. I ran smoke and integration passes first, then the load run, so I wasn&#39;t measuring a system that had never been exercised. It sustained about 5,200 TPS. I didn&#39;t record a p99 or error rate that I&#39;d quote today, so I won&#39;t dress it up as a production SLA. What it proved was the part I cared about: the outbox relay and the Redis idempotency keys held under concurrent duplicate and retry load.&quot;</p>
+</blockquote>
+<p>If pushed for a production number:</p>
+<blockquote>
+<p>&quot;I wouldn&#39;t give you one. The production platform runs its own SLA and I don&#39;t own capacity planning for it. This is a design-validation number.&quot;</p>
+</blockquote>
+<p>Why this holds: three instances, JMeter, smoke and integration before load - these are checkable details that only come from having run it. Downgrading the p99 before they ask reads as judgment.</p>
+<h3>2.4 &quot;25+ production issues&quot;</h3>
+<p><strong>They ask:</strong> &quot;Tell me about the worst one.&quot;</p>
+<p><strong>Say:</strong></p>
+<blockquote>
+<p>&quot;A customer was debited twice. The upstream call was hanging, the caller timed out and retried, and both attempts got processed - so the same payment posted twice. Money was wrong, not just delayed, which makes it a different class of incident.</p>
+<p>First move was to stop the bleeding: identify the duplicate postings and start reconciliation, and stop the retry path from creating more. Then diagnosis. The logs showed two requests with the same transaction reference hitting the service, both returning success. Nothing in the service treated them as the same payment.</p>
+<p>Root cause was the missing idempotency guard. A timeout does not mean the request failed - it means you do not know. The caller did the correct thing by retrying; we did the wrong thing by processing it twice.</p>
+<p>The fix was Redis-backed idempotency keys, the same pattern I used in RevPay. The first request claims the key for the transaction reference; a duplicate returns the stored result instead of posting again. Then I added a check that flags duplicate transaction references so the next one is caught by monitoring, not by a customer.&quot;</p>
+</blockquote>
+<p>If asked the detail question - &quot;what if the first request is still in flight when the retry lands?&quot; - answer: the claim is atomic, so the retry either sees the completed result or is rejected while the first is processing. That is the whole point of claiming the key before doing the work, not after.</p>
+<p>Close with:</p>
+<blockquote>
+<p>&quot;The pressure part isn&#39;t the fix. It&#39;s not changing three things at once and making the outage longer.&quot;</p>
+</blockquote>
+<p>That last line is what separates a production engineer from someone who has read about production.</p>
+<h3>2.5 &quot;10,000+ transactions/day at 99.9% uptime&quot;</h3>
+<p><strong>They ask:</strong> &quot;What did you personally move?&quot;</p>
+<p><strong>Say:</strong></p>
+<blockquote>
+<p>&quot;Those are the platform&#39;s numbers, not my personal metric. My scope was the services and the approval flow. I don&#39;t claim the SLA. I claim the 25+ issues I resolved, the 40% query cut, and the Kafka approval flow I built.&quot;</p>
+</blockquote>
+<p>This removes the strongest attack the panel had. Own the slice, name the context, claim nothing extra.</p>
+<h3>2.6 &quot;Built the Digital Payment Switch&quot;</h3>
+<p><strong>They ask:</strong> &quot;You built an entire switch?&quot;</p>
+<p><strong>Say:</strong></p>
+<blockquote>
+<p>&quot;I built the IMPS flow and the transaction portal - not the whole switch. I integrated against the core switch and owned the pieces named on my resume.&quot;</p>
+</blockquote>
+<p>Then draw the flow: request, validation, your service, the switch, response - and mark where it can fail. Precision about boundaries is what makes the rest believable.</p>
+<h3>2.7 Maker-checker, Kafka, RBAC, certificate auth</h3>
+<p>This is your strongest area. Answer with the state machine and the failure case.</p>
+<p><strong>Say:</strong></p>
+<blockquote>
+<p>&quot;The maker submits and the record enters pending-checker. Only a checker can approve or reject, and RBAC prevents self-approval. Service-to-service calls use certificate auth. The case that matters is the failure case: the approval commits, then the downstream publish fails. The outbox row stays unpublished and the relay retries until it succeeds, and idempotency on the consumer side makes the retry safe. That&#39;s how you avoid posting twice.&quot;</p>
+</blockquote>
+<p>If asked for Kafka detail, give the topic key and why: keying by transaction keeps ordering per transaction, and the consumer group handles retries with a dead-letter path for poison messages.</p>
+<h3>2.8 Migration R&amp;D (C#/.NET to Spring Boot)</h3>
+<p><strong>They ask:</strong> &quot;Where is it? What&#39;s hard?&quot;</p>
+<p><strong>Say:</strong></p>
+<blockquote>
+<p>&quot;I&#39;m contributing to moving the switch from C#/.NET to Spring Boot. My part is the modules I already own. The hard part is behavioural parity, not syntax - error codes, rounding, timeouts have to match or reconciliation breaks downstream. A straight port that &#39;works&#39; is not the same as a port that behaves identically.&quot;</p>
+</blockquote>
+<p>Have one near-miss ready: the thing that looked equivalent in the rewrite and was not.</p>
+<hr>
+<h2>3. The timeline question</h2>
+<p>The overlap - full-time from December 2025 while your B.Tech ran to May 2026 - is the first thing a sharp interviewer will notice. Answer once, plainly, then move on. Use the sentence that is true.</p>
+<p><strong>If you started full-time during your final semester:</strong></p>
+<blockquote>
+<p>&quot;I joined full-time in December 2025 while finishing my final semester; my degree was conferred in May 2026. The role was full-time from day one.&quot;</p>
+</blockquote>
+<p><strong>If it became full-time after graduation:</strong></p>
+<blockquote>
+<p>&quot;I started in December 2025 alongside my final semester and moved to full-time after graduating in May 2026.&quot;</p>
+</blockquote>
+<p>Do not apologise. Do not over-explain. One sentence.</p>
+<hr>
+<h2>4. Pressure story</h2>
+<p>Use a different incident from the one in section 2.4.</p>
+<p><strong>Structure:</strong></p>
+<ol>
+<li>The live path, the time, and what alerted you.</li>
+<li>The stakes: money at risk, transactions stuck, or a merchant impact.</li>
+<li>Your first move: stabilise, not diagnose. Disable the path, replay, reconcile.</li>
+<li>Who you coordinated with and what you told them.</li>
+<li>How you stayed systematic: timestamps, one layer at a time, a written timeline.</li>
+<li>The outcome, including whether anything posted twice.</li>
+<li>The guard you shipped afterwards.</li>
+</ol>
+<p><strong>Close with:</strong></p>
+<blockquote>
+<p>&quot;I&#39;d rather take ten minutes to understand it than take an hour to undo a bad fix.&quot;</p>
+</blockquote>
+<hr>
+<h2>5. Problem-solving story</h2>
+<p>Use a non-incident example - a design problem or a bug in the project.</p>
+<p><strong>Structure:</strong></p>
+<ol>
+<li>The symptom on the surface.</li>
+<li>Your first hypothesis, and how you disproved it.</li>
+<li>The method: logs, metrics, traces, reproduction, narrowing across layers.</li>
+<li>The root cause, ideally below where it appeared.</li>
+<li>The fix, and the test that fails before it and passes after.</li>
+</ol>
+<p>The wrong-first-hypothesis step is the one interviewers trust. It proves you debug rather than pattern-match.</p>
+<hr>
+<h2>6. Standard answers</h2>
+<p><strong>Why fintech?</strong></p>
+<blockquote>
+<p>&quot;Payments is one of the few domains where correctness is the product. Idempotency and the outbox pattern aren&#39;t resume keywords to me - they&#39;re what stops someone being debited twice. I want to work where that bar is the default.&quot;</p>
+</blockquote>
+<p><strong>Why this company?</strong></p>
+<blockquote>
+<p>&quot;I looked at the product and the engineering work. The part I want to work on is the transaction path, because that is exactly where my production experience sits.&quot;</p>
+</blockquote>
+<p>Replace &quot;the transaction path&quot; with the one system you actually researched before the interview. Never answer with the logo.</p>
+<p><strong>Biggest weakness:</strong></p>
+<blockquote>
+<p>&quot;I tend to go deep on root cause before asking for help. On a live incident that&#39;s the wrong instinct. I&#39;ve learned to stabilise first and do the deep dive after, and I now timebox myself and escalate at a set point.&quot;</p>
+</blockquote>
+<p><strong>A failure:</strong></p>
+<p>Use a real one. State the decision, the consequence, and the change you made to how you work. No humble-brag.</p>
+<hr>
+<h2>7. Questions to ask them</h2>
+<ol>
+<li>&quot;What does on-call look like for this team, and who owns the pager?&quot;</li>
+<li>&quot;How do you test failure paths - duplicate publishes, partial failures - before production?&quot;</li>
+<li>&quot;What&#39;s the current bottleneck in the payment flow, and what&#39;s stopping you fixing it?&quot;</li>
+<li>&quot;How is a design reviewed here before it&#39;s built?&quot;</li>
+<li>&quot;What did the last person in this role do that made them successful?&quot;</li>
+</ol>
+<hr>
+<h2>8. Say this, not that</h2>
+<table>
+<thead>
+<tr>
+<th>Don&#39;t say</th>
+<th>Say</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>&quot;about 5,200 TPS&quot;</td>
+<td>&quot;5,200 TPS in my load test, non-production&quot;</td>
+</tr>
+<tr>
+<td>&quot;high volume&quot;</td>
+<td>&quot;10,000 transactions/day&quot;</td>
+</tr>
+<tr>
+<td>&quot;I built the payment switch&quot;</td>
+<td>&quot;I built the IMPS flow and transaction portal&quot;</td>
+</tr>
+<tr>
+<td>&quot;We did it&quot; when it was you</td>
+<td>&quot;I did this; the team owned that&quot;</td>
+</tr>
+<tr>
+<td>&quot;It was a simple fix&quot;</td>
+<td>&quot;The fix was small; finding it took hours&quot;</td>
+</tr>
+<tr>
+<td>&quot;I&#39;m a fast learner&quot;</td>
+<td>&quot;I picked up the stack and shipped in this timeframe&quot;</td>
+</tr>
+<tr>
+<td>&quot;40% faster&quot; with no unit</td>
+<td>&quot;p95 down 40%, measured before and after&quot;</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>9. The six sentences to memorise</h2>
+<ol>
+<li>&quot;That&#39;s the platform&#39;s number, not mine - my scope was the services and the approval flow.&quot;</li>
+<li>&quot;The table had no index; every lookup was a full scan, so I added a clustered B-tree index.&quot;</li>
+<li>&quot;It validates the design, not production capacity.&quot;</li>
+<li>&quot;I built the IMPS flow and the transaction portal, not the whole switch.&quot;</li>
+<li>&quot;A timeout doesn&#39;t mean the request failed - it means you don&#39;t know, so the retry has to be idempotent.&quot;</li>
+<li>&quot;The pressure part is not changing three things at once.&quot;</li>
+</ol>
+<p>Every other answer can be rebuilt from those six.</p>
+<hr>
+<p><em>Preparation, not a script. If a figure is not in memory, say you will pull it. That answer never loses an interview; a made-up number does.</em></p>
+
+</body></html>

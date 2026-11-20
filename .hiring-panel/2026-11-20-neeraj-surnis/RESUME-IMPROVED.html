@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Neeraj Surnis - Software Engineer</title>
+<style>
+  @page { size: A4; margin: 9mm 13mm; }
+  * { box-sizing: border-box; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body {
+    margin: 0;
+    font-family: "Calibri", "Segoe UI", Arial, sans-serif;
+    font-size: 9.4pt;
+    line-height: 1.27;
+    color: #1a1a1a;
+  }
+  a { color: inherit; text-decoration: none; }
+  header { border-bottom: 2px solid #0f2a43; padding-bottom: 4px; margin-bottom: 6px; }
+  h1 {
+    margin: 0 0 1px;
+    font-size: 21pt;
+    letter-spacing: 0.6px;
+    font-weight: 700;
+    color: #0f2a43;
+  }
+  .contact { font-size: 8.6pt; color: #3b4a57; }
+  .contact span { white-space: nowrap; }
+  .dot { color: #9aa8b5; padding: 0 3px; }
+  h2 {
+    margin: 8px 0 3px;
+    font-size: 9.4pt;
+    letter-spacing: 0.35px;
+    text-transform: uppercase;
+    color: #0f2a43;
+    border-bottom: 0.7px solid #c9d4de;
+    padding-bottom: 2px;
+  }
+  p { margin: 0 0 4px; }
+  ul { margin: 0; padding-left: 13px; }
+  li { margin: 0 0 1.8px; }
+  li::marker { color: #0f2a43; }
+  .snapshot ul { padding-left: 13px; }
+  .snapshot li { margin-bottom: 1.5px; }
+  .role { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-top: 5px; }
+  .role:first-of-type { margin-top: 2px; }
+  .role .left { font-weight: 700; font-size: 9.9pt; }
+  .role .left .company { font-weight: 600; color: #24384a; }
+  .role .right { font-size: 8.7pt; color: #44535f; white-space: nowrap; }
+  .role .sep { font-weight: 400; color: #8a98a4; }
+  .project { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-top: 5px; }
+  .project .left { font-weight: 700; font-size: 9.7pt; }
+  .project .right { font-size: 8.3pt; color: #44535f; text-align: right; }
+  .edu { margin: 0 0 2.5px; }
+  .edu strong { color: #1a1a1a; }
+  strong { font-weight: 700; }
+  .skills p { margin: 0 0 1.5px; }
+  .skills b { color: #0f2a43; font-weight: 700; }
+  .foot { margin-top: 8px; font-size: 7pt; color: #a3b0bc; text-align: right; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>NEERAJ SURNIS</h1>
+  <div class="contact">
+    Thane, Maharashtra<span class="dot">|</span><span>+91 93226 96345</span><span class="dot">|</span><span>neerajsurnis@gmail.com</span><span class="dot">|</span><span>linkedin.com/in/neeraj-surnis</span><span class="dot">|</span><span>github.com/NEERAJ-45</span>
+  </div>
+</header>
+
+<h2>Summary</h2>
+<p>Backend engineer building production payment systems in Java / Spring Boot: Kafka event workflows, maker-checker approvals, RBAC and certificate-based authentication, and SQL / PL-SQL tuning. Ships through Docker, Kubernetes, and Azure DevOps CI/CD; resolves live payment incidents. Built RevPay, a distributed payments project using idempotency keys, optimistic locking, and the transactional outbox pattern.</p>
+
+<h2>Impact Snapshot</h2>
+<div class="snapshot">
+<ul>
+  <li>Cut query time <strong>40%</strong> on a payment platform serving <strong>10,000+ transactions/day at 99.9% uptime</strong>.</li>
+  <li>Resolved <strong>25+ production payment issues</strong> across payment services.</li>
+  <li>Load-tested RevPay with JMeter at <strong>~5,200 transactions/second</strong> on a three-instance setup.</li>
+</ul>
+</div>
+
+<h2>Technical Skills</h2>
+<div class="skills">
+  <p><b>Languages:</b> Java, SQL, PL/SQL, C#, Python, JavaScript</p>
+  <p><b>Backend:</b> Spring Boot, Spring Data JPA, Hibernate, REST APIs, Swagger/OpenAPI, Microservices, Kafka, Event-Driven Architecture, JWT, RBAC, ASP.NET, FastAPI</p>
+  <p><b>Databases:</b> Oracle, SQL Server, PostgreSQL, MongoDB, Redis</p>
+  <p><b>DevOps and Cloud:</b> Docker, Kubernetes, Azure DevOps CI/CD, AWS, Oracle Cloud</p>
+  <p><b>Testing and Tools:</b> JUnit 5, Mockito, Git, Postman, Jira, Agile/Scrum</p>
+  <p><b>Frontend:</b> React, Next.js</p>
+</div>
+
+<h2>Professional Experience</h2>
+
+<div class="role">
+  <div class="left">Software Engineer (Java / Spring Boot) <span class="sep">|</span> <span class="company">Maximus Infoware</span>, Thane, Maharashtra</div>
+  <div class="right">December 2025 - Present</div>
+</div>
+<ul>
+  <li>Build and maintain production Spring Boot microservices and REST APIs for a payment platform serving 10,000+ transactions/day at 99.9% uptime; persist with Spring Data JPA/Hibernate and document with Swagger/OpenAPI.</li>
+  <li>Built Kafka event workflows and maker-checker approval flows secured with RBAC and certificate-based authentication.</li>
+  <li>Resolved 25+ production payment issues, including a double-debit caused by retried hung API calls; added Redis-backed idempotency keys so retries return the original result instead of posting again.</li>
+  <li>Cut query time 40% on an unindexed table by adding a clustered B-tree index, replacing full scans with index seeks.</li>
+  <li>Containerized services with Docker and Kubernetes; automated build and deployment through Azure DevOps CI/CD on AWS and Oracle Cloud.</li>
+  <li>Built the Digital Payment Switch (IMPS and transaction portal) in C#, ASP.NET, React, and SQL Server, adding real-time interbank transfer support.</li>
+  <li>Contributing to the Digital Payment Switch migration from C#/.NET to Spring Boot microservices as part of an R&amp;D initiative.</li>
+</ul>
+
+<div class="role">
+  <div class="left">Software Developer Intern <span class="sep">|</span> <span class="company">Sainisoft Infotech</span>, Pune, Maharashtra</div>
+  <div class="right">November 2024 - February 2025</div>
+</div>
+<ul>
+  <li>Built and integrated REST APIs for course management and user workflows, improving admin process automation by 60%.</li>
+  <li>Built LMS dashboards for 5,000+ users with role-based access control on MongoDB.</li>
+</ul>
+
+<div class="role">
+  <div class="left">Full Stack Developer Intern <span class="sep">|</span> <span class="company">Tiyara Innovations LLP</span>, Remote</div>
+  <div class="right">May 2024 - August 2024</div>
+</div>
+<ul>
+  <li>Integrated backend REST APIs over HTTP/TCP for low-latency data flow across booking workflows.</li>
+  <li>Implemented JWT-based authentication, data encryption, and secure session management.</li>
+</ul>
+
+<h2>Projects</h2>
+
+<div class="project">
+  <div class="left">RevPay - Distributed Payment Platform</div>
+  <div class="right">Java, Spring Boot, Kafka, Redis, PostgreSQL, Docker, AWS | GitHub</div>
+</div>
+<ul>
+  <li>Designed a Spring Boot microservices payment platform with Kafka event-driven processing; JMeter load tests on a three-instance setup sustained ~5,200 transactions/second in a non-production environment.</li>
+  <li>Ensured transactional consistency and safe retries under concurrent load using Redis idempotency keys, <strong>@Version</strong> optimistic locking, and the transactional outbox pattern.</li>
+  <li>Unit-tested with JUnit 5 and Mockito; added AWS X-Ray and CloudWatch for distributed tracing and monitoring.</li>
+</ul>
+
+<div class="project">
+  <div class="left">HustleAI - AI Job Matching Pipeline</div>
+  <div class="right">Python, FastAPI, Next.js, MongoDB, Docker | GitHub</div>
+</div>
+<ul>
+  <li>Built a FastAPI REST service that ranks jobs for candidates using Sentence-BERT embeddings and cosine similarity, with MongoDB storage, input validation, structured error handling, and Docker containerization.</li>
+  <li>Implemented authentication and session management with NextAuth.js in the Next.js frontend.</li>
+</ul>
+
+<h2>Education</h2>
+<div class="edu"><strong>B.Tech in Computer Science</strong> | DKTE, Ichalkaranji, Maharashtra | CGPA: 7.86 | September 2023 - May 2026</div>
+<div class="edu"><strong>Diploma in Computer Engineering</strong> | LESP, Kupwad, Maharashtra | 89% | June 2020 - May 2023</div>
+
+
+</body>
+</html>
