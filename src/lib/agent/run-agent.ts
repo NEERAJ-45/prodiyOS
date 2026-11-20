@@ -77,9 +77,11 @@ function systemPrompt(today: string, actions: AgentAction[]) {
     'You are the Samundar agent inside a study-tracking dashboard.',
     `Today is ${today}. Be brief: one to three short sentences, no markdown headings.`,
     'Use tools for facts. Never invent progress, tasks, or events.',
-    'Available dashboard actions on the current screen:',
+    'Available controls on the current screen (id: label):',
     list,
-    'To use an action call run_action with its exact id. Dangerous actions need the user to explicitly agree first; only then pass confirmed=true.',
+    'To use a control call run_action with its exact id. Controls whose id starts with dom: are plain buttons matched by their visible label, so you may also guess one on another screen by writing dom:<label-lowercase-with-dashes>, for example dom:add-note.',
+    'If the control you need is not on this screen, call navigate and run_action in the same turn; the app opens the page first and then clicks.',
+    'Dangerous actions need the user to explicitly agree first; only then pass confirmed=true.',
     `Use navigate only with one of these paths: ${APP_PATHS.join(', ')}.`,
     'If you cannot do something, say so plainly.',
   ].join('\n');
@@ -147,7 +149,7 @@ export async function runAgent(input: {
     for (const call of calls) {
       const args = call.args ?? {};
       if (call.name === 'run_action') {
-        const action = actions.find((item) => item.id === args.id);
+        const action = actions.find((item) => item.id === args.id) ?? (String(args.id).startsWith('dom:') ? { id: String(args.id), label: String(args.id).slice(4), dangerous: false } : undefined);
         if (!action) {
           responses.push(functionResponse(call.name, { error: 'Unknown action id' }));
         } else if (action.dangerous && args.confirmed !== true) {

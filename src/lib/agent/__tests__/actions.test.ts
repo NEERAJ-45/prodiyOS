@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { runAction, scanActions } from '@/lib/agent/actions';
+import { pickActions, runAction, scanActions } from '@/lib/agent/actions';
 
 afterEach(() => {
   document.body.innerHTML = '';
@@ -47,5 +47,28 @@ describe('runAction', () => {
 
   it('reports missing controls', () => {
     expect(runAction('nope')).toEqual({ ok: false, error: 'Action not visible on this screen' });
+  });
+});
+
+describe('plain controls', () => {
+  it('picks up untagged buttons and clicks them by label', () => {
+    const el = document.createElement('button');
+    el.textContent = 'Add note';
+    const spy = vi.fn();
+    el.addEventListener('click', spy);
+    document.body.appendChild(el);
+
+    const found = scanActions().find((action) => action.id === 'dom:add-note');
+    expect(found?.label).toBe('Add note');
+    expect(runAction('dom:add-note')).toEqual({ ok: true });
+    expect(spy).toHaveBeenCalledOnce();
+  });
+
+  it('filters to matching labels when the screen has many controls', () => {
+    const actions = Array.from({ length: 80 }, (_, index) => ({ id: `dom:item-${index}`, label: `Item ${index}` }));
+    actions.push({ id: 'dom:start-focus', label: 'Start focus' });
+    const picked = pickActions(actions, 'start focus');
+    expect(picked.map((action) => action.label)).toContain('Start focus');
+    expect(picked.length).toBeLessThanOrEqual(60);
   });
 });

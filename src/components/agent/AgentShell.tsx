@@ -1,16 +1,18 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { ArrowUp, Mic, PlugZap, Volume2, VolumeX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { scanActions, runAction } from '@/lib/agent/actions';
+import { pickActions, runAction, scanActions } from '@/lib/agent/actions';
 import type { AgentMessage, AgentResponse } from '@/lib/agent/types';
 import { createRecognizer, speak, stopSpeaking } from '@/lib/agent/speech';
 import { AgentOrb, type OrbState } from './AgentOrb';
 
 const QUICK_PROMPTS = ["What's today?", "What's next?", 'Open my calendar'];
+const HISTORY_KEY = 'samundar-agent-history';
+const MAX_STORED = 40;
 
 type LogEntry = AgentMessage & { at: string };
 
@@ -20,7 +22,9 @@ function now() {
 
 export function AgentShell() {
   const router = useRouter();
+  const pathname = usePathname();
   const [entries, setEntries] = useState<LogEntry[]>([]);
+  const [hydrated, setHydrated] = useState(false);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [phase, setPhase] = useState<OrbState>('idle');
@@ -31,8 +35,16 @@ export function AgentShell() {
   const [recognizerSupported, setRecognizerSupported] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
   const recognizerRef = useRef<ReturnType<typeof createRecognizer>>(null);
+  const pendingRef = useRef<{ id: string; dangerous: boolean } | null>(null);
 
   useEffect(() => {
+    try {
+      const stored = JSON.parse(window.localStorage.getItem(HISTORY_KEY) ?? '[]') as LogEntry[];
+      if (Array.isArray(stored)) setEntries(stored.filter((entry) => entry?.role && entry?.content));
+    } catch {
+      window.localStorage.removeItem(HISTORY_KEY);
+    }
+    setHydrated(true);
     setSound(window.localStorage.getItem('samundar-agent-sound') !== 'off');
     const win = window as unknown as { SpeechRecognition?: unknown; webkitSpeechRecognition?: unknown };
     setRecognizerSupported(Boolean(win.SpeechRecognition ?? win.webkitSpeechRecognition));
@@ -47,11 +59,46 @@ export function AgentShell() {
     endRef.current?.scrollIntoView({ block: 'end' });
   }, [entries, busy]);
 
+  useEffect(() => {
+    if (!hydrated) return;
+    window.localStorage.setItem(HISTORY_KEY, JSON.stringify(entries.slice(-MAX_STORED)));
+  }, [entries, hydrated]);
+
+  useEffect(() => {
+    const pending = pendingRef.current;
+    if (!pending) return;
+    pendingRef.current = null;
+    let attempt = 0;
+    let timer = 0;
+    const tryRun = () => {
+      const result = runAction(pending.id, { allowDangerous: pending.dangerous });
+      if (!result.ok && attempt < 3) {
+        attempt += 1;
+        timer = window.setTimeout(tryRun, 700);
+        return;
+      }
+      setEntries((current) => {
+        const next = [...current];
+        const last = next[next.length - 1];
+        if (last?.role === 'assistant') {
+          next[next.length - 1] = {
+            ...last,
+            content: `${last.content}
+${result.ok ? 'Ran it' : result.error}`,
+          };
+        }
+        return next;
+      });
+    };
+    timer = window.setTimeout(tryRun, 700);
+    return () => window.clearTimeout(timer);
+  }, [pathname]);
+
   async function send(text: string) {
     const content = text.trim();
     if (!content || busy) return;
     const next: LogEntry[] = [...entries, { role: 'user', content, at: now() }];
-    const visible = scanActions();
+    const visible = pickActions(scanActions(), content);
     setEntries(next);
     setInput('');
     setError('');
@@ -76,14 +123,14 @@ export function AgentShell() {
       setPhase('responding');
 
       const lines = [data.message];
-      if (data.run) {
-        const result = runAction(data.run, { allowDangerous: data.runDangerous });
-        const label = visible.find((action) => action.id === data.run)?.label ?? data.run;
-        lines.push(result.ok ? `Ran ${label}` : `Blocked: ${result.error}`);
-      }
       if (data.navigate) {
         router.push(data.navigate);
         lines.push(`Opened ${data.navigate}`);
+        if (data.run) pendingRef.current = { id: data.run, dangerous: !!data.runDangerous };
+      } else if (data.run) {
+        const result = runAction(data.run, { allowDangerous: data.runDangerous });
+        const label = visible.find((action) => action.id === data.run)?.label ?? data.run.slice(4);
+        lines.push(result.ok ? `Ran ${label}` : `Blocked: ${result.error}`);
       }
       if (sound) speak(data.message);
       setEntries([...next, { role: 'assistant', content: lines.join('\n'), at: now() }]);
@@ -98,9 +145,19 @@ export function AgentShell() {
   const status = offline ? 'Offline' : busy ? 'Working' : 'Ready';
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-background">
+    <div className="flex h-full min-h-0 flex-col bg-background" data-agent-ignore>
       <header className="flex items-center justify-between border-b px-5 py-3">
-        <h2 className="text-sm font-medium">Agent</h2>
+        <div className="flex items-center gap-3">
+          <h2 className="text-sm font-medium">Agent</h2>
+          {entries.length > 0 && (
+            <button
+              onClick={() => setEntries([])}
+              className="text-xs text-muted-foreground transition-colors hover:text-foreground"
+            >
+              New chat
+            </button>
+          )}
+        </div>
         <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <span className={`h-1.5 w-1.5 rounded-full ${offline ? 'bg-destructive' : 'bg-muted-foreground'}`} />
           {status}

@@ -1051,10 +1051,10 @@ export default function PomodoroFocus() {
         </div>
 
         <div className="controls-row">
-          <button className="btn-ghost" onClick={handleReset}>
+          <button className="btn-ghost" onClick={handleReset} data-agent-action="focus-reset" data-agent-label="Reset timer">
             Reset
           </button>
-          <button className="btn-primary" onClick={handleStartPause}>
+          <button className="btn-primary" onClick={handleStartPause} data-agent-action="focus-start" data-agent-label="Start or pause timer">
             {isRunning ? "Pause" : "Start"}
           </button>
         </div>
