@@ -3,18 +3,24 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
-import { ArrowUp, Mic, PlugZap, Volume2, VolumeX } from 'lucide-react';
+import { ArrowUp, Bot, Mic, PlugZap, Volume2, VolumeX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { scanActions, runAction } from '@/lib/agent/actions';
 import type { AgentMessage, AgentResponse } from '@/lib/agent/types';
-import { AgentOrb, type OrbState } from './AgentOrb';
 import { createRecognizer, speak, stopSpeaking } from '@/lib/agent/speech';
+import { AgentOrb, type OrbState } from './AgentOrb';
 
 const QUICK_PROMPTS = ["What's today?", "What's next?", 'Open my calendar'];
 
+type LogEntry = AgentMessage & { at: string };
+
+function now() {
+  return format(new Date(), 'HH:mm:ss');
+}
+
 export function AgentShell() {
   const router = useRouter();
-  const [messages, setMessages] = useState<AgentMessage[]>([]);
+  const [entries, setEntries] = useState<LogEntry[]>([]);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [phase, setPhase] = useState<OrbState>('idle');
@@ -39,14 +45,14 @@ export function AgentShell() {
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: 'end' });
-  }, [messages, busy]);
+  }, [entries, busy]);
 
   async function send(text: string) {
     const content = text.trim();
     if (!content || busy) return;
-    const next: AgentMessage[] = [...messages, { role: 'user', content }];
+    const next: LogEntry[] = [...entries, { role: 'user', content, at: now() }];
     const visible = scanActions();
-    setMessages(next);
+    setEntries(next);
     setInput('');
     setError('');
     setBusy(true);
@@ -55,12 +61,15 @@ export function AgentShell() {
       const res = await fetch('/api/agent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: next, actions: visible, today: format(new Date(), 'yyyy-MM-dd') }),
+        body: JSON.stringify({
+          messages: next.map(({ role, content: value }) => ({ role, content: value })),
+          actions: visible,
+          today: format(new Date(), 'yyyy-MM-dd'),
+        }),
       });
       const data = (await res.json()) as AgentResponse & { error?: string };
       if (res.status === 503 && data.error === 'agent_offline') {
         setOffline(true);
-        setMessages(messages);
         return;
       }
       if (!res.ok) throw new Error(data.error ?? 'Agent failed');
@@ -70,16 +79,16 @@ export function AgentShell() {
       if (data.run) {
         const result = runAction(data.run, { allowDangerous: data.runDangerous });
         const label = visible.find((action) => action.id === data.run)?.label ?? data.run;
-        lines.push(result.ok ? `Ran: ${label}` : `Could not run ${label}: ${result.error}`);
+        lines.push(result.ok ? `> ran: ${label}` : `> blocked: ${result.error}`);
       }
       if (data.navigate) {
         router.push(data.navigate);
-        lines.push(`Opened ${data.navigate}`);
+        lines.push(`> opened: ${data.navigate}`);
       }
-      setMessages([...next, { role: 'assistant', content: lines.join('\n') }]);
+      if (sound) speak(data.message);
+      setEntries([...next, { role: 'assistant', content: lines.join('\n'), at: now() }]);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Agent failed');
-      setMessages(next);
     } finally {
       setBusy(false);
       setPhase('idle');
@@ -87,115 +96,151 @@ export function AgentShell() {
   }
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="hud-surface hud-scanlines relative flex h-full min-h-0 flex-col">
+      <div className="flex items-center justify-between border-b border-white/5 px-4 py-2 font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
+        <span className="text-cyan-400/90">Samundar</span>
+        <span className="flex items-center gap-2">
+          <span className={`h-1.5 w-1.5 rounded-full ${offline ? 'bg-destructive' : 'animate-pulse bg-cyan-400'}`} />
+          {offline ? 'offline' : busy ? phase : 'online'}
+        </span>
+      </div>
+
       <div className="flex-1 overflow-y-auto">
-        <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8 md:px-6">
-          <AgentOrb state={phase} />
+        <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 py-6">
+          <div className="flex justify-center">
+            <AgentOrb state={phase} />
+          </div>
 
           {offline ? (
-            <div className="flex items-start gap-3 rounded-xl border bg-card p-4">
-              <PlugZap className="mt-0.5 h-4 w-4 text-muted-foreground" />
+            <div className="flex items-start gap-3 border border-white/10 bg-black/20 p-4">
+              <PlugZap className="mt-0.5 h-4 w-4 text-cyan-400/80" />
               <div>
-                <p className="text-sm font-medium">Agent offline</p>
-                <p className="mt-1 text-sm text-muted-foreground">Add GOOGLE_API_KEY to .env.local and restart the dev server.</p>
+                <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-foreground">Agent offline</p>
+                <p className="mt-1.5 text-sm text-muted-foreground">Add GOOGLE_API_KEY to .env.local and restart the dev server.</p>
               </div>
             </div>
-          ) : messages.length === 0 ? (
-            <div className="space-y-4 text-center">
+          ) : entries.length === 0 ? (
+            <div className="space-y-5 text-center">
               <div>
-                <h1 className="text-xl font-semibold tracking-tight">Samundar Agent</h1>
-                <p className="mt-1 text-sm text-muted-foreground">Ask about your plan, or tell it to drive the dashboard.</p>
+                <h1 className="font-mono text-sm font-semibold uppercase tracking-[0.35em] text-foreground">Samundar Agent</h1>
+                <p className="mt-2 text-xs text-muted-foreground">Ask about your plan, or tell it to drive the dashboard.</p>
               </div>
               <div className="flex flex-wrap justify-center gap-2">
                 {QUICK_PROMPTS.map((prompt) => (
                   <button
                     key={prompt}
                     onClick={() => void send(prompt)}
-                    className="rounded-full border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:border-muted-foreground/40 hover:text-foreground"
+                    className="border border-white/10 px-3 py-1.5 font-mono text-[11px] text-muted-foreground transition-colors hover:border-cyan-400/40 hover:text-cyan-300"
                   >
-                    {prompt}
+                    [{prompt}]
                   </button>
                 ))}
               </div>
             </div>
           ) : (
-            <div className="space-y-4">
-              {messages.map((message, index) => (
-                <div key={index} className={message.role === 'user' ? 'flex justify-end' : 'flex justify-start'}>
-                  <div
-                    className={
-                      message.role === 'user'
-                        ? 'max-w-[85%] whitespace-pre-wrap rounded-2xl bg-secondary px-4 py-2.5 text-sm text-foreground'
-                        : 'max-w-[85%] whitespace-pre-wrap rounded-2xl border px-4 py-2.5 text-sm text-foreground/90'
-                    }
-                  >
-                    {message.content}
+            <div className="space-y-1">
+              {entries.map((entry, index) => (
+                <div key={index} className="border-b border-white/5 py-3 last:border-0">
+                  <div className="flex items-baseline gap-2 font-mono text-[10px] uppercase tracking-[0.18em]">
+                    <span className={entry.role === 'user' ? 'text-muted-foreground' : 'text-cyan-400/90'}>
+                      {entry.role === 'user' ? 'user' : 'agent'}
+                    </span>
+                    <span className="text-muted-foreground/50">{entry.at}</span>
                   </div>
+                  <p className="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">{entry.content}</p>
                 </div>
               ))}
-              {busy && <p className="text-xs text-muted-foreground">{phase === 'thinking' ? 'Thinking…' : 'Working…'}</p>}
+              {busy && (
+                <div className="flex items-center gap-2 py-3 font-mono text-[11px] uppercase tracking-[0.18em] text-cyan-400/80">
+                  <span className="flex gap-1">
+                    <span className="h-1 w-1 animate-pulse rounded-full bg-cyan-400" />
+                    <span className="h-1 w-1 animate-pulse rounded-full bg-cyan-400 [animation-delay:150ms]" />
+                    <span className="h-1 w-1 animate-pulse rounded-full bg-cyan-400 [animation-delay:300ms]" />
+                  </span>
+                  {phase === 'thinking' ? 'processing' : 'executing'}
+                </div>
+              )}
               <div ref={endRef} />
             </div>
           )}
 
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          {error && <p className="font-mono text-xs text-destructive">! {error}</p>}
         </div>
       </div>
 
-      <div className="border-t bg-background">
+      <div className="border-t border-white/5 bg-black/20">
         <form
           onSubmit={(event) => {
             event.preventDefault();
             void send(input);
           }}
-          className="mx-auto flex w-full max-w-3xl items-end gap-2 px-4 py-3 md:px-6"
+          className="mx-auto flex w-full max-w-2xl items-end gap-2 px-4 py-3"
         >
-          <textarea
-            value={input}
-            onChange={(event) => setInput(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter' && !event.shiftKey) {
-                event.preventDefault();
-                void send(input);
-              }
-            }}
-            rows={1}
-            placeholder={offline ? 'Agent offline' : 'Ask or command…'}
-            disabled={offline || busy}
-            className="max-h-32 min-h-10 flex-1 resize-none rounded-lg border bg-card px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring disabled:opacity-60"
-          />
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            disabled={offline || busy || !recognizerSupported}
-            onClick={() => {
-              if (listening) { recognizerRef.current?.stop(); setListening(false); return; }
-              stopSpeaking();
-              const recognizer = createRecognizer((text) => { setListening(false); void send(text); }, () => setListening(false));
-              if (!recognizer) return;
-              recognizerRef.current = recognizer;
-              recognizer.start();
-              setListening(true);
-            }}
-            aria-label={listening ? 'Stop listening' : 'Speak to agent'}
-            title={recognizerSupported ? 'Speak to agent' : 'Voice input needs Chrome or Edge'}
-          >
-            <Mic className={`h-4 w-4 ${listening ? 'text-ring' : ''}`} />
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            onClick={() => { setSound((value) => !value); stopSpeaking(); }}
-            aria-label={sound ? 'Mute replies' : 'Unmute replies'}
-          >
-            {sound ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
-          </Button>
-          <Button type="submit" size="icon" disabled={offline || busy || !input.trim()} aria-label="Send">
-            <ArrowUp className="h-4 w-4" />
-          </Button>
+          <div className="flex min-h-10 flex-1 items-end gap-2 border border-white/10 bg-black/30 px-3 py-2 transition-colors focus-within:border-cyan-400/40">
+            <span className="pb-0.5 font-mono text-xs text-cyan-400/80">{'>'}</span>
+            <textarea
+              value={input}
+              onChange={(event) => setInput(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' && !event.shiftKey) {
+                  event.preventDefault();
+                  void send(input);
+                }
+              }}
+              rows={1}
+              placeholder={offline ? 'agent offline' : 'ask or command…'}
+              disabled={offline || busy}
+              className="max-h-32 min-h-6 flex-1 resize-none bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/60 disabled:opacity-60"
+            />
+          </div>
+
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              disabled={offline || busy || !recognizerSupported}
+              onClick={() => {
+                if (listening) {
+                  recognizerRef.current?.stop();
+                  setListening(false);
+                  return;
+                }
+                stopSpeaking();
+                const recognizer = createRecognizer(
+                  (text) => { setListening(false); void send(text); },
+                  () => setListening(false),
+                );
+                if (!recognizer) return;
+                recognizerRef.current = recognizer;
+                recognizer.start();
+                setListening(true);
+              }}
+              className={`flex h-9 w-9 items-center justify-center border transition-colors disabled:opacity-40 ${
+                listening ? 'border-cyan-400/60 text-cyan-300' : 'border-white/10 text-muted-foreground hover:text-foreground'
+              }`}
+              aria-label={listening ? 'Stop listening' : 'Speak to agent'}
+              title={recognizerSupported ? 'Speak to agent' : 'Voice input needs Chrome or Edge'}
+            >
+              <Mic className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => { setSound((value) => !value); stopSpeaking(); }}
+              className={`flex h-9 w-9 items-center justify-center border transition-colors ${
+                sound ? 'border-cyan-400/40 text-cyan-300' : 'border-white/10 text-muted-foreground hover:text-foreground'
+              }`}
+              aria-label={sound ? 'Mute replies' : 'Unmute replies'}
+            >
+              {sound ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+            </button>
+            <Button type="submit" size="icon" disabled={offline || busy || !input.trim()} aria-label="Send">
+              <ArrowUp className="h-4 w-4" />
+            </Button>
+          </div>
         </form>
+        <div className="mx-auto flex max-w-2xl items-center justify-between px-4 pb-2 font-mono text-[9px] uppercase tracking-[0.22em] text-muted-foreground/50">
+          <span className="flex items-center gap-1.5"><Bot className="h-3 w-3" /> gemini-3.5-flash</span>
+          <span>enter to send · shift+enter newline</span>
+        </div>
       </div>
     </div>
   );
