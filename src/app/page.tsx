@@ -1,5 +1,9 @@
 import { AgentShell } from '@/components/agent/AgentShell';
 
 export default function Home() {
-  return <AgentShell />;
+  return (
+    <main className="flex h-[100dvh] flex-col">
+      <AgentShell />
+    </main>
+  );
 }

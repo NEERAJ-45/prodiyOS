@@ -9,9 +9,9 @@ export function AgentOrb({ state }: { state: OrbState }) {
   const active = state !== 'idle';
 
   return (
-    <svg viewBox="0 0 120 120" className="h-28 w-28 text-muted-foreground" aria-hidden>
-      <circle cx="60" cy="60" r="56" fill="none" stroke="currentColor" strokeOpacity="0.25" strokeWidth="1" />
-      <circle cx="60" cy="60" r="44" fill="none" stroke="currentColor" strokeOpacity="0.12" strokeWidth="1" />
+    <svg viewBox="0 0 120 120" className="h-40 w-40 text-muted-foreground" aria-hidden>
+      <circle cx="60" cy="60" r="56" fill="none" stroke="currentColor" strokeOpacity="0.3" strokeWidth="1" />
+      <circle cx="60" cy="60" r="40" fill="none" stroke="currentColor" strokeOpacity="0.15" strokeWidth="1" />
 
       <motion.g
         style={{ transformOrigin: '60px 60px' }}
@@ -21,12 +21,12 @@ export function AgentOrb({ state }: { state: OrbState }) {
         <circle
           cx="60"
           cy="60"
-          r="44"
+          r="40"
           fill="none"
           stroke="hsl(var(--ring))"
-          strokeWidth="2"
+          strokeWidth="2.5"
           strokeLinecap="round"
-          strokeDasharray="40 236"
+          strokeDasharray="64 187"
           opacity={active ? 1 : 0.5}
         />
       </motion.g>
@@ -34,7 +34,7 @@ export function AgentOrb({ state }: { state: OrbState }) {
       <motion.circle
         cx="60"
         cy="60"
-        r="7"
+        r="8"
         fill="hsl(var(--ring))"
         animate={reduce ? {} : { opacity: active ? 1 : 0.6 }}
         transition={{ duration: 0.25 }}

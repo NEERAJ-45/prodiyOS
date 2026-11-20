@@ -108,7 +108,7 @@ export function AgentShell() {
       </header>
 
       <div className="flex-1 overflow-y-auto">
-        <div className="mx-auto flex w-full max-w-xl flex-col gap-6 px-5 py-8">
+        <div className={`mx-auto flex w-full max-w-xl flex-col gap-6 px-5 py-8 ${entries.length === 0 && !offline ? 'h-full justify-center' : ''}`}>
           <div className="flex justify-center">
             <AgentOrb state={phase} />
           </div>
@@ -125,10 +125,7 @@ export function AgentShell() {
             </div>
           ) : entries.length === 0 ? (
             <div className="space-y-5 text-center">
-              <div className="space-y-1.5">
-                <h1 className="text-lg font-medium">Samundar Agent</h1>
-                <p className="text-sm text-muted-foreground">Ask about your plan, or tell it to drive the dashboard.</p>
-              </div>
+              <p className="text-base text-muted-foreground">Ask about your plan, or tell it to drive the dashboard.</p>
               <div className="flex flex-wrap justify-center gap-2">
                 {QUICK_PROMPTS.map((prompt) => (
                   <button
