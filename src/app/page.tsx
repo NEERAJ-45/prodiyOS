@@ -1,9 +1,5 @@
-import { AgentShell } from '@/components/agent/AgentShell';
+import { redirect } from 'next/navigation';
 
 export default function Home() {
-  return (
-    <main className="flex h-[100dvh] flex-col">
-      <AgentShell />
-    </main>
-  );
+  redirect('/command-center');
 }
