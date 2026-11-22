@@ -77,7 +77,7 @@ function useDeleteTask() {
 type EventForm = { title: string; date: string; startTime: string; endTime: string; category: string; notes: string };
 const emptyForm = (date: string): EventForm => ({ title: '', date, startTime: '', endTime: '', category: '', notes: '' });
 
-const cellClass = 'min-h-28 rounded-lg border bg-card p-2 text-left transition-colors hover:border-muted-foreground/30';
+const cellClass = 'min-h-0 overflow-hidden rounded-lg border bg-card p-2 text-left transition-colors hover:border-muted-foreground/30';
 
 const gridVariants = { hidden: {}, show: { transition: { staggerChildren: 0.008 } } };
 const cellVariants = {
@@ -340,9 +340,12 @@ export default function CalendarPlansPage() {
   }
   if (error) return <div className="p-6 text-sm text-destructive">Could not load schedules: {error.message}</div>;
 
-  return <div className="space-y-5 p-4 md:p-6">
+  const cells = datesForMonth(month);
+  const weeks = Math.ceil(cells.length / 7);
+
+  return <div className="flex h-full flex-col gap-4 p-4 md:p-6">
     {plans.length > 0 && (
-      <div className="flex gap-2 overflow-x-auto border-b pb-2">
+      <div className="flex shrink-0 gap-2 overflow-x-auto border-b pb-2">
         {plans.map((plan, index) => (
           <button
             key={plan.scheduleId}
@@ -362,11 +365,8 @@ export default function CalendarPlansPage() {
     )}
 
     {!activePlan ? <EmptyState onImport={() => setImportOpen(true)} /> : <>
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">{activePlan.name}</h1>
-          <p className="mt-1 text-xs text-muted-foreground tabular-nums">{activePlan.events.length} events · {activePlan.sourceFileName}</p>
-        </div>
+      <div className="flex shrink-0 flex-wrap items-end justify-between gap-3">
+        <h1 className="text-2xl font-semibold tracking-tight">{activePlan.name}</h1>
         <div className="flex items-center gap-2">
           <Button size="sm" onClick={openAdd} data-agent-action="event-add" data-agent-label="Add task"><Plus className="h-4 w-4" /> Add task</Button>
           <Button variant="outline" size="sm" onClick={() => { setImportError(''); setImportOpen(true); }} data-agent-action="calendar-import" data-agent-label="Import schedule"><FileUp className="h-4 w-4" /> Import schedule</Button>
@@ -376,13 +376,13 @@ export default function CalendarPlansPage() {
         </div>
       </div>
 
-      <div className="rounded-xl border bg-card p-3 md:p-5">
-        <div className="mb-4 flex items-center justify-between">
+      <div className="flex min-h-0 flex-1 flex-col rounded-xl border bg-card p-3 md:p-5">
+        <div className="mb-4 flex shrink-0 items-center justify-between">
           <button aria-label="Previous month" onClick={() => setMonth((value) => subMonths(value, 1))} className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"><ChevronLeft className="h-4 w-4" /></button>
           <h2 className="text-sm font-medium">{format(month, 'MMMM yyyy')}</h2>
           <button aria-label="Next month" onClick={() => setMonth((value) => addMonths(value, 1))} className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"><ChevronRight className="h-4 w-4" /></button>
         </div>
-        <div className="mb-2 grid grid-cols-7 text-center text-xs text-muted-foreground">
+        <div className="mb-2 grid shrink-0 grid-cols-7 text-center text-xs text-muted-foreground">
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => <span key={day}>{day}</span>)}
         </div>
         <motion.div
@@ -390,9 +390,10 @@ export default function CalendarPlansPage() {
           variants={gridVariants}
           initial={reduceMotion ? false : 'hidden'}
           animate="show"
-          className="grid grid-cols-7 gap-1"
+          className="grid min-h-0 flex-1 grid-cols-7 gap-1"
+          style={{ gridTemplateRows: `repeat(${weeks}, minmax(0, 1fr))` }}
         >
-          {datesForMonth(month).map((date) => {
+          {cells.map((date) => {
             const key = dateKey(date);
             const dayEvents = eventsByDate.get(key) ?? [];
             const done = dayEvents.filter((event) => event.completed).length;
@@ -412,8 +413,8 @@ export default function CalendarPlansPage() {
                   <span className={cn('text-xs tabular-nums', key === todayKey ? 'font-semibold text-foreground' : 'font-medium text-muted-foreground')}>{format(date, 'd')}</span>
                   {dayEvents.length > 0 && <span className="font-mono text-[11px] tabular-nums text-muted-foreground">{done}/{dayEvents.length}</span>}
                 </div>
-                {dayEvents.slice(0, 3).map((event) => <EventChip key={event.id} event={event} />)}
-                {dayEvents.length > 3 && <span className="text-[11px] text-muted-foreground tabular-nums">+{dayEvents.length - 3} more</span>}
+                {dayEvents.slice(0, 2).map((event) => <EventChip key={event.id} event={event} />)}
+                {dayEvents.length > 2 && <span className="text-[11px] text-muted-foreground tabular-nums">+{dayEvents.length - 2} more</span>}
               </motion.button>
             );
           })}
