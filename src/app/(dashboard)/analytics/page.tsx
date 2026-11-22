@@ -12,7 +12,8 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { ROADMAPS } from '@/data/roadmaps';
 import { useMounted } from '@/hooks/useMounted';
-import { useProfile } from '@/components/providers/ProfileProvider';
+import { useAllCompletionsQuery } from '@/hooks/use-completions';
+import { useSchedulePlansQuery } from '@/hooks/use-schedule-plans';
 import { ActivityHeatmap } from '@/components/charts/activity-heatmap';
 import { WeeklyActivityChart } from '@/components/charts/weekly-activity-chart';
 import { CategoryProgressChart } from '@/components/charts/category-progress-chart';
@@ -158,55 +159,84 @@ function GroupedRoadmapTable({ roadmapStats, totalCompleted, overallPct }: {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function AnalyticsPage() {
-  const { userEmail, customDbUrl } = useProfile();
   const [completionMap, setCompletionMap] = useState<Record<string, Set<string>>>({});
-  const [completionDates, setCompletionDates] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [localDates, setLocalDates] = useState<string[]>([]);
+  const [dbDates, setDbDates] = useState<string[]>([]);
   const mounted = useMounted();
+  const { data: completionsDb, isLoading: completionsLoading } = useAllCompletionsQuery();
+  const { data: plansData, isLoading: plansLoading } = useSchedulePlansQuery();
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const localMap: Record<string, Set<string>> = {};
-    const localDates: string[] = [];
+    const localFound: string[] = [];
     ROADMAPS.forEach((rm) => {
       const raw = localStorage.getItem(rm.storageKey);
       if (raw) {
         try {
           const parsed = JSON.parse(raw) as Record<string, string>;
           localMap[rm.storageKey] = new Set(Object.keys(parsed));
-          Object.values(parsed).forEach((d) => { if (d) localDates.push(d); });
+          Object.values(parsed).forEach((d) => { if (d) localFound.push(d); });
         } catch { }
       }
       if (!localMap[rm.storageKey]) localMap[rm.storageKey] = new Set();
     });
     setCompletionMap({ ...localMap });
-    setCompletionDates([...localDates]);
+    setLocalDates(localFound);
+  }, []);
 
-    async function loadFromDB() {
-      try {
-        const headers: Record<string, string> = { 'Content-Type': 'application/json', 'x-user-email': userEmail };
-        if (customDbUrl) headers['x-mongodb-url'] = customDbUrl;
-        const res = await fetch(`/api/db/completions?userEmail=${encodeURIComponent(userEmail)}`, { headers });
-        const json = await res.json();
-        if (json.dbConnected && Array.isArray(json.data)) {
-          const merged: Record<string, Set<string>> = {};
-          ROADMAPS.forEach((rm) => { merged[rm.storageKey] = new Set(localMap[rm.storageKey] || []); });
-          const dbDates: string[] = [];
-          json.data.forEach((item: { storagePrefix: string; itemId: string; completedAt: string }) => {
-            const { storagePrefix, itemId, completedAt } = item;
-            if (!merged[storagePrefix]) merged[storagePrefix] = new Set();
-            if (itemId) merged[storagePrefix].add(itemId);
-            if (completedAt) dbDates.push(completedAt);
-          });
-          setCompletionMap({ ...merged });
-          setCompletionDates([...localDates, ...dbDates]);
-        }
-      } catch { /* fallback to local */ } finally {
-        setLoading(false);
-      }
-    }
-    loadFromDB();
-  }, [userEmail, customDbUrl]);
+  useEffect(() => {
+    if (!completionsDb?.dbConnected || !Array.isArray(completionsDb.data)) return;
+    const merged: Record<string, Set<string>> = {};
+    ROADMAPS.forEach((rm) => { merged[rm.storageKey] = new Set(); });
+    const dbDates: string[] = [];
+    completionsDb.data.forEach(({ storagePrefix, itemId, completedAt }) => {
+      if (!merged[storagePrefix]) merged[storagePrefix] = new Set();
+      if (itemId) merged[storagePrefix].add(itemId);
+      if (completedAt) dbDates.push(completedAt);
+    });
+    setCompletionMap((prev) => {
+      const out: Record<string, Set<string>> = {};
+      new Set([...Object.keys(prev), ...Object.keys(merged)]).forEach((key) => {
+        out[key] = new Set([...(prev[key] ?? []), ...(merged[key] ?? [])]);
+      });
+      return out;
+    });
+    setDbDates(dbDates);
+  }, [completionsDb]);
+
+  const loading = completionsLoading || plansLoading;
+
+  const allEvents = useMemo(
+    () => (plansData?.plans ?? []).flatMap((plan) => plan.events.map((event) => ({ ...event, planName: plan.name, scheduleId: plan.scheduleId }))),
+    [plansData],
+  );
+  const todayKey = new Date().toISOString().slice(0, 10);
+
+  const calendarStats = useMemo(() => {
+    const done = allEvents.filter((e) => e.completed).length;
+    const overdue = allEvents.filter((e) => !e.completed && e.date < todayKey).length;
+    const dueToday = allEvents.filter((e) => e.date === todayKey).length;
+    const doneToday = allEvents.filter((e) => e.date === todayKey && e.completed).length;
+    const byPlan = (plansData?.plans ?? []).map((plan) => {
+      const total = plan.events.length;
+      const completed = plan.events.filter((e) => e.completed).length;
+      return { name: plan.name, total, completed, pct: total ? Math.round((completed / total) * 100) : 0 };
+    }).filter((p) => p.total > 0);
+    return {
+      done, total: allEvents.length, overdue, dueToday, doneToday, byPlan,
+      pct: allEvents.length ? Math.round((done / allEvents.length) * 100) : 0,
+    };
+  }, [allEvents, plansData, todayKey]);
+
+  const calendarDates = useMemo(
+    () => allEvents.filter((e) => e.completed).map((e) => e.date),
+    [allEvents],
+  );
+  const completionDates = useMemo(
+    () => [...localDates, ...dbDates, ...calendarDates],
+    [localDates, dbDates, calendarDates],
+  );
 
   const roadmapStats = useMemo(() =>
     ROADMAPS.map((rm) => {
@@ -261,13 +291,15 @@ export default function AnalyticsPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.05 }}
-              className="grid grid-cols-2 md:grid-cols-4 gap-4"
+              className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4"
             >
               {[
                 { label: 'Topics Done', value: totalCompleted, icon: BookOpen, color: 'text-blue-400', bg: 'bg-blue-500/10', suffix: `/${TOTAL_TOPICS}` },
                 { label: 'Current Streak', value: streak, icon: Flame, color: 'text-amber-400', bg: 'bg-amber-500/10', suffix: ` day${streak !== 1 ? 's' : ''}` },
                 { label: 'Active Days', value: activeDays, icon: Activity, color: 'text-emerald-400', bg: 'bg-emerald-500/10', suffix: '' },
                 { label: 'Completion Rate', value: overallPct, icon: Target, color: 'text-purple-400', bg: 'bg-purple-500/10', suffix: '%' },
+                { label: 'Calendar Done', value: calendarStats.done, icon: CalendarDays, color: 'text-sky-400', bg: 'bg-sky-500/10', suffix: `/${calendarStats.total}` },
+                { label: 'Overdue Plans', value: calendarStats.overdue, icon: AlertTriangle, color: 'text-rose-400', bg: 'bg-rose-500/10', suffix: calendarStats.overdue === 1 ? ' event' : ' events' },
               ].map((stat, i) => {
                 const Icon = stat.icon;
                 return (
@@ -359,6 +391,41 @@ export default function AnalyticsPage() {
                 </Card>
               </motion.div>
             </div>
+
+            {/* ── Calendar Plan Progress ── */}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.32 }}>
+              <Card className="bg-card/50 border-zinc-800">
+                <CardHeader className="p-5 pb-3">
+                  <div className="flex items-center gap-2">
+                    <CalendarDays className="h-4 w-4 text-sky-400" />
+                    <CardTitle className="text-sm font-medium">Calendar Plan Progress</CardTitle>
+                    <span className="ml-auto text-[11px] text-muted-foreground">
+                      {calendarStats.doneToday}/{calendarStats.dueToday} today · {calendarStats.pct}% overall
+                    </span>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-5 pt-0 space-y-3">
+                  {calendarStats.byPlan.length === 0 ? (
+                    <p className="text-xs text-zinc-500 text-center py-4">
+                      No calendar plans yet — import one from the calendar.
+                    </p>
+                  ) : calendarStats.byPlan.map((plan) => (
+                    <div key={plan.name} className="space-y-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-zinc-300 truncate mr-2">{plan.name}</span>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="text-zinc-500 tabular-nums">{plan.completed}/{plan.total}</span>
+                          <span className="w-8 text-right font-medium tabular-nums text-sky-400">{plan.pct}%</span>
+                        </div>
+                      </div>
+                      <div className="h-1.5 w-full rounded-full bg-zinc-800 overflow-hidden">
+                        <div className="h-full rounded-full bg-sky-500 transition-all duration-700" style={{ width: `${plan.pct}%` }} />
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </motion.div>
 
             {/* ── Weak & Strong Areas ── */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
