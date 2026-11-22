@@ -1,12 +1,17 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, type ElementType } from 'react';
 import { motion } from 'framer-motion';
 import {
   Flame, BookOpen, Target, Activity,
   Loader2, TrendingUp, AlertTriangle, CheckCircle,
-  ChevronDown, ChevronRight, CalendarDays,
+  ChevronDown, ChevronRight, CalendarDays, ArrowUpRight,
 } from 'lucide-react';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
@@ -63,6 +68,11 @@ function AnimatedNumber({ value, suffix = '' }: { value: number; suffix?: string
   }, [value]);
   return <>{display}{suffix}</>;
 }
+
+type StatInfo = {
+  label: string; value: number; suffix: string; href: string; cta: string; blurb: string;
+  icon: ElementType; color: string; bg: string;
+};
 
 type RoadmapStat = {
   title: string; storageKey: string; total: number; category: string; color: string;
@@ -159,6 +169,7 @@ function GroupedRoadmapTable({ roadmapStats, totalCompleted, overallPct }: {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function AnalyticsPage() {
+  const [activeStat, setActiveStat] = useState<StatInfo | null>(null);
   const [completionMap, setCompletionMap] = useState<Record<string, Set<string>>>({});
   const [localDates, setLocalDates] = useState<string[]>([]);
   const [dbDates, setDbDates] = useState<string[]>([]);
@@ -293,14 +304,14 @@ export default function AnalyticsPage() {
               transition={{ delay: 0.05 }}
               className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4"
             >
-              {[
-                { label: 'Topics Done', value: totalCompleted, icon: BookOpen, color: 'text-blue-400', bg: 'bg-blue-500/10', suffix: `/${TOTAL_TOPICS}` },
-                { label: 'Current Streak', value: streak, icon: Flame, color: 'text-amber-400', bg: 'bg-amber-500/10', suffix: ` day${streak !== 1 ? 's' : ''}` },
-                { label: 'Active Days', value: activeDays, icon: Activity, color: 'text-emerald-400', bg: 'bg-emerald-500/10', suffix: '' },
-                { label: 'Completion Rate', value: overallPct, icon: Target, color: 'text-purple-400', bg: 'bg-purple-500/10', suffix: '%' },
-                { label: 'Calendar Done', value: calendarStats.done, icon: CalendarDays, color: 'text-sky-400', bg: 'bg-sky-500/10', suffix: `/${calendarStats.total}` },
-                { label: 'Overdue Plans', value: calendarStats.overdue, icon: AlertTriangle, color: 'text-rose-400', bg: 'bg-rose-500/10', suffix: calendarStats.overdue === 1 ? ' event' : ' events' },
-              ].map((stat, i) => {
+              {([
+                { label: 'Topics Done', value: totalCompleted, icon: BookOpen, color: 'text-blue-400', bg: 'bg-blue-500/10', suffix: `/${TOTAL_TOPICS}`, href: '/roadmaps', cta: 'Open roadmaps', blurb: 'Topics you have ticked off across every roadmap. Jump in and keep the streak of completions going.' },
+                { label: 'Current Streak', value: streak, icon: Flame, color: 'text-amber-400', bg: 'bg-amber-500/10', suffix: ` day${streak !== 1 ? 's' : ''}`, href: '/daily', cta: "Open today's plan", blurb: 'Consecutive days with at least one completion, counting roadmap topics and finished calendar events.' },
+                { label: 'Active Days', value: activeDays, icon: Activity, color: 'text-emerald-400', bg: 'bg-emerald-500/10', suffix: '', href: '/daily', cta: "Open today's plan", blurb: 'Every distinct day that has any completion on record. Keep the calendar moving to grow this number.' },
+                { label: 'Completion Rate', value: overallPct, icon: Target, color: 'text-purple-400', bg: 'bg-purple-500/10', suffix: '%', href: '/mastery', cta: 'Review mastery', blurb: 'Share of all roadmap topics you have completed so far, weighted across every roadmap.' },
+                { label: 'Calendar Done', value: calendarStats.done, icon: CalendarDays, color: 'text-sky-400', bg: 'bg-sky-500/10', suffix: `/${calendarStats.total}`, href: '/plan/calendar', cta: 'Open calendar tasks', blurb: `${calendarStats.doneToday} of ${calendarStats.dueToday} events scheduled today are done. The calendar holds every planned task.` },
+                { label: 'Overdue Plans', value: calendarStats.overdue, icon: AlertTriangle, color: 'text-rose-400', bg: 'bg-rose-500/10', suffix: calendarStats.overdue === 1 ? ' event' : ' events', href: '/plan/calendar', cta: 'Review overdue tasks', blurb: 'Events whose date has passed but are still not marked done. Clear them or reschedule them in the calendar.' },
+              ] as StatInfo[]).map((stat, i) => {
                 const Icon = stat.icon;
                 return (
                   <motion.div
@@ -309,8 +320,15 @@ export default function AnalyticsPage() {
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.08 + i * 0.05 }}
                   >
-                    <Card className="bg-card/50 border-zinc-800 hover:border-zinc-700 transition-colors">
-                      <CardContent className="p-5 flex items-center gap-4">
+                    <Card
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => setActiveStat(stat)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActiveStat(stat); } }}
+                      className="group cursor-pointer bg-card/50 border-zinc-800 hover:border-sky-500/40 hover:bg-zinc-800/30 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <CardContent className="relative p-5 flex items-center gap-4">
+                        <ArrowUpRight className="absolute right-3 top-3 h-3.5 w-3.5 text-zinc-600 opacity-0 transition-all group-hover:opacity-100 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
                         <div className={cn('flex h-11 w-11 items-center justify-center rounded-xl shrink-0', stat.bg)}>
                           <Icon className={cn('h-5 w-5', stat.color)} />
                         </div>
@@ -517,6 +535,34 @@ export default function AnalyticsPage() {
           </div>
         </div>
       </div>
+
+      <Dialog open={!!activeStat} onOpenChange={(open) => { if (!open) setActiveStat(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {activeStat && <activeStat.icon className={cn('h-4 w-4', activeStat.color)} />}
+              {activeStat?.label}
+            </DialogTitle>
+            <DialogDescription className="pt-1">
+              {activeStat?.blurb}
+            </DialogDescription>
+          </DialogHeader>
+          {activeStat && (
+            <p className="text-sm text-foreground">
+              <span className="font-semibold tabular-nums">{activeStat.value}{activeStat.suffix}</span>
+              <span className="text-muted-foreground"> recorded so far</span>
+            </p>
+          )}
+          <DialogFooter>
+            <Button asChild className="group/cta w-full sm:w-auto">
+              <Link href={activeStat?.href ?? '/'} onClick={() => setActiveStat(null)}>
+                {activeStat?.cta}
+                <ArrowUpRight className="ml-1.5 h-4 w-4 transition-transform duration-200 group-hover/cta:translate-x-0.5 group-hover/cta:-translate-y-0.5" />
+              </Link>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </TooltipProvider>
   );
 }

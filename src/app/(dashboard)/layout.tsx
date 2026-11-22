@@ -8,6 +8,7 @@ import { NotificationsProvider } from '@/components/providers/NotificationsProvi
 const MobileNav = dynamic(() => import('@/components/layout/mobile-nav').then(m => m.MobileNav));
 const QuoteToast = dynamic(() => import('@/components/ui/quote-toast').then(m => m.QuoteToast));
 const PageTransition = dynamic(() => import('@/components/shared/PageTransition').then(m => m.PageTransition));
+const CompanionAvatar = dynamic(() => import('@/components/companion/CompanionAvatar').then(m => m.CompanionAvatar));
 
 export default function DashboardLayout({
   children,
@@ -26,6 +27,7 @@ export default function DashboardLayout({
         </div>
         <MobileNav />
         <QuoteToast />
+        <CompanionAvatar />
       </div>
     </NotificationsProvider>
   );
