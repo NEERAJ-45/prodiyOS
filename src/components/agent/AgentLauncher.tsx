@@ -1,15 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { usePathname } from 'next/navigation';
 import { Bot } from 'lucide-react';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { AgentShell } from './AgentShell';
 
 export function AgentLauncher() {
   const [open, setOpen] = useState(false);
-  const pathname = usePathname();
-  if (pathname === '/') return null;
 
   return (
     <>
