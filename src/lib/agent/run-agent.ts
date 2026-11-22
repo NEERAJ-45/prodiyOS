@@ -17,10 +17,10 @@ type Content = { role: 'user' | 'model'; parts: Part[] };
 const functionDeclarations = [
   {
     name: 'get_today_plan',
-    description: "Get today's study slots and calendar plan events, with completion state.",
+    description: "Get today's calendar plan events with completion state.",
     parameters: {
       type: 'OBJECT',
-      properties: { scheduleId: { type: 'STRING', description: 'steady | react | java | devops | custom' } },
+      properties: {},
     },
   },
   {

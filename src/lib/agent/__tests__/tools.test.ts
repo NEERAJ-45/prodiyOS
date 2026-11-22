@@ -34,10 +34,10 @@ describe('executeTool', () => {
     const result = await executeTool('get_today_plan', {}, ctx);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    const data = result.data as { date: string; completedTaskIds: string[]; calendar: { eventId: string }[] };
+    const data = result.data as { date: string; completedTaskIds: string[]; events: { eventId: string }[] };
     expect(data.date).toBe('2026-11-20');
     expect(data.completedTaskIds).toEqual(['x']);
-    expect(data.calendar[0].eventId).toBe('e1');
+    expect(data.events[0].eventId).toBe('e1');
   });
 
   it('ticks a calendar event', async () => {

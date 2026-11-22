@@ -1,33 +1,23 @@
 'use client';
 
 import * as React from 'react';
+import Link from 'next/link';
 import { useMounted } from '@/hooks/useMounted';
 import { useDailyQuery, useSyncDaily, useActivityLog } from '@/hooks/use-daily';
 import { useLoginStreakQuery } from '@/hooks/use-login-streak';
-import { Target } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { useSchedulePlansQuery } from '@/hooks/use-schedule-plans';
+import { CalendarDays } from 'lucide-react';
 import { useProfile } from '@/components/providers/ProfileProvider';
-import { SCHEDULES, SCHEDULE_IDS, getTodaySchedule, getDaySchedule, type ScheduleId, type Slot } from '@/data/schedules';
 import { STORAGE_KEYS } from '@/lib/storage-keys';
-import { ScheduleTabs } from '@/components/daily/ScheduleTabs';
 import { DailyStats } from '@/components/daily/DailyStats';
-import { SlotCard } from '@/components/daily/SlotCard';
-import { CatchUpSection } from '@/components/daily/CatchUpSection';
 import { CustomTaskList } from '@/components/daily/CustomTaskList';
 import { FocusTimer } from '@/components/daily/FocusTimer';
 import { DailyReflection } from '@/components/daily/DailyReflection';
-import { ScheduleLegend } from '@/components/daily/ScheduleLegend';
 import { SyncStatus, type SyncState } from '@/components/shared/SyncStatus';
 import { PlanEvents } from '@/components/shared/PlanEvents';
 
-const SCHEDULE_MODE_KEY = STORAGE_KEYS.DAILY_SCHEDULE_MODE;
-const SLOT_COMPLETIONS_KEY = STORAGE_KEYS.DAILY_SLOT_COMPLETIONS;
-const SLOT_NOTES_KEY = STORAGE_KEYS.DAILY_SLOT_NOTES;
 const STORAGE_KEY = STORAGE_KEYS.DAILY_COMPLETIONS;
 const NOTES_KEY = STORAGE_KEYS.DAILY_NOTES;
-
-const DAY_ABBREV = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 function toKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -43,37 +33,6 @@ interface Task {
   priority: Priority;
 }
 
-interface SlotCompletion {
-  completed: Record<string, boolean>;
-  notes: Record<string, string>;
-}
-
-function getDateRange(base: Date, daysBack: number): string[] {
-  const dates: string[] = [];
-  for (let i = 1; i <= daysBack; i++) {
-    const d = new Date(base);
-    d.setDate(d.getDate() - i);
-    dates.push(d.toISOString().slice(0, 10));
-  }
-  return dates;
-}
-
-function loadSlotData(): Record<string, SlotCompletion> {
-  try {
-    const raw = localStorage.getItem(SLOT_COMPLETIONS_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch {}
-  return {};
-}
-
-function loadSlotNotes(): Record<string, Record<string, string>> {
-  try {
-    const raw = localStorage.getItem(SLOT_NOTES_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch {}
-  return {};
-}
-
 export default function DailyPage() {
   const { userEmail } = useProfile();
   const mounted = useMounted();
@@ -82,7 +41,6 @@ export default function DailyPage() {
   const dateStr = now.toLocaleDateString('en-US', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
   });
-  const todayDayName = DAY_ABBREV[now.getDay()];
   const [syncState, setSyncState] = React.useState<SyncState>('idle');
   const [completed, setCompleted] = React.useState<Set<string>>(() => {
     try {
@@ -111,20 +69,7 @@ export default function DailyPage() {
     } catch {}
     return [];
   });
-  const [scheduleId, setScheduleId] = React.useState<ScheduleId>(() => {
-    try {
-      const savedMode = localStorage.getItem(SCHEDULE_MODE_KEY);
-      if (savedMode && SCHEDULE_IDS.includes(savedMode as ScheduleId)) {
-        return savedMode as ScheduleId;
-      }
-    } catch {}
-    return 'steady';
-  });
-  const [slotData, setSlotData] = React.useState<Record<string, SlotCompletion>>(() => loadSlotData());
-  const [slotNotes, setSlotNotes] = React.useState<Record<string, Record<string, string>>>(() => loadSlotNotes());
-  const [showCatchUp, setShowCatchUp] = React.useState(true);
 
-  // Midnight rollover: re-derive the date on a timer and when tab regains focus.
   React.useEffect(() => {
     const check = () => {
       const t = new Date();
@@ -138,7 +83,6 @@ export default function DailyPage() {
     };
   }, []);
 
-  // On date change, reload completed/note for the new day before anything writes under the new key.
   const prevDayKeyRef = React.useRef(todayKey);
   React.useEffect(() => {
     if (prevDayKeyRef.current === todayKey) return;
@@ -157,32 +101,13 @@ export default function DailyPage() {
   const { data: dailyDb } = useDailyQuery(todayKey);
   const syncDaily = useSyncDaily();
   const logActivity = useActivityLog();
+  const { data: plansData } = useSchedulePlansQuery();
 
-  const todaySchedule = React.useMemo(() => getTodaySchedule(scheduleId), [scheduleId]);
-  const todaySlotsCompleted = React.useMemo(() => slotData[todayKey]?.completed ?? {}, [slotData, todayKey]);
-  const todaySlotNotes = React.useMemo(() => slotNotes[todayKey] ?? {}, [slotNotes, todayKey]);
-  const todaySlotsDone = React.useMemo(
-    () => todaySchedule ? todaySchedule.slots.filter((s) => todaySlotsCompleted[s.period]).length : 0,
-    [todaySchedule, todaySlotsCompleted],
+  const todayEvents = React.useMemo(
+    () => (plansData?.plans ?? []).flatMap((plan) => plan.events.filter((event) => event.date === todayKey)),
+    [plansData, todayKey],
   );
-  const totalSlotsToday = todaySchedule?.slots.length ?? 3;
-
-  const catchUpMissed = React.useMemo(() => {
-    const missed: { date: string; dayName: string; slot: Slot }[] = [];
-    for (const dateKey of getDateRange(now, 7)) {
-      const d = new Date(dateKey + 'T12:00:00');
-      const dayName = DAY_ABBREV[d.getDay()];
-      const daySchedule = getDaySchedule(scheduleId, dayName);
-      if (!daySchedule) continue;
-      const dayCompletions = slotData[dateKey]?.completed ?? {};
-      for (const slot of daySchedule.slots) {
-        if (!dayCompletions[slot.period]) {
-          missed.push({ date: dateKey, dayName, slot });
-        }
-      }
-    }
-    return missed;
-  }, [scheduleId, slotData, now]);
+  const eventsDone = todayEvents.filter((event) => event.completed).length;
 
   const syncDailyToServer = React.useCallback((ids: Set<string>, noteText: string) => {
     if (!userEmail) return;
@@ -218,37 +143,12 @@ export default function DailyPage() {
       savedNotes[todayKey] = note;
       localStorage.setItem(NOTES_KEY, JSON.stringify(savedNotes));
 
-      localStorage.setItem(SCHEDULE_MODE_KEY, scheduleId);
-      localStorage.setItem(SLOT_COMPLETIONS_KEY, JSON.stringify(slotData));
-      localStorage.setItem(SLOT_NOTES_KEY, JSON.stringify(slotNotes));
       localStorage.setItem('daily-custom-tasks', JSON.stringify(customTasks));
 
       syncDailyToServer(completed, note);
     }, 2000);
     return () => clearTimeout(id);
-  }, [completed, note, scheduleId, slotData, slotNotes, customTasks, mounted, syncDailyToServer, todayKey]);
-
-  function toggleSlotCompletion(period: string) {
-    setSlotData((prev) => {
-      const day = prev[todayKey] ?? { completed: {}, notes: {} };
-      return { ...prev, [todayKey]: { ...day, completed: { ...day.completed, [period]: !day.completed[period] } } };
-    });
-    logActivity.mutate(`Toggled "${period}" slot completion`);
-  }
-
-  function updateSlotNote(period: string, text: string) {
-    setSlotNotes((prev) => {
-      const day = prev[todayKey] ?? {};
-      return { ...prev, [todayKey]: { ...day, [period]: text } };
-    });
-  }
-
-  function toggleCatchUpSlot(dateKey: string, period: string) {
-    setSlotData((prev) => {
-      const day = prev[dateKey] ?? { completed: {}, notes: {} };
-      return { ...prev, [dateKey]: { ...day, completed: { ...day.completed, [period]: !day.completed[period] } } };
-    });
-  }
+  }, [completed, note, customTasks, mounted, syncDailyToServer, todayKey]);
 
   function toggleTask(id: string) {
     const wasCompleted = completed.has(id);
@@ -279,8 +179,6 @@ export default function DailyPage() {
     .filter((t) => completed.has(t.id))
     .reduce((sum, t) => sum + (parseInt(t.time) || 0), 0);
 
-  const slotProgressPct = Math.round((todaySlotsDone / totalSlotsToday) * 100);
-
   if (!mounted) {
     return (
       <div className="flex flex-col h-full">
@@ -303,74 +201,27 @@ export default function DailyPage() {
               </div>
               <p className="text-sm text-muted-foreground mt-1">{dateStr}</p>
             </div>
+            <Link
+              href="/plan/calendar"
+              className="inline-flex items-center gap-1.5 self-start text-xs px-2.5 py-1 rounded-md border bg-card hover:bg-muted transition-colors"
+            >
+              <CalendarDays className="h-3.5 w-3.5" />
+              Edit in calendar
+            </Link>
           </div>
-
-          <ScheduleTabs scheduleId={scheduleId} onChange={setScheduleId} />
 
           <DailyStats
             dailyStreak={dailyStreak}
             minutesDone={minutesDone}
             completedCount={completed.size}
             totalTasks={customTasks.length}
-            todaySlotsDone={todaySlotsDone}
-            totalSlotsToday={totalSlotsToday}
+            todaySlotsDone={eventsDone}
+            totalSlotsToday={todayEvents.length}
           />
-
-          <div className="space-y-1">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">Today&apos;s Schedule Progress</span>
-              <span className="text-muted-foreground">{slotProgressPct}%</span>
-            </div>
-            <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
-              <div
-                className="h-full rounded-full bg-blue-500 transition-all duration-700"
-                style={{ width: `${slotProgressPct}%` }}
-              />
-            </div>
-          </div>
 
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
             <div className="xl:col-span-2 space-y-4">
               <PlanEvents dates={[todayKey]} />
-              <Card className="bg-card/50 border-border">
-                <CardHeader className="p-4 pb-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Target className="h-4 w-4 text-blue-400" />
-                      <CardTitle className="text-sm font-medium text-foreground">
-                        {todayDayName}&apos;s Plan — {SCHEDULES[scheduleId].label}
-                      </CardTitle>
-                    </div>
-                    <Badge variant="outline" className="text-[10px] text-muted-foreground border-border">
-                      {todaySlotsDone}/{totalSlotsToday} done
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-4 pt-1 space-y-3">
-                  {todaySchedule?.slots.map((slot) => (
-                    <SlotCard
-                      key={slot.period}
-                      slot={slot}
-                      isDone={todaySlotsCompleted[slot.period] ?? false}
-                      slotNote={todaySlotNotes[slot.period] ?? ''}
-                      onToggle={() => toggleSlotCompletion(slot.period)}
-                      onNoteChange={(text) => updateSlotNote(slot.period, text)}
-                    />
-                  ))}
-                  {!todaySchedule && (
-                    <p className="text-sm text-muted-foreground text-center py-4">No schedule found for today.</p>
-                  )}
-                </CardContent>
-              </Card>
-
-              <CatchUpSection
-                missed={catchUpMissed}
-                showCatchUp={showCatchUp}
-                onToggleSection={() => setShowCatchUp(!showCatchUp)}
-                onToggleSlot={toggleCatchUpSlot}
-                getSlotCompletion={(dateKey, period) => slotData[dateKey]?.completed[period] ?? false}
-              />
-
               <CustomTaskList
                 tasks={customTasks}
                 completed={completed}
@@ -385,7 +236,6 @@ export default function DailyPage() {
             <div className="space-y-4">
               <FocusTimer />
               <DailyReflection note={note} onChange={setNote} />
-              <ScheduleLegend />
             </div>
           </div>
         </div>

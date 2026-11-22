@@ -1,4 +1,3 @@
-import { getDaySchedule, type ScheduleId } from '@/data/schedules';
 import DailyRecord from '@/lib/models/DailyRecord';
 import SchedulePlan from '@/lib/models/SchedulePlan';
 import type { ToolResult } from './types';
@@ -8,7 +7,6 @@ export interface ToolContext {
   today: string;
 }
 
-const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MAX_EVENTS = 200;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -36,14 +34,11 @@ export async function executeTool(
   try {
     switch (name) {
       case 'get_today_plan': {
-        const scheduleId = (typeof args.scheduleId === 'string' ? args.scheduleId : 'steady') as ScheduleId;
-        const dayName = DAY_NAMES[new Date(`${ctx.today}T12:00:00`).getDay()];
-        const day = getDaySchedule(scheduleId, dayName);
         const [record, plans] = await Promise.all([
           DailyRecord.findOne({ date: ctx.today, userEmail: ctx.email }).lean(),
           SchedulePlan.find({ userEmail: ctx.email }).lean(),
         ]);
-        const calendar = (plans as Array<{ name: string; scheduleId: string; events: PlanEvent[] }>).flatMap((plan) =>
+        const events = (plans as Array<{ name: string; scheduleId: string; events: PlanEvent[] }>).flatMap((plan) =>
           plan.events
             .filter((event) => event.date === ctx.today)
             .map((event) => ({
@@ -59,11 +54,8 @@ export async function executeTool(
           ok: true,
           data: {
             date: ctx.today,
-            dayName,
-            scheduleId,
-            slots: day?.slots ?? [],
+            events,
             completedTaskIds: (record as { completedTaskIds?: string[] } | null)?.completedTaskIds ?? [],
-            calendar,
           },
         };
       }
