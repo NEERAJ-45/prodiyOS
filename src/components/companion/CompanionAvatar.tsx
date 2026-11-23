@@ -4,8 +4,11 @@ import * as React from 'react';
 
 const STORAGE_KEY = 'samundar-companion-pos';
 
+type Facing = 'left' | 'right';
+
 export function CompanionAvatar() {
   const [pos, setPos] = React.useState<{ x: number; y: number } | null>(null);
+  const [facing, setFacing] = React.useState<Facing>('left');
   const dragRef = React.useRef<{ startX: number; startY: number; baseX: number; baseY: number } | null>(null);
 
   React.useEffect(() => {
@@ -23,6 +26,8 @@ export function CompanionAvatar() {
   function onPointerMove(event: React.PointerEvent) {
     const drag = dragRef.current;
     if (!drag) return;
+    const dx = event.clientX - drag.startX;
+    if (Math.abs(dx) > 6) setFacing(dx > 0 ? 'right' : 'left');
     setPos({
       x: Math.min(0, Math.max(-(window.innerWidth - 120), drag.baseX + event.clientX - drag.startX)),
       y: Math.min(window.innerHeight - 150, Math.max(-56, drag.baseY + event.clientY - drag.startY)),
@@ -55,7 +60,8 @@ export function CompanionAvatar() {
         src="/companion/nezuko-sit.webp"
         alt=""
         draggable={false}
-        className="pointer-events-none h-full w-full object-contain"
+        className="pointer-events-none h-full w-full object-contain transition-transform duration-300 ease-out"
+        style={{ transform: facing === 'right' ? 'scaleX(-1)' : 'none' }}
       />
     </div>
   );
