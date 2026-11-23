@@ -3,12 +3,13 @@
 import * as React from 'react';
 
 const STORAGE_KEY = 'samundar-companion-pos';
-
-type Facing = 'left' | 'right';
+const ANGLE_COUNT = 8;
+const ANGLES = Array.from({ length: ANGLE_COUNT }, (_, i) => `/companion/nezuko-a${i}.webp`);
 
 export function CompanionAvatar() {
   const [pos, setPos] = React.useState<{ x: number; y: number } | null>(null);
-  const [facing, setFacing] = React.useState<Facing>('left');
+  const [angle, setAngle] = React.useState(0);
+  const ref = React.useRef<HTMLDivElement>(null);
   const dragRef = React.useRef<{ startX: number; startY: number; baseX: number; baseY: number } | null>(null);
 
   React.useEffect(() => {
@@ -16,6 +17,21 @@ export function CompanionAvatar() {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) setPos(JSON.parse(raw) as { x: number; y: number });
     } catch {}
+    ANGLES.forEach((src) => {
+      const img = new Image();
+      img.src = src;
+    });
+  }, []);
+
+  React.useEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+    function onWheel(event: WheelEvent) {
+      event.preventDefault();
+      setAngle((current) => (current + (event.deltaY > 0 ? 1 : -1) + ANGLE_COUNT) % ANGLE_COUNT);
+    }
+    node.addEventListener('wheel', onWheel, { passive: false });
+    return () => node.removeEventListener('wheel', onWheel);
   }, []);
 
   function onPointerDown(event: React.PointerEvent) {
@@ -26,8 +42,6 @@ export function CompanionAvatar() {
   function onPointerMove(event: React.PointerEvent) {
     const drag = dragRef.current;
     if (!drag) return;
-    const dx = event.clientX - drag.startX;
-    if (Math.abs(dx) > 6) setFacing(dx > 0 ? 'right' : 'left');
     setPos({
       x: Math.min(0, Math.max(-(window.innerWidth - 120), drag.baseX + event.clientX - drag.startX)),
       y: Math.min(window.innerHeight - 150, Math.max(-56, drag.baseY + event.clientY - drag.startY)),
@@ -45,8 +59,10 @@ export function CompanionAvatar() {
 
   return (
     <div
+      ref={ref}
       role="img"
-      aria-label="Companion: Nezuko sitting"
+      aria-label="Companion: Nezuko sitting. Drag to move, scroll to rotate."
+      title="Drag to move · Scroll to rotate"
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
@@ -57,11 +73,10 @@ export function CompanionAvatar() {
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src="/companion/nezuko-sit.webp"
+        src={ANGLES[angle]}
         alt=""
         draggable={false}
-        className="pointer-events-none h-full w-full object-contain transition-transform duration-300 ease-out"
-        style={{ transform: facing === 'right' ? 'scaleX(-1)' : 'none' }}
+        className="pointer-events-none h-full w-full object-contain"
       />
     </div>
   );
