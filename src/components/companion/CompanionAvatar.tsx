@@ -50,13 +50,11 @@ export function CompanionAvatar() {
       style={{ transform: `translate(${pos?.x ?? 0}px, ${pos?.y ?? 0}px)` }}
       data-agent-ignore
     >
-      <video
-        src="/companion/nezuko-sit.webm"
-        autoPlay
-        loop
-        muted
-        playsInline
-        disablePictureInPicture
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/companion/nezuko-sit.webp"
+        alt=""
+        draggable={false}
         className="pointer-events-none h-full w-full object-contain"
       />
     </div>
