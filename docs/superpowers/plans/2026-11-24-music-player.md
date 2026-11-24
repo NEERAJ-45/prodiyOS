@@ -46,6 +46,11 @@
   - `formatTime(seconds: number): string`
   - `STORAGE_KEYS.PLAYER`
 
+- [ ] **Step 0: Install dependencies (fresh clone has no `node_modules`)**
+
+Run: `npm install`
+Expected: exits 0; `node_modules/.bin/vitest`, `tsc`, and `eslint` exist.
+
 - [ ] **Step 1: Add the storage key**
 
 In `src/lib/storage-keys.ts`, add this line inside `STORAGE_KEYS` (after `COMMAND_CENTER_STICKY`):
