@@ -3,12 +3,9 @@
 import * as React from 'react';
 
 const STORAGE_KEY = 'samundar-companion-pos';
-const ANGLE_COUNT = 8;
-const ANGLES = Array.from({ length: ANGLE_COUNT }, (_, i) => `/companion/nezuko-a${i}.webp`);
 
 export function CompanionAvatar() {
   const [pos, setPos] = React.useState<{ x: number; y: number } | null>(null);
-  const [angle, setAngle] = React.useState(0);
   const ref = React.useRef<HTMLDivElement>(null);
   const dragRef = React.useRef<{ startX: number; startY: number; baseX: number; baseY: number } | null>(null);
 
@@ -17,21 +14,6 @@ export function CompanionAvatar() {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) setPos(JSON.parse(raw) as { x: number; y: number });
     } catch {}
-    ANGLES.forEach((src) => {
-      const img = new Image();
-      img.src = src;
-    });
-  }, []);
-
-  React.useEffect(() => {
-    const node = ref.current;
-    if (!node) return;
-    function onWheel(event: WheelEvent) {
-      event.preventDefault();
-      setAngle((current) => (current + (event.deltaY > 0 ? 1 : -1) + ANGLE_COUNT) % ANGLE_COUNT);
-    }
-    node.addEventListener('wheel', onWheel, { passive: false });
-    return () => node.removeEventListener('wheel', onWheel);
   }, []);
 
   function onPointerDown(event: React.PointerEvent) {
@@ -61,8 +43,8 @@ export function CompanionAvatar() {
     <div
       ref={ref}
       role="img"
-      aria-label="Companion: Nezuko sitting. Drag to move, scroll to rotate."
-      title="Drag to move · Scroll to rotate"
+      aria-label="Companion: Nezuko sitting animation. Drag to move."
+      title="Drag to move"
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
@@ -73,7 +55,7 @@ export function CompanionAvatar() {
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={ANGLES[angle]}
+        src="/companion/nezuko-sit.webp"
         alt=""
         draggable={false}
         className="pointer-events-none h-full w-full object-contain"
