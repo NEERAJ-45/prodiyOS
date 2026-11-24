@@ -90,12 +90,17 @@ interface SavedPlayer {
 - Fixed bottom-center, `z-30`, ~320 px, rounded-full.
 - Contents: album art (Audius artwork or a gradient placeholder), marquee title, 4-bar equalizer
   (animates only while playing), play/pause, expand chevron.
-- Style: `bg-zinc-950/80 backdrop-blur-2xl border border-white/10 shadow-2xl`, amber accents.
+- Glass style: translucent dark base (`bg-zinc-950/60`), `backdrop-blur-2xl backdrop-saturate-150`,
+  `border border-white/10`, inset top highlight (`shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]`),
+  outer `shadow-2xl shadow-black/60`, amber accents.
 
 ### Expanded dock
 
 - ~560 px wide, rounded-2xl glass card above the pill position; on `<md` it becomes a
   full-width bottom sheet that clears the floating mobile nav (`bottom: 5rem` + safe-area).
+- Glass depth: same recipe as the pill plus a pointer-events-none top sheen
+  (`bg-gradient-to-b from-white/[0.07] to-transparent`, ~96px tall), a faint amber radial
+  glow behind the header art, and a `bg-white/[0.03]` inner section divider instead of borders.
 - Header: 96 px art with a blurred copy of the same art as amber-tinted glow, title, artist,
   station badge, "Open on Audius" link (`https://audius.co` + `track.permalink`), collapse button.
 - Progress row: 3 px track that thickens on hover; elapsed/duration labels.
@@ -108,6 +113,10 @@ interface SavedPlayer {
 
 ### Aesthetics and motion
 
+- Glassmorphism, layered: blur + saturation on a translucent zinc base, 1px white/10 border,
+  inset top highlight, soft black outer shadow, and a subtle top sheen. Maximum two blur layers
+  per surface to keep scrolling smooth; blur falls back gracefully where `backdrop-filter` is
+  unsupported (background becomes solid zinc-950/90).
 - Amber (`amber-400/500`) is the only accent; no Spotify green.
 - framer-motion spring for expand/collapse; equalizer and marquee are CSS keyframes.
 - `prefers-reduced-motion` (via `useReducedMotion`) disables the spring, equalizer, and marquee.
