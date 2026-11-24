@@ -762,12 +762,15 @@ export function MusicPlayer() {
         {expanded && (
           <div className="pointer-events-none fixed inset-x-0 bottom-24 z-30 flex justify-center px-3 md:bottom-24">
             <motion.section
-              initial={reduceMotion ? false : { opacity: 0, y: 16, scale: 0.98 }}
+              initial={reduceMotion ? false : { opacity: 0, y: 24, scale: 0.94 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 16, scale: 0.98 }}
+              exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 24, scale: 0.94 }}
               transition={
-                reduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 420, damping: 34 }
+                reduceMotion
+                  ? { duration: 0 }
+                  : { type: 'spring', stiffness: 380, damping: 26, mass: 0.8 }
               }
+              style={{ transformOrigin: 'bottom center' }}
               className={cn(
                 'pointer-events-auto relative w-full max-w-[560px] overflow-hidden rounded-2xl',
                 GLASS,
@@ -861,10 +864,11 @@ export function MusicPlayer() {
                   >
                     <SkipBack className="h-4 w-4" />
                   </button>
-                  <button
+                  <motion.button
                     onClick={toggle}
+                    whileTap={{ scale: 0.9 }}
                     aria-label={playing ? 'Pause' : 'Play'}
-                    className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-400 text-zinc-950 shadow-lg shadow-amber-500/20 transition-transform hover:scale-105 active:scale-95"
+                    className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-400 text-zinc-950 shadow-lg shadow-amber-500/20 transition-transform hover:scale-105"
                   >
                     {status === 'buffering' ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -873,7 +877,7 @@ export function MusicPlayer() {
                     ) : (
                       <Play className="ml-0.5 h-4 w-4" />
                     )}
-                  </button>
+                  </motion.button>
                   <button
                     onClick={() => stepTrack(1)}
                     aria-label="Next track"
@@ -954,9 +958,16 @@ export function MusicPlayer() {
                     </p>
                   )}
                   {queue.map((t, i) => (
-                    <button
+                    <motion.button
                       key={t.id}
                       ref={i === trackIndex ? activeItemRef : undefined}
+                      initial={reduceMotion ? false : { opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={
+                        reduceMotion
+                          ? { duration: 0 }
+                          : { duration: 0.18, delay: Math.min(i, 8) * 0.025 }
+                      }
                       onClick={() => playIndex(i)}
                       className={cn(
                         'flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition-colors',
@@ -979,7 +990,7 @@ export function MusicPlayer() {
                         {formatTime(t.duration)}
                       </span>
                       {i === trackIndex && playing && <Equalizer playing />}
-                    </button>
+                    </motion.button>
                   ))}
                 </div>
               </div>
@@ -989,7 +1000,12 @@ export function MusicPlayer() {
       </AnimatePresence>
 
       <div className="fixed inset-x-0 bottom-4 z-30 flex justify-center px-4 md:bottom-5">
-        <div
+        <motion.div
+          initial={reduceMotion ? false : { opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={
+            reduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 380, damping: 26 }
+          }
           className={cn(
             'flex w-full max-w-xs items-center gap-2 rounded-full px-2 py-1.5',
             GLASS,
@@ -1026,10 +1042,11 @@ export function MusicPlayer() {
             </p>
           </div>
           <Equalizer playing={playing} />
-          <button
+          <motion.button
             onClick={toggle}
+            whileTap={{ scale: 0.9 }}
             aria-label={playing ? 'Pause' : 'Play'}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-400 text-zinc-950 transition-transform hover:scale-105 active:scale-95"
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-400 text-zinc-950 transition-transform hover:scale-105"
           >
             {loading && !track ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -1038,7 +1055,7 @@ export function MusicPlayer() {
             ) : (
               <Play className="ml-0.5 h-3.5 w-3.5" />
             )}
-          </button>
+          </motion.button>
           <button
             onClick={() => setExpanded((v) => !v)}
             aria-label={expanded ? 'Collapse player' : 'Expand player'}
@@ -1047,7 +1064,7 @@ export function MusicPlayer() {
           >
             {expanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
           </button>
-        </div>
+        </motion.div>
       </div>
     </>
   );

@@ -118,7 +118,11 @@ interface SavedPlayer {
   per surface to keep scrolling smooth; blur falls back gracefully where `backdrop-filter` is
   unsupported (background becomes solid zinc-950/90).
 - Amber (`amber-400/500`) is the only accent; no Spotify green.
-- framer-motion spring for expand/collapse; equalizer and marquee are CSS keyframes.
+- Motion (smooth pop out / pop in, never bouncy): the expanded dock scales from 94% with a
+  slightly overshooting spring (stiffness 380, damping 26, mass 0.8), rising 24 px, anchored at
+  bottom-center; exit reverses it. The pill pops in once on mount (spring, 24 px rise). Queue
+  rows stagger in at 25 ms per row (capped at 8 rows). Play/expand buttons scale to 0.9 on press.
+  Equalizer and marquee are CSS keyframes.
 - `prefers-reduced-motion` (via `useReducedMotion`) disables the spring, equalizer, and marquee.
 - Focus-visible rings on every control; `aria-label`s; the progress bar is a real
   `<input type="range">`.
