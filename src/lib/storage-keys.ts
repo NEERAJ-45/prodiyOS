@@ -8,6 +8,7 @@ export const STORAGE_KEYS = {
   REVISION_SCHEDULER_ITEMS: 'revision-scheduler-items',
   COMMAND_CENTER: 'samundar-command-center',
   COMMAND_CENTER_STICKY: 'command-center-sticky',
+  PLAYER: 'samundar-player',
 
   FOUNDATION_OS: 'foundation-os-completed',
   FOUNDATION_DBMS: 'foundation-dbms-completed',
