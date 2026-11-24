@@ -85,3 +85,17 @@ All API messages follow this canonical structure:
   "OrgRRN": "514713000182"
 }
 ```
+
+## Working Agreement — Plan Before Code
+Applies to every task that changes code.
+
+1. **Understand first.** Read every file the change touches and trace the real flow end to end before proposing anything. For API/UI work, verify both sides of each contract actually exist (client call ↔ route/handler, field ↔ schema).
+2. **Brainstorm.** Restate the goal, constraints, and edge cases. Ask questions when ambiguous. Offer 2–3 approaches with trade-offs and a recommendation. YAGNI — cut unrequested scope.
+3. **Plan.** Present a short plan: files to touch, exact changes, test plan, risks.
+4. **Approval gate.** Do NOT write or edit code until the user explicitly approves the plan. If scope changes mid-work, stop and re-approve.
+5. **Implement.** Smallest correct diff, following existing patterns. No unrequested abstractions, no drive-by refactors.
+6. **Test and verify.** Add or extend tests for changed logic. Run typecheck, lint, and tests. Report the exact commands and their results as evidence.
+7. **Done.** Summarize what changed and what was verified. Never claim success without the checks passing.
+
+Exception: read-only or informational questions are answered directly, without the plan gate.
+
