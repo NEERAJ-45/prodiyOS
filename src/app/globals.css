@@ -94,3 +94,34 @@ em-emoji-picker {
   max-height: 100% !important;
 }
 
+/* Player — equalizer bars and title marquee (no Tailwind equivalent) */
+@keyframes player-eq {
+  0%,
+  100% {
+    transform: scaleY(0.35);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+.player-eq {
+  transform-origin: bottom;
+  animation: player-eq 0.9s ease-in-out infinite;
+}
+
+@keyframes player-marquee {
+  0%,
+  8% {
+    transform: translateX(0);
+  }
+  92%,
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.player-marquee {
+  animation: player-marquee 9s linear infinite;
+}
+
