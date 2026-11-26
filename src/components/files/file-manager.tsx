@@ -62,7 +62,6 @@ import {
   StatusBar,
   type MenuItemSpec,
 } from './file-chrome';
-import { PdfDock } from './pdf-dock';
 import { ProcessPanel } from './process-panel';
 import { useProcesses } from './processes';
 import { docsTheme } from './theme';
@@ -88,6 +87,20 @@ function buildUrl(pathname: string, p: Params) {
 
 function itemSize(nodes: FileNode[]) {
   return nodes.reduce((total, node) => total + (node.kind === 'file' ? node.size || 0 : 0), 0);
+}
+
+const READER_FILE_TYPES = new Set(['pdf', 'docx', 'md', 'markdown']);
+const READER_MIMES = new Set([
+  'application/pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'text/markdown',
+]);
+
+function isReaderFile(node: FileNode) {
+  return (
+    READER_FILE_TYPES.has(node.fileType.toLowerCase()) ||
+    READER_MIMES.has(node.mimeType)
+  );
 }
 
 export function FileManager() {
@@ -129,7 +142,6 @@ export function FileManager() {
     ids: string[];
   } | null>(null);
   const [dragCount, setDragCount] = React.useState(0);
-  const [pdfNode, setPdfNode] = React.useState<FileNode | null>(null);
   const [panelOpen, setPanelOpen] = React.useState(false);
 
   const filesQuery = useFilesQuery({ parentId: folderId, sort, dir, trashed: trash });
@@ -219,29 +231,11 @@ export function FileManager() {
       navigateTo({ folder: node.id, trash: false });
       return;
     }
-    if (node.fileType === 'pdf' || node.mimeType === 'application/pdf') {
-      openPdf(node);
+    if (isReaderFile(node)) {
+      router.push(`/docs/read/${node.id}`);
       return;
     }
     router.push(`/docs/preview/${node.id}`);
-  }
-
-  function openPdf(node: FileNode) {
-    setPdfNode(node);
-    setPanelOpen(true);
-    startProcess({
-      id: `pdf-${node.id}`,
-      kind: 'pdf',
-      name: node.title,
-      targetId: node.id,
-      detail: 'Loading…',
-      abort: () => setPdfNode(null),
-    });
-  }
-
-  function closePdf() {
-    if (pdfNode) finishProcess(`pdf-${pdfNode.id}`, 'done');
-    setPdfNode(null);
   }
 
   function fail(title: string) {
@@ -743,20 +737,6 @@ export function FileManager() {
             </DragOverlay>
           </DndContext>
 
-          {pdfNode ? (
-            <PdfDock
-              key={pdfNode.id}
-              node={pdfNode}
-              onClose={closePdf}
-              onExpand={() => {
-                closePdf();
-                router.push(`/docs/preview/${pdfNode.id}`);
-              }}
-              onLoaded={(pages) =>
-                patchProcess(`pdf-${pdfNode.id}`, { detail: `${pages} page${pages === 1 ? '' : 's'}` })
-              }
-            />
-          ) : null}
         </Box>
 
         <StatusBar

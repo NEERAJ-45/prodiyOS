@@ -1,15 +1,14 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { LazyAppear } from "@/components/shared/LazyAppear";
-import { useCommandCenterQuery, useUpdateFocusItem } from '@/hooks/use-command-center';
+import { useCommandCenterQuery } from '@/hooks/use-command-center';
+import { useSchedulePlansQuery, useUpdateScheduleEvent } from '@/hooks/use-schedule-plans';
+import { dateKey } from '@/lib/schedule-plans/date-mapping';
 import { useProfile } from "@/components/providers/ProfileProvider";
 import { useRevisionDueCount } from '@/hooks/use-revision-due';
 import {
@@ -18,9 +17,9 @@ import {
   Calendar,
   BrainCircuit,
   ArrowRight,
+  Check,
   Loader2,
   Plus,
-  Pencil,
 } from "lucide-react";
 import { cn, formatRelativeTime } from '@/lib/utils';
 
@@ -58,36 +57,24 @@ function ProjectProgressBar({ progress }: { progress: string }) {
 }
 
 export default function CommandCenterPage() {
-  const { userName, userEmail } = useProfile();
+  const { userName } = useProfile();
   const router = useRouter();
   const { data, isLoading, error } = useCommandCenterQuery();
-  const updateFocusItem = useUpdateFocusItem();
   const dueCount = useRevisionDueCount();
-
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [dialogLabel, setDialogLabel] = useState('');
-  const [dialogValue, setDialogValue] = useState('');
-  const [dialogBadge, setDialogBadge] = useState('');
+  const { data: plansData } = useSchedulePlansQuery();
+  const updateEvent = useUpdateScheduleEvent();
 
   useEffect(() => {
     localStorage.removeItem('samundar-command-center');
   }, []);
 
-  const openFocusDialog = (label: string, value: string, badge: string) => {
-    setDialogLabel(label);
-    setDialogValue(value);
-    setDialogBadge(badge);
-    setDialogOpen(true);
-  };
-
-  const saveFocusEdit = async () => {
-    if (!userEmail || !dialogLabel) {
-      setDialogOpen(false);
-      return;
-    }
-    updateFocusItem.mutate({ label: dialogLabel, value: dialogValue, badge: dialogBadge });
-    setDialogOpen(false);
-  };
+  const todayKey = useMemo(() => dateKey(new Date()), []);
+  const todayEvents = useMemo(() => {
+    const rows = (plansData?.plans ?? []).flatMap((plan) =>
+      plan.events.filter((event) => event.date === todayKey).map((event) => ({ plan, event })),
+    );
+    return rows.sort((a, b) => (a.event.startTime ?? '99:99').localeCompare(b.event.startTime ?? '99:99'));
+  }, [plansData, todayKey]);
 
   const todayActivities = useMemo(() => {
     const today = new Date();
@@ -175,50 +162,47 @@ export default function CommandCenterPage() {
         <LazyAppear delay={0.15}>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Card className="md:col-span-2 border-border bg-card/40">
-              <CardHeader className="pb-3">
+              <CardHeader className="pb-3 flex-row items-center justify-between">
                 <CardTitle className="text-sm font-medium">Today&apos;s Focus</CardTitle>
+                <Link href="/plan/calendar" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  Open calendar
+                </Link>
               </CardHeader>
-              <CardContent className="space-y-4">
-                {data.focusItems.map((item) => {
-                  if (item.label === 'Due Revisions') {
-                    return (
-                      <Link
-                        key={item.label}
-                        href="/revision?tab=due"
-                        className="flex items-center justify-between group"
+              <CardContent className="space-y-3">
+                {todayEvents.length === 0 ? (
+                  <div className="text-center py-6 space-y-2">
+                    <p className="text-sm text-muted-foreground">Nothing scheduled today</p>
+                    <Link href="/plan/calendar" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                      Open calendar <ArrowRight className="h-3 w-3" />
+                    </Link>
+                  </div>
+                ) : (
+                  todayEvents.map(({ plan, event }) => (
+                    <div key={`${plan.scheduleId}:${event.id}`} className="flex items-start gap-3">
+                      <button
+                        type="button"
+                        aria-pressed={event.completed}
+                        aria-label={event.completed ? 'Mark not done' : 'Mark done'}
+                        onClick={() => updateEvent.mutate({ scheduleId: plan.scheduleId, eventId: event.id, completed: !event.completed })}
+                        className={cn(
+                          'mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors',
+                          event.completed ? 'border-primary bg-primary text-primary-foreground' : 'border-border hover:border-muted-foreground',
+                        )}
                       >
-                        <div>
-                          <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                            {item.label}
-                            <ArrowRight className="h-2.5 w-2.5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                          </p>
-                          <p className="text-sm font-medium mt-0.5 group-hover:text-foreground transition-colors">{item.value}</p>
-                        </div>
-                        <Badge variant="secondary" className="text-xs bg-muted text-muted-foreground group-hover:bg-muted/70 transition-colors">
-                          {item.badge}
-                        </Badge>
-                      </Link>
-                    );
-                  }
-                  return (
-                    <div
-                      key={item.label}
-                      onClick={() => openFocusDialog(item.label, item.value, item.badge)}
-                      className="flex items-center justify-between cursor-pointer group"
-                    >
-                      <div>
-                        <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                          {item.label}
-                          <Pencil className="h-2.5 w-2.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                        {event.completed && <Check className="h-3 w-3" />}
+                      </button>
+                      <div className="min-w-0 flex-1">
+                        <p className={cn('truncate text-sm font-medium', event.completed && 'text-muted-foreground line-through')}>
+                          {event.title}
                         </p>
-                        <p className="text-sm font-medium mt-0.5 group-hover:text-foreground transition-colors">{item.value}</p>
+                        <p className="truncate text-xs text-muted-foreground tabular-nums">
+                          {event.startTime && <>{event.startTime}{event.endTime ? `–${event.endTime}` : ''} · </>}
+                          {plan.name}
+                        </p>
                       </div>
-                      <Badge variant="secondary" className="text-xs bg-muted text-muted-foreground group-hover:bg-muted/70 transition-colors">
-                        {item.badge}
-                      </Badge>
                     </div>
-                  );
-                })}
+                  ))
+                )}
               </CardContent>
             </Card>
 
@@ -300,28 +284,6 @@ export default function CommandCenterPage() {
           </Card>
         </LazyAppear>
       </div>
-
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="bg-background border-border sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-foreground">Edit {dialogLabel}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-1.5">
-              <label className="text-xs text-muted-foreground">Value</label>
-              <Input value={dialogValue} onChange={(e) => setDialogValue(e.target.value)} className="bg-card border-border text-foreground" />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs text-muted-foreground">Badge</label>
-              <Input value={dialogBadge} onChange={(e) => setDialogBadge(e.target.value)} className="bg-card border-border text-foreground" />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)}>Cancel</Button>
-            <Button size="sm" onClick={saveFocusEdit}>OK</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

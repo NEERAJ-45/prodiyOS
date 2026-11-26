@@ -22,6 +22,8 @@ import '@cyntler/react-doc-viewer/dist/index.css';
 import { cn } from '@/lib/utils';
 import { useProfile } from '@/components/providers/ProfileProvider';
 import { useProjectsQuery, useCreateProject, useUpdateProject, useDeleteProject } from '@/hooks/use-projects';
+import { useObjectUrl } from '@/hooks/use-object-url';
+import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 
 type ProjectStatus = 'IDEA' | 'IN_PROGRESS' | 'COMPLETED' | 'MAINTAINING' | 'ARCHIVED';
 
@@ -143,15 +145,7 @@ function ProjectCard({ project, onSelect, onEdit, onDelete }: {
 }
 
 function ArchImage({ url }: { url: string }) {
-  const [blobUrl, setBlobUrl] = React.useState<string | null>(null);
-  React.useEffect(() => {
-    if (url.startsWith('data:')) {
-      const b = dataUrlToBlob(url);
-      setBlobUrl(b);
-      return () => URL.revokeObjectURL(b);
-    }
-    setBlobUrl(url);
-  }, [url]);
+  const blobUrl = useObjectUrl(url);
   if (!blobUrl) return null;
   return (
     <div className="mt-2 border border-zinc-700 rounded-lg overflow-hidden cursor-pointer"
@@ -162,35 +156,10 @@ function ArchImage({ url }: { url: string }) {
   );
 }
 
-function dataUrlToBlob(url: string): string {
-  const [header, base64] = url.split(',', 2);
-  const mime = header?.split(':')[1]?.split(';')[0] || 'application/octet-stream';
-  const raw = atob(base64 || '');
-  const len = raw.length;
-  const buf = new ArrayBuffer(len);
-  const bytes = new Uint8Array(buf);
-  for (let i = 0; i < len; i++) bytes[i] = raw.charCodeAt(i);
-  const blob = new Blob([buf], { type: mime });
-  return URL.createObjectURL(blob);
-}
-
 function ExpandedDialog({ project, open, onOpenChange }: { project: Project | null; open: boolean; onOpenChange: (v: boolean) => void }) {
   const [viewingDoc, setViewingDoc] = React.useState<{ name: string; url: string } | null>(null);
-  const [docBlobUrl, setDocBlobUrl] = React.useState<string | null>(null);
+  const docBlobUrl = useObjectUrl(viewingDoc?.url);
   const [imageLoadError, setImageLoadError] = React.useState(false);
-
-  React.useEffect(() => {
-    if (!viewingDoc) {
-      if (docBlobUrl) { URL.revokeObjectURL(docBlobUrl); setDocBlobUrl(null); }
-      return;
-    }
-    if (viewingDoc.url.startsWith('data:')) {
-      const url = dataUrlToBlob(viewingDoc.url);
-      setDocBlobUrl(url);
-      return () => URL.revokeObjectURL(url);
-    }
-    setDocBlobUrl(viewingDoc.url);
-  }, [viewingDoc, docBlobUrl]);
 
   if (!project) return null;
 
@@ -302,7 +271,7 @@ function ExpandedDialog({ project, open, onOpenChange }: { project: Project | nu
 
 const emptyFeature = (): ProjectFeature => ({ name: '', done: false });
 
-export default function ProjectsPage() {
+function ProjectsPageContent() {
   const [projects, setProjects] = React.useState<Project[]>([]);
   const mounted = useMounted();
   const [dialogProject, setDialogProject] = React.useState<Project | null>(null);
@@ -725,5 +694,13 @@ export default function ProjectsPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+export default function ProjectsPage() {
+  return (
+    <ErrorBoundary>
+      <ProjectsPageContent />
+    </ErrorBoundary>
   );
 }

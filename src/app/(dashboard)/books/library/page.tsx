@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import Link from "next/link";
-
 import {
   ArrowLeft,
   BookOpen,
@@ -12,13 +11,7 @@ import {
   Plus,
   Search,
 } from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -41,67 +34,14 @@ const categoryOrder = [
   "07-Others",
 ];
 
-const categoryColors: Record<
-  string,
-  { bg: string; border: string; text: string }
-> = {
-  "01-Foundations": {
-    bg: "bg-blue-950/40",
-    border: "border-blue-800/40",
-    text: "text-blue-300",
-  },
-  "02-Distributed-Systems": {
-    bg: "bg-violet-950/40",
-    border: "border-violet-800/40",
-    text: "text-violet-300",
-  },
-  "03-Architecture": {
-    bg: "bg-emerald-950/40",
-    border: "border-emerald-800/40",
-    text: "text-emerald-300",
-  },
-  "04-Performance": {
-    bg: "bg-amber-950/40",
-    border: "border-amber-800/40",
-    text: "text-amber-300",
-  },
-  "05-Deep-Mastery": {
-    bg: "bg-rose-950/40",
-    border: "border-rose-800/40",
-    text: "text-rose-300",
-  },
-  "06-Meta-Learning": {
-    bg: "bg-cyan-950/40",
-    border: "border-cyan-800/40",
-    text: "text-cyan-300",
-  },
-  "07-Others": {
-    bg: "bg-zinc-800/40",
-    border: "border-zinc-700/40",
-    text: "text-zinc-300",
-  },
-};
-
 const bookStatusConfig: Record<
   BookData["status"],
   { label: string; className: string }
 > = {
-  TO_READ: {
-    label: "To Read",
-    className: "bg-zinc-800 text-zinc-300 border-zinc-700",
-  },
-  READING: {
-    label: "Reading",
-    className: "bg-blue-950 text-blue-300 border-blue-800",
-  },
-  COMPLETED: {
-    label: "Completed",
-    className: "bg-emerald-950 text-emerald-300 border-emerald-800",
-  },
-  REFERENCE: {
-    label: "Reference",
-    className: "bg-amber-950 text-amber-300 border-amber-800",
-  },
+  TO_READ: { label: "To Read", className: "border-border bg-muted text-muted-foreground" },
+  READING: { label: "Reading", className: "border-blue-500/30 bg-blue-500/10 text-blue-400" },
+  COMPLETED: { label: "Completed", className: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400" },
+  REFERENCE: { label: "Reference", className: "border-amber-500/30 bg-amber-500/10 text-amber-400" },
 };
 
 const emptyFormState: BookFormState = {
@@ -114,12 +54,14 @@ const emptyFormState: BookFormState = {
   pdfFile: null,
 };
 
-type LibrarySearchHit = {
+type SearchHit = {
   key: string;
   title: string;
   author?: string;
   categoryLabel: string;
   status?: { label: string; className: string };
+  progress?: number;
+  hasPdf?: boolean;
   href: string;
 };
 
@@ -141,6 +83,73 @@ function groupUploadedBooksByCategory(
   return grouped;
 }
 
+function BookCard({
+  title,
+  author,
+  categoryLabel,
+  href,
+  status,
+  progress,
+  hasPdf,
+}: {
+  title: string;
+  author?: string;
+  categoryLabel: string;
+  href: string;
+  status?: { label: string; className: string };
+  progress?: number;
+  hasPdf?: boolean;
+}) {
+  return (
+    <Link href={href} className="group block">
+      <Card className="h-full border-border bg-card/60 transition-colors group-hover:border-primary/40 group-hover:bg-card">
+        <CardHeader className="p-4 pb-2">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <CardTitle className="truncate text-sm font-medium">{title}</CardTitle>
+              {author && (
+                <p className="mt-0.5 truncate text-xs text-muted-foreground">{author}</p>
+              )}
+            </div>
+            {status && (
+              <Badge
+                variant="outline"
+                className={cn("shrink-0 text-[10px]", status.className)}
+              >
+                {status.label}
+              </Badge>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-2 p-4 pt-0">
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+            {categoryLabel}
+          </p>
+          {typeof progress === "number" && (
+            <div className="flex items-center gap-2">
+              <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full bg-primary"
+                  style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
+                />
+              </div>
+              <span className="text-[10px] tabular-nums text-muted-foreground">
+                {progress}%
+              </span>
+            </div>
+          )}
+          {hasPdf && (
+            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <FileType className="h-3 w-3" />
+              PDF
+            </p>
+          )}
+        </CardContent>
+      </Card>
+    </Link>
+  );
+}
+
 export default function LibraryPage() {
   const [selectedCategory, setSelectedCategory] = React.useState<string | null>(
     null,
@@ -160,32 +169,36 @@ export default function LibraryPage() {
     [uploadedBooks],
   );
 
-  const searchResults = React.useMemo<LibrarySearchHit[]>(() => {    if (!q) return [];
+  const searchResults = React.useMemo<SearchHit[]>(() => {
+    if (!q) return [];
 
-    const uploadedHits: LibrarySearchHit[] = uploadedBooks
+    const uploadedHits: SearchHit[] = uploadedBooks
       .filter((book) => {
         const title = book.title.toLowerCase();
         const author = (book.author || "").toLowerCase();
         return title.includes(q) || author.includes(q);
       })
-      .map((book) => ({
-        key: `uploaded-${book._id || book.id}`,
-        title: book.title,
-        author: book.author || undefined,
-        categoryLabel: getCategoryLabel(book.category || "other"),
-        status: bookStatusConfig[book.status],
-        href:
-          book.hasPdf || book.pdfPath
-            ? `/books/read/${book.id}`
-            : `/books/reading/${book.id}`,
-      }));
+      .map((book) => {
+        const hasPdf = !!(book.hasPdf || book.pdfPath);
+        return {
+          key: `uploaded-${book._id || book.id}`,
+          title: book.title,
+          author: book.author || undefined,
+          categoryLabel: getCategoryLabel(book.category || "other"),
+          status: bookStatusConfig[book.status],
+          progress: book.progress,
+          hasPdf,
+          href: hasPdf ? `/books/read/${book.id}` : `/books/reading/${book.id}`,
+        };
+      });
 
-    const staticHits: LibrarySearchHit[] = books
+    const staticHits: SearchHit[] = books
       .filter((book) => book.title.toLowerCase().includes(q))
       .map((book) => ({
         key: `static-${book.slug}`,
         title: book.title,
         categoryLabel: categoryLabels[book.category] || book.category,
+        hasPdf: true,
         href: `/books/${book.slug}`,
       }));
 
@@ -223,87 +236,60 @@ export default function LibraryPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
-        <div className="relative max-w-md flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search library..."
-            className="w-full bg-zinc-900/40 border border-zinc-800 rounded-lg pl-9 pr-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-600 outline-none focus:border-primary/50 focus:bg-zinc-900/80 transition-all"
-          />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2 className="text-lg font-semibold">Library</h2>
+          <p className="text-sm text-muted-foreground">
+            {uploadedBooks.length} uploaded · {books.length} built-in
+          </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={openAddDialog}
-          className="shrink-0"
-        >
-          <Plus className="h-3.5 w-3.5 mr-1" />
-          Add Book
-        </Button>
+        <div className="flex items-center gap-2">
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search library..."
+              className="w-full rounded-lg border border-border bg-card py-2 pl-9 pr-3 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-primary/50"
+            />
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={openAddDialog}
+            className="shrink-0"
+          >
+            <Plus className="mr-1 h-3.5 w-3.5" />
+            Add Book
+          </Button>
+        </div>
       </div>
 
       {isLoading ? (
         <div className="flex items-center justify-center py-10">
-          <Loader2 className="h-6 w-6 animate-spin text-zinc-500" />
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
       ) : q ? (
         searchResults.length > 0 ? (
-          <div className="space-y-4">
-            <p className="text-xs text-zinc-500">
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground">
               {searchResults.length}{" "}
               {searchResults.length === 1 ? "result" : "results"} for &quot;
               {searchQuery.trim()}&quot;
             </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {searchResults.map((hit) => (
-                <Link key={hit.key} href={hit.href} className="block group">
-                  <Card className="border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900 transition-colors h-full">
-                    <CardHeader className="p-5 pb-3">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1 min-w-0">
-                          <CardTitle className="text-sm font-medium text-zinc-100 truncate">
-                            {hit.title}
-                          </CardTitle>
-                          {hit.author && (
-                            <CardDescription className="text-xs text-zinc-500 mt-0.5">
-                              {hit.author}
-                            </CardDescription>
-                          )}
-                        </div>
-                        {hit.status && (
-                          <Badge
-                            variant="outline"
-                            className={cn(
-                              "text-[10px] font-medium shrink-0",
-                              hit.status.className,
-                            )}
-                          >
-                            {hit.status.label}
-                          </Badge>
-                        )}
-                      </div>
-                    </CardHeader>
-                    <CardContent className="p-5 pt-0">
-                      <div className="text-[10px] text-zinc-600 uppercase tracking-wider">
-                        {hit.categoryLabel}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {searchResults.map(({ key, ...hit }) => (
+                <BookCard key={key} {...hit} />
               ))}
             </div>
           </div>
         ) : (
-          <Card className="border-zinc-800 bg-zinc-900/30">
-            <CardContent className="p-12 flex flex-col items-center justify-center text-center">
-              <BookOpen className="h-10 w-10 text-zinc-700 mb-3" />
-              <p className="text-sm font-medium text-zinc-400">
-                No books match your search
-              </p>
-              <p className="text-xs text-zinc-600 mt-1">
+          <Card className="border-border bg-card/40">
+            <CardContent className="flex flex-col items-center justify-center p-12 text-center">
+              <BookOpen className="mb-3 h-10 w-10 text-muted-foreground" />
+              <p className="text-sm font-medium">No books match your search</p>
+              <p className="mt-1 text-xs text-muted-foreground">
                 Try a different title or author
               </p>
             </CardContent>
@@ -311,197 +297,123 @@ export default function LibraryPage() {
         )
       ) : (
         <>
-          
-
           {Object.keys(uploadedGrouped).length > 0 ? (
-        <div className="space-y-6">
-          {BOOK_CATEGORIES.map((category) => {
-            const booksInCategory = uploadedGrouped[category.value];
-            if (!booksInCategory?.length) return null;
+            <div className="space-y-6">
+              {BOOK_CATEGORIES.map((category) => {
+                const list = uploadedGrouped[category.value];
+                if (!list?.length) return null;
 
-            return (
-              <section key={category.value} className="space-y-3">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <h2 className="text-sm font-semibold text-zinc-100">
-                      {getCategoryLabel(category.value)}
-                    </h2>
-                    <p className="text-xs text-zinc-500">
-                      {booksInCategory.length} uploaded book
-                      {booksInCategory.length === 1 ? "" : "s"}
-                    </p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {booksInCategory.map((book) => {
-                    const status = bookStatusConfig[book.status];
-                    const hasPdf = !!(book.hasPdf || book.pdfPath);
-
-                    return (
-                      <Link
-                        key={book._id || book.id}
-                        href={
-                          hasPdf
-                            ? `/books/read/${book.id}`
-                            : `/books/reading/${book.id}`
-                        }
-                        className="block group"
-                      >
-                        <Card className="border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900 transition-colors h-full">
-                          <CardHeader className="p-5 pb-3">
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="flex-1 min-w-0">
-                                <CardTitle className="text-sm font-medium text-zinc-100 truncate">
-                                  {book.title}
-                                </CardTitle>
-                                {book.author && (
-                                  <CardDescription className="text-xs text-zinc-500 mt-0.5">
-                                    {book.author}
-                                  </CardDescription>
-                                )}
-                              </div>
-                              <Badge
-                                variant="outline"
-                                className={cn(
-                                  "text-[10px] font-medium shrink-0",
-                                  status.className,
-                                )}
-                              >
-                                {status.label}
-                              </Badge>
-                            </div>
-                          </CardHeader>
-                          <CardContent className="p-5 pt-0 space-y-3">
-                            <div className="text-[10px] text-zinc-600 uppercase tracking-wider">
-                              {getCategoryLabel(book.category || "other")}
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <div className="text-xs text-zinc-500">
-                                {hasPdf ? "PDF available" : "No PDF attached"}
-                              </div>
-                              {hasPdf && (
-                                <span className="p-1 rounded text-zinc-500">
-                                  <FileType className="h-3 w-3" />
-                                </span>
-                              )}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </Link>
-                    );
-                  })}
-                </div>
-              </section>
-            );
-          })}
-        </div>
-      ) : (
-        <Card className="border-zinc-800 bg-zinc-900/30">
-          <CardContent className="p-12 flex flex-col items-center justify-center text-center">
-            <BookOpen className="h-10 w-10 text-zinc-700 mb-3" />
-            <p className="text-sm font-medium text-zinc-400">
-              No uploaded books yet
-            </p>
-            <p className="text-xs text-zinc-600 mt-1">
-              Use Add Book to upload a PDF into the matching category
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
-      {selectedCategory ? (
-        <div className="space-y-4">
-          <button
-            onClick={() => setSelectedCategory(null)}
-            className="flex items-center gap-2 text-sm text-zinc-400 hover:text-zinc-200 transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to categories
-          </button>
-          <div>
-            <h2 className="text-lg font-semibold text-zinc-200">
-              {categoryLabels[selectedCategory] || selectedCategory}
-            </h2>
-            <p className="text-sm text-zinc-500 mt-1">
-              {(grouped[selectedCategory] || []).length} books
-            </p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {(grouped[selectedCategory] || []).map((book) => (
-              <Link
-                key={book.slug}
-                href={`/books/${book.slug}`}
-                className="block group"
-              >
-                <Card className="border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900 transition-colors h-full">
-                  <CardHeader className="p-5 pb-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <CardTitle className="text-sm font-medium text-zinc-100 truncate flex-1 min-w-0">
-                        {book.title}
-                      </CardTitle>
+                return (
+                  <section key={category.value} className="space-y-3">
+                    <div className="flex items-baseline justify-between gap-3">
+                      <h3 className="text-sm font-medium">
+                        {getCategoryLabel(category.value)}
+                      </h3>
+                      <span className="text-xs text-muted-foreground">
+                        {list.length}
+                      </span>
                     </div>
-                    <CardDescription className="text-xs text-zinc-500 mt-1">
-                      {categoryLabels[book.category] || book.category}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="p-5 pt-0 flex items-center gap-2">
-                    <FileType className="h-3.5 w-3.5 text-zinc-600" />
-                    <span className="text-xs text-zinc-600">PDF</span>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
-          </div>
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          {categoryOrder.map((cat) => {
-            const catBooks = grouped[cat];
-            if (!catBooks) return null;
-            const colors = categoryColors[cat] || categoryColors["07-Others"];
-            return (
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                      {list.map((book) => {
+                        const hasPdf = !!(book.hasPdf || book.pdfPath);
+                        return (
+                          <BookCard
+                            key={book._id || book.id}
+                            title={book.title}
+                            author={book.author || undefined}
+                            categoryLabel={getCategoryLabel(book.category || "other")}
+                            status={bookStatusConfig[book.status]}
+                            progress={book.progress}
+                            hasPdf={hasPdf}
+                            href={
+                              hasPdf
+                                ? `/books/read/${book.id}`
+                                : `/books/reading/${book.id}`
+                            }
+                          />
+                        );
+                      })}
+                    </div>
+                  </section>
+                );
+              })}
+            </div>
+          ) : (
+            <Card className="border-border bg-card/40">
+              <CardContent className="flex flex-col items-center justify-center p-12 text-center">
+                <BookOpen className="mb-3 h-10 w-10 text-muted-foreground" />
+                <p className="text-sm font-medium">No uploaded books yet</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Use Add Book to upload a PDF into the matching category
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {selectedCategory ? (
+            <div className="space-y-4">
               <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className="w-full text-left"
+                onClick={() => setSelectedCategory(null)}
+                className="flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
               >
-                <Card
-                  className={cn(
-                    "border transition-all cursor-pointer group h-full",
-                    colors.border,
-                    colors.bg,
-                    "hover:scale-[1.02] hover:shadow-black/20",
-                  )}
-                >
-                  <CardContent className="p-6 flex flex-col items-center justify-center text-center gap-3">
-                    <div
-                      className={cn(
-                        "w-12 h-12 rounded-xl flex items-center justify-center",
-                        colors.bg,
-                        "ring-1",
-                        colors.border,
-                      )}
-                    >
-                      <Library className={cn("h-6 w-6", colors.text)} />
-                    </div>
-                    <div>
-                      <CardTitle
-                        className={cn("text-base font-semibold", colors.text)}
-                      >
-                        {categoryLabels[cat] || cat}
-                      </CardTitle>
-                      <CardDescription className="text-xs text-zinc-500 mt-1">
-                        {catBooks.length}{" "}
-                        {catBooks.length === 1 ? "book" : "books"}
-                      </CardDescription>
-                    </div>
-                  </CardContent>
-                </Card>
+                <ArrowLeft className="h-4 w-4" />
+                Back to categories
               </button>
-            );
-          })}
-        </div>
-      )}
+              <div>
+                <h3 className="text-lg font-semibold">
+                  {categoryLabels[selectedCategory] || selectedCategory}
+                </h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {(grouped[selectedCategory] || []).length} books
+                </p>
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {(grouped[selectedCategory] || []).map((book) => (
+                  <BookCard
+                    key={book.slug}
+                    title={book.title}
+                    categoryLabel={categoryLabels[book.category] || book.category}
+                    hasPdf
+                    href={`/books/${book.slug}`}
+                  />
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <h3 className="text-sm font-medium">Built-in library</h3>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                {categoryOrder.map((cat) => {
+                  const catBooks = grouped[cat];
+                  if (!catBooks) return null;
+                  return (
+                    <button
+                      key={cat}
+                      onClick={() => setSelectedCategory(cat)}
+                      className="group text-left"
+                    >
+                      <Card className="h-full border-border bg-card/60 transition-colors group-hover:border-primary/40 group-hover:bg-card">
+                        <CardContent className="flex items-center gap-3 p-4">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted text-muted-foreground transition-colors group-hover:text-foreground">
+                            <Library className="h-5 w-5" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium">
+                              {categoryLabels[cat] || cat}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {catBooks.length}{" "}
+                              {catBooks.length === 1 ? "book" : "books"}
+                            </p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </>
       )}
 

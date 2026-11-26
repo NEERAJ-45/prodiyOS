@@ -51,7 +51,7 @@ const TextDocViewer = dynamic(() => import('./text-doc-viewer'), {
 });
 
 export function DocReaderClient({ doc }: { doc: DocData }) {
-  const isPdf = doc.fileType === 'pdf';
+  const isPdf = doc.fileType === 'pdf' || doc.mimeType === 'application/pdf';
 
   const [numPages, setNumPages] = React.useState(0);
   const [pageNumber, setPageNumber] = React.useState(1);

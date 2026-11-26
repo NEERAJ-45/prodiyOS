@@ -27,7 +27,8 @@ export async function GET(request: Request) {
 
     const projects = await Project.find({ userEmail }).sort({ id: -1 }).lean();
     return NextResponse.json({ projects });
-  } catch {
+  } catch (error) {
+    console.error('[projects] GET failed', error);
     return NextResponse.json({ projects: [] });
   }
 }
@@ -59,6 +60,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ project }, { status: 201 });
   } catch (error: unknown) {
+    console.error('[projects] POST failed', error);
     const message = error instanceof Error ? error.message : 'An error occurred';
     return NextResponse.json({ error: message }, { status: 500 });
   }
@@ -101,6 +103,7 @@ export async function PUT(request: Request) {
 
     return NextResponse.json({ project });
   } catch (error: unknown) {
+    console.error('[projects] PUT failed', error);
     const message = error instanceof Error ? error.message : 'An error occurred';
     return NextResponse.json({ error: message }, { status: 500 });
   }
@@ -133,6 +136,7 @@ export async function DELETE(request: Request) {
     await Project.deleteOne({ id });
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
+    console.error('[projects] DELETE failed', error);
     const message = error instanceof Error ? error.message : 'An error occurred';
     return NextResponse.json({ error: message }, { status: 500 });
   }

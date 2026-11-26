@@ -12,9 +12,9 @@ import { STORAGE_KEYS } from '@/lib/storage-keys';
 import { DailyStats } from '@/components/daily/DailyStats';
 import { CustomTaskList } from '@/components/daily/CustomTaskList';
 import { FocusTimer } from '@/components/daily/FocusTimer';
-import { DailyReflection } from '@/components/daily/DailyReflection';
 import { SyncStatus, type SyncState } from '@/components/shared/SyncStatus';
 import { PlanEvents } from '@/components/shared/PlanEvents';
+import { MissedSlots } from '@/components/daily/MissedSlots';
 
 const STORAGE_KEY = STORAGE_KEYS.DAILY_COMPLETIONS;
 const NOTES_KEY = STORAGE_KEYS.DAILY_NOTES;
@@ -221,6 +221,7 @@ export default function DailyPage() {
 
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
             <div className="xl:col-span-2 space-y-4">
+              <MissedSlots />
               <PlanEvents dates={[todayKey]} />
               <CustomTaskList
                 tasks={customTasks}
@@ -235,7 +236,6 @@ export default function DailyPage() {
 
             <div className="space-y-4">
               <FocusTimer />
-              <DailyReflection note={note} onChange={setNote} />
             </div>
           </div>
         </div>
