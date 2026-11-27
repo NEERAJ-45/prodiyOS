@@ -15,6 +15,7 @@ export function useProdigy() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [detail, setDetail] = useState<TaskDetail | null>(null);
   const [offline, setOffline] = useState(false);
+  const [offlineError, setOfflineError] = useState('');
   const [error, setError] = useState('');
 
   const activeRef = useRef<string | null>(null);
@@ -43,13 +44,20 @@ export function useProdigy() {
       setInstances(nextInstances);
       setTasks(nextTasks);
       setOffline(false);
+      setOfflineError('');
       if (activeRef.current) {
         api.task(activeRef.current).then(setDetail).catch(() => {});
       }
-    } catch {
+    } catch (caught) {
       setOffline(true);
+      setOfflineError(errorMessage(caught));
     }
   }, []);
+
+  const retry = useCallback(async () => {
+    setError('');
+    await Promise.allSettled([loadMeta(), refresh()]);
+  }, [loadMeta, refresh]);
 
   useEffect(() => {
     void loadMeta();
@@ -57,10 +65,9 @@ export function useProdigy() {
   }, [loadMeta, refresh]);
 
   useEffect(() => {
-    if (offline) return;
-    const timer = window.setInterval(() => void refresh(), POLL_MS);
+    const timer = window.setInterval(() => void (offline ? retry() : refresh()), offline ? 5000 : POLL_MS);
     return () => window.clearInterval(timer);
-  }, [offline, refresh]);
+  }, [offline, refresh, retry]);
 
   useEffect(() => {
     if (!activeId) {
@@ -80,8 +87,10 @@ export function useProdigy() {
     activeId,
     setActiveId,
     offline,
+    offlineError,
     error,
     setError,
     refresh,
+    retry,
   };
 }

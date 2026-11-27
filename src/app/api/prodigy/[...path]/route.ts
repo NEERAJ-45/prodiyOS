@@ -9,11 +9,22 @@ const token = () => process.env.AGENTDOCK_TOKEN ?? '';
 
 type Ctx = { params: Promise<{ path: string[] }> };
 
+function logUnauthorized(request: Request) {
+  const cookie = request.headers.get('cookie') ?? '';
+  console.warn('[prodigy] proxy unauthorized', {
+    cookies: cookie.split(';').map((part) => part.trim().split('=')[0]).filter(Boolean),
+    host: request.headers.get('host'),
+    forwardedHost: request.headers.get('x-forwarded-host'),
+    forwardedProto: request.headers.get('x-forwarded-proto'),
+  });
+}
+
 async function forward(request: Request, ctx: Ctx) {
   const session = await auth();
   const bearer = (request.headers.get('authorization') ?? '').replace(/^Bearer\s+/i, '').trim();
   const authorized = !!session?.user?.email || (!!token() && bearer === token());
   if (!authorized) {
+    logUnauthorized(request);
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   if (!token()) {

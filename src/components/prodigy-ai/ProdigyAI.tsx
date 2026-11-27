@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { Activity, ServerOff, Sparkles, X } from 'lucide-react';
+import { Activity, LogIn, ServerOff, Sparkles, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
@@ -24,9 +24,11 @@ export function ProdigyAI() {
     activeId,
     setActiveId,
     offline,
+    offlineError,
     error,
     setError,
     refresh,
+    retry,
   } = useProdigy();
   const [workspaceId, setWorkspaceId] = useState('');
   const [tab, setTab] = useState<'agent' | 'terminal'>('agent');
@@ -51,6 +53,7 @@ export function ProdigyAI() {
   }, [workspaceId, workspaces, meta]);
 
   const status = offline ? 'offline' : meta && !meta.configured ? 'unconfigured' : runtime ? 'online' : 'loading';
+  const unauthorized = /unauthori[sz]ed/i.test(offlineError);
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-5 md:px-6">
@@ -81,7 +84,7 @@ export function ProdigyAI() {
         </div>
       </div>
 
-      {error && (
+      {error && !offline && (
         <div className="mb-4 flex items-start gap-2 rounded-md border border-red-900/50 bg-red-950/20 px-3 py-2 text-sm text-red-300">
           <span className="flex-1">{error}</span>
           <button type="button" onClick={() => setError('')} aria-label="Dismiss" className="text-red-400/70 hover:text-red-300">
@@ -96,32 +99,54 @@ export function ProdigyAI() {
             <ServerOff className="mt-0.5 h-5 w-5 text-muted-foreground" />
             <div className="space-y-3 text-sm">
               <div>
-                <p className="font-medium">ProdigyAI backend is offline</p>
-                <p className="text-muted-foreground">
-                  The AgentDock server at <span className="font-mono text-xs">{meta?.url ?? 'http://127.0.0.1:8080'}</span> is not
-                  reachable.
+                <p className="font-medium">
+                  {unauthorized ? 'ProdigyAI needs you to sign in again' : 'ProdigyAI backend is offline'}
                 </p>
+                <p className="text-muted-foreground">
+                  {unauthorized
+                    ? 'Your session is missing or expired, so the API rejected the request.'
+                    : `The AgentDock server at ${meta?.url ?? 'http://127.0.0.1:8080'} is not reachable.`}
+                </p>
+                {offlineError && <p className="mt-1 font-mono text-[11px] text-red-300">{offlineError}</p>}
               </div>
-              <div className="space-y-1 text-muted-foreground">
-                <p className="font-medium text-foreground">Start it:</p>
-                <pre className="overflow-x-auto rounded-md border bg-black/40 p-2 font-mono text-[11px] text-zinc-300">
+              {unauthorized ? (
+                <Button size="sm" onClick={() => { window.location.href = '/login?callbackUrl=/prodigy-ai'; }}>
+                  <LogIn className="mr-1.5 h-3.5 w-3.5" /> Sign in again
+                </Button>
+              ) : (
+                <>
+                  <div className="space-y-1 text-muted-foreground">
+                    <p className="font-medium text-foreground">Start it:</p>
+                    <pre className="overflow-x-auto rounded-md border bg-black/40 p-2 font-mono text-[11px] text-zinc-300">
 {`cd agentdock/backend
 set -a && . ./.env && set +a
 npm run dev`}
-                </pre>
-              </div>
-              <div className="space-y-1 text-muted-foreground">
-                <p className="font-medium text-foreground">Point ProdigyOS at it (prodiyOS/.env.local):</p>
-                <pre className="overflow-x-auto rounded-md border bg-black/40 p-2 font-mono text-[11px] text-zinc-300">
+                    </pre>
+                  </div>
+                  <div className="space-y-1 text-muted-foreground">
+                    <p className="font-medium text-foreground">Point ProdigyOS at it (prodiyOS/.env.local):</p>
+                    <pre className="overflow-x-auto rounded-md border bg-black/40 p-2 font-mono text-[11px] text-zinc-300">
 {`AGENTDOCK_URL=http://127.0.0.1:8080
 AGENTDOCK_TOKEN=<API_TOKEN from agentdock/backend/.env>
 AGENTDOCK_DEFAULT_WORKSPACE=${meta?.defaultWorkspace || '/absolute/path/to/prodiyOS'}`}
-                </pre>
-                <p className="text-xs">Restart the Next.js dev server after changing env.</p>
+                    </pre>
+                    <p className="text-xs">Restart the Next.js dev server after changing env.</p>
+                  </div>
+                </>
+              )}
+              <div className="flex flex-wrap items-center gap-3">
+                <Button size="sm" variant="outline" onClick={() => void retry()}>
+                  <Activity className="mr-1.5 h-3.5 w-3.5" /> Retry
+                </Button>
+                <a
+                  href="/api/prodigy-debug"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+                >
+                  Open diagnostics
+                </a>
               </div>
-              <Button size="sm" variant="outline" onClick={() => void refresh()}>
-                <Activity className="mr-1.5 h-3.5 w-3.5" /> Retry
-              </Button>
             </div>
           </div>
         </Card>
