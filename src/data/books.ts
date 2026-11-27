@@ -33,13 +33,13 @@ const books: BookEntry[] = [
   { slug: 'mythical-man-month', title: 'The Mythical Man-Month', category: '06-Meta-Learning', path: '06-Meta-Learning/Addison.Wesley.The.Mythical.Man-Month.Essays.on.Software.Engineering.20th.Anniversary.Edition.pdf' },
   { slug: 'thinking-fast-slow', title: 'Thinking, Fast and Slow', category: '06-Meta-Learning', path: '06-Meta-Learning/Daniel Kahneman-Thinking, Fast and Slow  .pdf' },
   { slug: 'pragmatic-programmer', title: 'The Pragmatic Programmer', category: '06-Meta-Learning', path: '06-Meta-Learning/the-pragmatic-programmer.pdf' },
-  { slug: 'dsa-made-easy', title: 'Data Structures and Algorithms Made Easy in Java', category: '07-Others', path: '07-Others/Data Structures and Algorithms Made Easy in Java.pdf' },
-  { slug: 'head-first-java', title: 'Head First Java', category: '07-Others', path: '07-Others/Head First Java.pdf' },
-  { slug: 'java-complete-reference', title: 'Java: The Complete Reference', category: '07-Others', path: '07-Others/Java - The Complete Reference - 11 Edition.pdf' },
-  { slug: 'java-8-in-action', title: 'Java 8 in Action', category: '07-Others', path: '07-Others/Java 8 in Action.pdf' },
-  { slug: 'operating-systems-three-easy', title: 'Operating Systems: Three Easy Pieces', category: '07-Others', path: '07-Others/Operating Systems - Three Easy Pieces.pdf' },
-  { slug: 'java-notes-part-1', title: 'Java Notes - Part 1', category: '07-Others', path: '07-Others/Java-Notes/JAVA NOTES/Part-1.pdf' },
-  { slug: 'java-notes-part-2', title: 'Java Notes - Part 2', category: '07-Others', path: '07-Others/Java-Notes/JAVA NOTES/Part-2.pdf' },
+  { slug: 'dsa-made-easy', title: 'Data Structures and Algorithms Made Easy in Java', category: '01-Foundations', path: '07-Others/Data Structures and Algorithms Made Easy in Java.pdf' },
+  { slug: 'head-first-java', title: 'Head First Java', category: '01-Foundations', path: '07-Others/Head First Java.pdf' },
+  { slug: 'java-complete-reference', title: 'Java: The Complete Reference', category: '01-Foundations', path: '07-Others/Java - The Complete Reference - 11 Edition.pdf' },
+  { slug: 'java-8-in-action', title: 'Java 8 in Action', category: '01-Foundations', path: '07-Others/Java 8 in Action.pdf' },
+  { slug: 'operating-systems-three-easy', title: 'Operating Systems: Three Easy Pieces', category: '05-Deep-Mastery', path: '07-Others/Operating Systems - Three Easy Pieces.pdf' },
+  { slug: 'java-notes-part-1', title: 'Java Notes - Part 1', category: '01-Foundations', path: '07-Others/Java-Notes/JAVA NOTES/Part-1.pdf' },
+  { slug: 'java-notes-part-2', title: 'Java Notes - Part 2', category: '01-Foundations', path: '07-Others/Java-Notes/JAVA NOTES/Part-2.pdf' },
 ];
 
 export const categoryLabels: Record<string, string> = {

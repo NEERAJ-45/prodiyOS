@@ -31,7 +31,6 @@ const categoryOrder = [
   "04-Performance",
   "05-Deep-Mastery",
   "06-Meta-Learning",
-  "07-Others",
 ];
 
 const bookStatusConfig: Record<
@@ -47,7 +46,7 @@ const bookStatusConfig: Record<
 const emptyFormState: BookFormState = {
   title: "",
   author: "",
-  category: "other",
+  category: "system-design",
   status: "TO_READ",
   progress: 0,
   rating: 0,

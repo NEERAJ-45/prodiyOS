@@ -48,7 +48,7 @@ const RatingStars = React.memo(function RatingStars({ rating }: { rating: number
 const emptyFormState: BookFormState = {
   title: '',
   author: '',
-  category: 'other',
+  category: 'system-design',
   status: 'TO_READ',
   progress: 0,
   rating: 0,

@@ -136,6 +136,14 @@ export function BookFormDialog({
                     {c.label}
                   </SelectItem>
                 ))}
+                {form.category === 'other' && (
+                  <SelectItem
+                    value="other"
+                    className="text-zinc-300 focus:bg-zinc-800 focus:text-zinc-100"
+                  >
+                    Other (legacy)
+                  </SelectItem>
+                )}
               </SelectContent>
             </Select>
           </Field>
