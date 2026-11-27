@@ -35,9 +35,9 @@ import {
 type Status = 'idle' | 'playing' | 'paused' | 'buffering' | 'error';
 
 const GLASS =
-  'border border-white/10 bg-zinc-950/90 supports-[backdrop-filter]:bg-zinc-950/60 backdrop-blur-2xl backdrop-saturate-150';
+  'border border-white/15 bg-white/[0.06] backdrop-blur-2xl backdrop-saturate-150';
 const GLASS_SHADOW =
-  'shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_28px_70px_-18px_rgba(0,0,0,0.85)]';
+  'shadow-[inset_0_1px_0_rgba(255,255,255,0.22),inset_0_-1px_0_rgba(255,255,255,0.06),0_30px_80px_-24px_rgba(0,0,0,0.9)]';
 
 function Art({ src, size, className }: { src: string | null; size: number; className?: string }) {
   if (!src) {
@@ -348,10 +348,10 @@ export function MusicPlayer() {
           aria-expanded={expanded}
           title="Music"
           className={cn(
-            'relative flex items-center justify-center rounded-lg border p-1.5 transition-colors',
+            'relative flex items-center justify-center rounded-lg border p-1.5 backdrop-blur-md transition-colors',
             expanded
-              ? 'border-amber-500/30 bg-amber-500/10 text-amber-400'
-              : 'border-border text-muted-foreground hover:border-amber-500/30 hover:bg-amber-500/5 hover:text-amber-400'
+              ? 'border-amber-400/30 bg-amber-400/10 text-amber-300'
+              : 'border-white/10 bg-white/5 text-zinc-400 hover:border-white/20 hover:bg-white/10 hover:text-zinc-100'
           )}
         >
           <Music2 className="h-3.5 w-3.5" />
@@ -365,24 +365,32 @@ export function MusicPlayer() {
             <>
               <div className="fixed inset-0 z-40" onClick={() => setExpanded(false)} />
               <motion.section
-                initial={reduceMotion ? false : { opacity: 0, y: -8, scale: 0.98 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -8, scale: 0.98 }}
+                initial={
+                  reduceMotion
+                    ? false
+                    : { opacity: 0, y: -8, scale: 0.94, borderRadius: 32, filter: 'blur(10px)' }
+                }
+                animate={{ opacity: 1, y: 0, scale: 1, borderRadius: 20, filter: 'blur(0px)' }}
+                exit={
+                  reduceMotion
+                    ? { opacity: 0 }
+                    : { opacity: 0, y: -8, scale: 0.94, borderRadius: 32, filter: 'blur(10px)' }
+                }
                 transition={
                   reduceMotion
                     ? { duration: 0 }
-                    : { type: 'spring', stiffness: 380, damping: 26, mass: 0.8 }
+                    : { type: 'spring', stiffness: 340, damping: 28, mass: 0.7 }
                 }
                 style={{ transformOrigin: 'top right' }}
                 className={cn(
-                  'fixed left-2 right-2 top-16 z-50 max-h-[calc(100vh-5rem)] overflow-y-auto overflow-x-hidden rounded-2xl sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[380px]',
+                  'fixed left-2 right-2 top-16 z-50 max-h-[calc(100vh-5rem)] overflow-y-auto overflow-x-hidden rounded-[20px] ring-1 ring-inset ring-white/10 sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[380px]',
                   GLASS,
                   GLASS_SHADOW
                 )}
                 aria-label="Music player"
               >
               <div
-                className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-white/[0.07] to-transparent"
+                className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-white/[0.12] to-transparent"
                 aria-hidden
               />
               <div
