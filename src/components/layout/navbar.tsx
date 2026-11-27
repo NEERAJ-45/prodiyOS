@@ -12,6 +12,7 @@ import { quotes } from '../../../quotes';
 import { GlobalSearch } from '@/components/shared/GlobalSearch';
 import { ModeToggle } from '@/components/layout/mode-toggle';
 import { NotificationsBell } from '@/components/layout/notifications-bell';
+import { MusicPlayer } from '@/components/player/MusicPlayer';
 import { AgentLauncher } from '@/components/agent/AgentLauncher';
 import { useModeStore } from '@/lib/stores/mode-store';
 
@@ -137,6 +138,9 @@ export function Navbar({ global = false }: { global?: boolean }) {
 
             {/* Notifications */}
             <NotificationsBell />
+
+            {/* Music */}
+            <MusicPlayer />
 
             {/* Quote Button */}
             <button

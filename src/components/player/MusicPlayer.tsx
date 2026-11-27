@@ -5,7 +5,6 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import {
   AlertCircle,
   ChevronDown,
-  ChevronUp,
   ExternalLink,
   Loader2,
   Music2,
@@ -130,7 +129,6 @@ export function MusicPlayer() {
     setTrackIndex(saved.trackIndex);
     setVolume(saved.volume);
     setMuted(saved.muted);
-    setExpanded(saved.expanded);
     setRestored(true);
   }, []);
 
@@ -138,9 +136,9 @@ export function MusicPlayer() {
     if (!restored) return;
     localStorage.setItem(
       STORAGE_KEYS.PLAYER,
-      JSON.stringify({ stationId, trackIndex, volume, muted, expanded })
+      JSON.stringify({ stationId, trackIndex, volume, muted })
     );
-  }, [restored, stationId, trackIndex, volume, muted, expanded]);
+  }, [restored, stationId, trackIndex, volume, muted]);
 
   React.useEffect(() => {
     const audio = audioRef.current;
@@ -343,26 +341,46 @@ export function MusicPlayer() {
     <>
       <audio ref={audioRef} preload="metadata" className="hidden" />
 
-      <AnimatePresence>
-        {expanded && (
-          <div className="pointer-events-none fixed inset-x-0 bottom-24 z-30 flex justify-center px-3 md:bottom-24">
-            <motion.section
-              initial={reduceMotion ? false : { opacity: 0, y: 24, scale: 0.94 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 24, scale: 0.94 }}
-              transition={
-                reduceMotion
-                  ? { duration: 0 }
-                  : { type: 'spring', stiffness: 380, damping: 26, mass: 0.8 }
-              }
-              style={{ transformOrigin: 'bottom center' }}
-              className={cn(
-                'pointer-events-auto relative w-full max-w-[560px] overflow-hidden rounded-2xl',
-                GLASS,
-                GLASS_SHADOW
-              )}
-              aria-label="Music player"
-            >
+      <div className="relative">
+        <button
+          onClick={() => setExpanded((v) => !v)}
+          aria-label={expanded ? 'Close music player' : 'Open music player'}
+          aria-expanded={expanded}
+          title="Music"
+          className={cn(
+            'relative flex items-center justify-center rounded-lg border p-1.5 transition-colors',
+            expanded
+              ? 'border-amber-500/30 bg-amber-500/10 text-amber-400'
+              : 'border-border text-muted-foreground hover:border-amber-500/30 hover:bg-amber-500/5 hover:text-amber-400'
+          )}
+        >
+          <Music2 className="h-3.5 w-3.5" />
+          {playing && (
+            <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-amber-400" />
+          )}
+        </button>
+
+        <AnimatePresence>
+          {expanded && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setExpanded(false)} />
+              <motion.section
+                initial={reduceMotion ? false : { opacity: 0, y: -8, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -8, scale: 0.98 }}
+                transition={
+                  reduceMotion
+                    ? { duration: 0 }
+                    : { type: 'spring', stiffness: 380, damping: 26, mass: 0.8 }
+                }
+                style={{ transformOrigin: 'top right' }}
+                className={cn(
+                  'fixed left-2 right-2 top-16 z-50 max-h-[calc(100vh-5rem)] overflow-y-auto overflow-x-hidden rounded-2xl sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[380px]',
+                  GLASS,
+                  GLASS_SHADOW
+                )}
+                aria-label="Music player"
+              >
               <div
                 className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-white/[0.07] to-transparent"
                 aria-hidden
@@ -416,7 +434,7 @@ export function MusicPlayer() {
                 </div>
                 <button
                   onClick={() => setExpanded(false)}
-                  aria-label="Collapse player"
+                  aria-label="Close music player"
                   className="rounded-md p-1.5 text-zinc-500 transition-colors hover:bg-white/5 hover:text-zinc-200"
                 >
                   <ChevronDown className="h-4 w-4" />
@@ -580,77 +598,10 @@ export function MusicPlayer() {
                   ))}
                 </div>
               </div>
-            </motion.section>
-          </div>
-        )}
-      </AnimatePresence>
-
-      <div className="fixed inset-x-0 bottom-4 z-30 flex justify-center px-4 md:bottom-5">
-        <motion.div
-          initial={reduceMotion ? false : { opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={
-            reduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 380, damping: 26 }
-          }
-          className={cn(
-            'flex w-full max-w-xs items-center gap-2 rounded-full px-2 py-1.5',
-            GLASS,
-            GLASS_SHADOW
+              </motion.section>
+            </>
           )}
-        >
-          <Art src={track?.artwork ?? null} size={36} />
-          <div className="min-w-0 flex-1">
-            {track ? (
-              <div className="relative overflow-hidden">
-                <div
-                  className={cn(
-                    'flex w-max gap-6',
-                    playing && !reduceMotion && track.title.length > 24 && 'player-marquee'
-                  )}
-                >
-                  <span className="whitespace-nowrap text-xs font-medium text-zinc-100">
-                    {track.title}
-                  </span>
-                  {track.title.length > 24 && (
-                    <span className="whitespace-nowrap text-xs font-medium text-zinc-100" aria-hidden>
-                      {track.title}
-                    </span>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <p className="truncate text-xs font-medium text-zinc-100">
-                {loadError ? 'Player offline' : `${station.label} radio`}
-              </p>
-            )}
-            <p className="truncate text-[10px] text-zinc-500">
-              {track ? track.artist : loading ? 'Loading…' : loadError ? 'Open to retry' : 'Tap play'}
-            </p>
-          </div>
-          <Equalizer playing={playing} />
-          <motion.button
-            onClick={toggle}
-            whileTap={{ scale: 0.9 }}
-            aria-label={playing ? 'Pause' : 'Play'}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-400 text-zinc-950 transition-transform hover:scale-105"
-          >
-            {loading && !track ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : playing ? (
-              <Pause className="h-3.5 w-3.5" />
-            ) : (
-              <Play className="ml-0.5 h-3.5 w-3.5" />
-            )}
-          </motion.button>
-          <button
-            onClick={() => setExpanded((v) => !v)}
-            aria-label={expanded ? 'Collapse player' : 'Expand player'}
-            aria-expanded={expanded}
-            className="rounded-full p-1.5 text-zinc-400 transition-colors hover:bg-white/5 hover:text-zinc-200"
-          >
-            {expanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
-          </button>
-        </motion.div>
+        </AnimatePresence>
       </div>
     </>
   );
