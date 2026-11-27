@@ -33,6 +33,7 @@ import {
   Code2,
   NotebookPen,
   MessageSquare,
+  Bot,
 } from "lucide-react";
 
 interface NavItem {
@@ -47,6 +48,12 @@ interface NavGroup {
 }
 
 const navGroups: NavGroup[] = [
+  {
+    label: "AI",
+    items: [
+      { label: "ProdigyAI", href: "/prodigy-ai", icon: Bot },
+    ],
+  },
   {
     label: "Learn",
     items: [

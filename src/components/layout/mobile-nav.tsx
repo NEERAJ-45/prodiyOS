@@ -3,12 +3,13 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, LayoutDashboard, GitBranch, Map, Target, Timer, RefreshCw, FolderKanban, Briefcase, BookOpen, CalendarCheck, BarChart3, StickyNote, Rocket, CalendarDays, History, ListChecks, FileText, FileCode, NotebookPen } from 'lucide-react';
+import { Menu, X, LayoutDashboard, GitBranch, Map, Target, Timer, RefreshCw, FolderKanban, Briefcase, BookOpen, CalendarCheck, BarChart3, StickyNote, Rocket, CalendarDays, History, ListChecks, FileText, FileCode, NotebookPen, Bot } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRevisionDueCount } from '@/hooks/use-revision-due';
 
 const navItems = [
   { label: 'Dashboard', href: '/command-center', icon: LayoutDashboard },
+  { label: 'ProdigyAI', href: '/prodigy-ai', icon: Bot },
   { label: 'Patterns Library', href: '/patterns', icon: GitBranch },
   { label: 'Roadmaps', href: '/roadmaps', icon: Map },
   { label: 'Mastery Tracker', href: '/mastery', icon: Target },
